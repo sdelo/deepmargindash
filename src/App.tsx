@@ -19,8 +19,22 @@ function App() {
     syntheticPools.find((p) => p.id === selectedPoolId) ?? syntheticPools[0]!;
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="max-w-[1400px] mx-auto mr-4 ml-4 text-white space-y-8">
+    <div className="min-h-screen py-8 relative">
+      <div className="plankton-layer" aria-hidden>
+        {Array.from({ length: 36 }).map((_, i) => (
+          <span
+            key={i}
+            className="plankton-dot"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDuration: `${18 + Math.random() * 20}s`,
+              animationDelay: `${-Math.random() * 20}s`,
+            }}
+          />
+        ))}
+      </div>
+      <div className="max-w-[1400px] mx-auto px-4 text-white space-y-8">
         <div className="mb-4">
           <h1 className="text-3xl font-extrabold tracking-wide text-cyan-200 drop-shadow">
             Available Pools
