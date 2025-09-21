@@ -20,7 +20,7 @@ function App() {
 
   return (
     <div className="min-h-screen py-8">
-      <div className="max-w-[1400px] mx-auto px-6 text-white space-y-8">
+      <div className="max-w-[1400px] mx-auto mr-4 ml-4 text-white space-y-8">
         <div className="mb-4">
           <h1 className="text-3xl font-extrabold tracking-wide text-amber-300 drop-shadow">
             Deepbook — Lending Dashboard

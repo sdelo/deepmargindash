@@ -1,4 +1,7 @@
 import type { FC } from "react";
+import React from "react";
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
+import ChartTooltip from "../../shared/components/ChartTooltip";
 import { depositorByPool } from "../../../data/synthetic/metrics";
 
 type Props = { poolId: string };
@@ -15,6 +18,45 @@ const colorToClass: Record<string, string> = {
 export const DepositorDistribution: FC<Props> = ({ poolId }) => {
   const d = depositorByPool[poolId];
   if (!d) return null;
+
+  const pieData = React.useMemo(
+    () =>
+      d.topSuppliers.map((s) => ({
+        name: s.address,
+        value: s.sharePct,
+        color: s.color,
+      })),
+    [d.topSuppliers]
+  );
+
+  const colorMap: Record<string, string> = {
+    cyan: "var(--color-cyan-300)",
+    amber: "var(--color-amber-400)",
+    blue: "var(--color-blue-400)",
+    emerald: "var(--color-emerald-400)",
+    rose: "var(--color-rose-400)",
+    indigo: "var(--color-indigo-400)",
+  };
+
+  function darken(hex: string, amount = 0.35) {
+    // hex -> darker hex by multiplying channel
+    const m = hex.replace("#", "");
+    const num = parseInt(m, 16);
+    const r = Math.max(
+      0,
+      Math.min(255, Math.floor(((num >> 16) & 0xff) * (1 - amount)))
+    );
+    const g = Math.max(
+      0,
+      Math.min(255, Math.floor(((num >> 8) & 0xff) * (1 - amount)))
+    );
+    const b = Math.max(
+      0,
+      Math.min(255, Math.floor((num & 0xff) * (1 - amount)))
+    );
+    const toHex = (v: number) => v.toString(16).padStart(2, "0");
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
 
   return (
     <div className="relative card-surface card-ring glow-amber glow-cyan text-white">
@@ -97,9 +139,63 @@ export const DepositorDistribution: FC<Props> = ({ poolId }) => {
               Top N = {d.topSuppliers.length}
             </div>
           </div>
-          {/* Donut placeholder */}
-          <div className="h-[260px] flex items-center justify-center text-cyan-100/70">
-            Donut Chart (mock)
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <defs>
+                  {pieData.map((entry, index) => {
+                    const end = colorMap[entry.color];
+                    const start = darken(end, 0.45);
+                    return (
+                      <linearGradient
+                        id={`dd-grad-${index}`}
+                        key={`dd-grad-${index}`}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="0%" stopColor={start} />
+                        <stop offset="100%" stopColor={end} />
+                      </linearGradient>
+                    );
+                  })}
+                </defs>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={70}
+                  outerRadius={110}
+                  paddingAngle={2}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={`url(#dd-grad-${index})`}
+                      stroke="rgba(255,255,255,0.8)"
+                      strokeWidth={1}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  content={
+                    <ChartTooltip
+                      labelFormatter={() => null}
+                      valueFormatter={(v) => `${Number(v).toFixed(1)}%`}
+                    />
+                  }
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center">
+              <div className="text-xl text-cyan-100/90">
+                Top {pieData.length} ={" "}
+                <span className="text-amber-300 font-semibold">100%</span>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -1,4 +1,16 @@
 import type { FC } from "react";
+import React from "react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+  ReferenceDot,
+} from "recharts";
 import type { PoolOverview } from "../types";
 import { utilizationPct } from "../../../data/synthetic/pools";
 
@@ -31,34 +43,16 @@ export const YieldCurve: FC<Props> = ({ pool }) => {
       : baseRate + baseSlope * optimalU + excessSlope * (u - optimalU);
   const supplyApr = borrowApr * u * (1 - spreadPct / 100);
 
-  // Simple SVG curve (piecewise linear) from 0..1 utilization mapped to width
-  const width = 760;
-  const height = 260;
-  const left = 60;
-  const right = width - 20;
-  const bottom = height - 20;
-  const top = 20;
-
-  function xAt(t: number) {
-    return left + (right - left) * t;
-  }
-  function yAt(apr: number) {
-    // scale APR to y; assume max ~ 40%
-    const max = Math.max(20, borrowApr * 1.6);
-    const norm = Math.min(apr, max) / max; // 0..1
-    return bottom - (bottom - top) * norm;
-  }
-
-  const points: string[] = [];
+  // Build data points to draw the piecewise linear curve in Recharts
   const steps = 16;
-  for (let i = 0; i <= steps; i++) {
+  const curveData = Array.from({ length: steps + 1 }, (_, i) => {
     const t = i / steps;
     const apr =
       t <= optimalU
         ? baseRate + baseSlope * t
         : baseRate + baseSlope * optimalU + excessSlope * (t - optimalU);
-    points.push(`${xAt(t)},${yAt(apr)}`);
-  }
+    return { u: Math.round(t * 100), apr };
+  });
 
   return (
     <div className="relative card-surface card-ring glow-amber glow-cyan text-white">
@@ -130,44 +124,65 @@ export const YieldCurve: FC<Props> = ({ pool }) => {
         }}
       >
         <div className="text-cyan-100/80 mb-3">Utilization Curve</div>
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-[260px]">
-          {/* Axes */}
-          <line
-            x1={left}
-            y1={bottom}
-            x2={right}
-            y2={bottom}
-            stroke="rgba(255,255,255,0.25)"
-            strokeWidth="1"
-          />
-          <line
-            x1={left}
-            y1={top}
-            x2={left}
-            y2={bottom}
-            stroke="rgba(255,255,255,0.25)"
-            strokeWidth="1"
-          />
-          {/* Optimal vertical */}
-          <line
-            x1={xAt(optimalU)}
-            y1={top}
-            x2={xAt(optimalU)}
-            y2={bottom}
-            stroke="#fde68a"
-            strokeOpacity={0.8}
-            strokeWidth="2"
-          />
-          {/* Curve */}
-          <polyline
-            fill="none"
-            stroke="#22d3ee"
-            strokeWidth="2.5"
-            points={points.join(" ")}
-          />
-          {/* Current point */}
-          <circle cx={xAt(u)} cy={yAt(borrowApr)} r="5" fill="#67e8f9" />
-        </svg>
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart
+            data={curveData}
+            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(255,255,255,0.15)"
+            />
+            <XAxis
+              dataKey="u"
+              type="number"
+              domain={[0, 100]}
+              tickFormatter={(v) => `${v}%`}
+              tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tickFormatter={(v) => `${v.toFixed(1)}%`}
+              tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              formatter={(value) => [`${(value as number).toFixed(2)}%`, "APR"]}
+              labelFormatter={(label) => `Utilization ${label}%`}
+              contentStyle={{
+                backgroundColor: "rgba(0,0,0,0.8)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: "8px",
+                color: "white",
+              }}
+            />
+            <ReferenceLine
+              x={Math.round(optimalU * 100)}
+              stroke="var(--color-amber-300)"
+              strokeWidth={2}
+            />
+            <Line
+              type="monotone"
+              dataKey="apr"
+              stroke="var(--color-cyan-300)"
+              strokeWidth={2.5}
+              dot={false}
+            />
+            <ReferenceLine
+              x={Math.round(u * 100)}
+              stroke="var(--color-cyan-200)"
+              strokeDasharray="4 4"
+            />
+            <ReferenceDot
+              x={Math.round(u * 100)}
+              y={borrowApr}
+              r={4}
+              fill="var(--color-cyan-300)"
+            />
+          </LineChart>
+        </ResponsiveContainer>
         <div className="text-[11px] text-cyan-100/60 mt-2">
           base_rate, base_slope →{" "}
           <span className="text-amber-300">optimal_utilization</span> →
