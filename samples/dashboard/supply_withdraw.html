@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leviathan Pool Overview + Deposit/Withdraw</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-b from-[#020617] to-[#0b1226] flex items-center justify-center min-h-screen">
+  <div class="w-[560px] rounded-3xl p-6 bg-white/10 backdrop-blur-2xl backdrop-saturate-150 shadow-2xl border-2 border-amber-400/70 ring-1 ring-cyan-300/40 relative space-y-8">
+    <!-- Ambient Leviathan Glows -->
+    <div class="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-r from-amber-400/35 via-yellow-500/15 to-transparent blur-2xl -z-10"></div>
+    <div class="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-cyan-300/20 via-blue-700/20 to-transparent blur-2xl -z-20"></div>
+
+    <!-- Title -->
+    <h2 class="text-2xl font-extrabold tracking-wide text-amber-300 mb-3 text-center drop-shadow">Leviathan Margin Pool</h2>
+    <div class="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent"></div>
+
+    <!-- Pool Overview Card -->
+    <div class="rounded-2xl p-5 bg-white/10 border border-cyan-300/40 shadow-inner space-y-3">
+      <h3 class="text-lg font-semibold text-cyan-200 mb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
+        Pool Overview
+      </h3>
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <p class="text-xs text-cyan-100/70">Total Supply</p>
+          <p class="text-lg font-bold text-amber-300">1,000,000</p>
+        </div>
+        <div>
+          <p class="text-xs text-cyan-100/70">Total Borrow</p>
+          <p class="text-lg font-bold text-amber-300">450,000</p>
+        </div>
+        <div>
+          <p class="text-xs text-cyan-100/70">Utilization</p>
+          <p class="text-lg font-bold text-amber-300">45%</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deposit Section -->
+    <div>
+      <h3 class="text-lg font-semibold text-cyan-200 mb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_12px_2px_rgba(251,191,36,0.6)]"></span>
+        Deposit
+      </h3>
+      <div class="space-y-3">
+        <select class="w-full rounded-xl bg-white/10 border-2 border-amber-400/70 text-white p-3 focus:outline-none focus:ring-2 focus:ring-amber-300/80 focus:border-amber-300/80 transition">
+          <option>USDC</option>
+          <option>SUI</option>
+          <option>ETH</option>
+        </select>
+        <input type="number" placeholder="Enter amount" class="w-full rounded-xl bg-white/10 border-2 border-amber-400/70 text-white p-3 focus:outline-none focus:ring-2 focus:ring-amber-300/80 focus:border-amber-300/80 transition" />
+        <p class="text-xs text-cyan-100/80">Min Borrow: <span class="text-amber-300">100</span> · Supply Cap: <span class="text-amber-300">1,000,000</span></p>
+        <button class="relative overflow-hidden w-full rounded-xl py-3 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold shadow-lg hover:from-amber-300 hover:to-yellow-500 transition">
+          <span class="relative z-10">Deposit</span>
+          <span class="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-amber-200/0 via-amber-300/25 to-transparent blur-sm"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Withdraw Section -->
+    <div>
+      <h3 class="text-lg font-semibold text-cyan-200 mb-2 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
+        Withdraw
+      </h3>
+      <div class="space-y-3">
+        <input type="number" placeholder="Enter amount" class="w-full rounded-xl bg-white/10 border-2 border-amber-400/70 text-white p-3 focus:outline-none focus:ring-2 focus:ring-amber-300/80 focus:border-amber-300/80 transition" />
+        <button class="relative overflow-hidden w-full rounded-xl py-3 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold shadow-lg hover:from-amber-300 hover:to-yellow-500 transition">
+          <span class="relative z-10">Withdraw All</span>
+          <span class="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-tr from-cyan-200/0 via-cyan-300/25 to-transparent blur-sm"></span>
+        </button>
+      </div>
+      <p class="text-xs text-cyan-100/80 mt-2">Current Balance: <span class="text-amber-300">5,000 USDC</span></p>
+    </div>
+  </div>
+</body>
+</html>

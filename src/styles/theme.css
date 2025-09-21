@@ -1,0 +1,84 @@
+@theme {
+  /* Colors */
+  --color-bg-start: #020617; /* slate-950 */
+  --color-bg-end: #0b1226;   /* custom deep blue */
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-cyan-200: #a5f3fc;
+  --color-cyan-300: #67e8f9;
+  --color-blue-700: #1d4ed8;
+  --color-white-10: rgba(255,255,255,0.10);
+  --color-white-05: rgba(255,255,255,0.05);
+
+  /* Radii */
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  /* Shadows */
+  --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+:root {
+  color-scheme: dark;
+  --bg-gradient: linear-gradient(to bottom, var(--color-bg-start), var(--color-bg-end));
+}
+
+/* Reusable component skins that mirror samples */
+.card-surface {
+  @apply rounded-3xl p-6 shadow-2xl border-2;
+  background: var(--color-white-10);
+  border-color: color-mix(in oklab, var(--color-amber-400) 70%, transparent);
+  box-shadow: var(--shadow-card);
+}
+
+.card-ring {
+  @apply ring-1;
+  --tw-ring-color: color-mix(in oklab, var(--color-cyan-300) 40%, transparent);
+}
+
+.glow-amber {
+  position: relative;
+}
+.glow-amber::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 1.5rem;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--color-amber-400) 35%, transparent), color-mix(in oklab, #eab308 15%, transparent), transparent);
+  filter: blur(32px);
+  z-index: -1;
+}
+.glow-cyan::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-cyan-300) 20%, transparent), color-mix(in oklab, var(--color-blue-700) 20%, transparent), transparent);
+  filter: blur(32px);
+  z-index: -2;
+}
+
+.btn-primary {
+  @apply relative overflow-hidden w-full rounded-xl py-3 font-semibold shadow-lg;
+  background-image: linear-gradient(to right, var(--color-amber-400), #ca8a04);
+  color: black;
+}
+.btn-primary:hover {
+  background-image: linear-gradient(to right, #fde68a, #f59e0b);
+}
+
+.input-surface {
+  @apply w-full rounded-xl p-3 transition focus:outline-none focus:ring-2;
+  background: var(--color-white-10);
+  border-width: 2px;
+  border-color: color-mix(in oklab, var(--color-amber-400) 70%, transparent);
+  --tw-ring-color: color-mix(in oklab, var(--color-amber-300) 80%, transparent);
+}
+
+.pill {
+  @apply rounded-xl px-3 py-1.5 border text-cyan-100;
+  border-color: color-mix(in oklab, var(--color-cyan-300) 40%, transparent);
+  background: color-mix(in oklab, white 10%, transparent);
+}
+

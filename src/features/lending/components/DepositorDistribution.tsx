@@ -1,0 +1,139 @@
+import type { FC } from "react";
+import { depositorByPool } from "../../../data/synthetic/metrics";
+
+type Props = { poolId: string };
+
+const colorToClass: Record<string, string> = {
+  cyan: "bg-cyan-300",
+  amber: "bg-amber-300",
+  blue: "bg-blue-400",
+  emerald: "bg-emerald-400",
+  rose: "bg-rose-300",
+  indigo: "bg-indigo-400",
+};
+
+export const DepositorDistribution: FC<Props> = ({ poolId }) => {
+  const d = depositorByPool[poolId];
+  if (!d) return null;
+
+  return (
+    <div className="relative card-surface card-ring glow-amber glow-cyan text-white">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+          Depositor Distribution
+        </h2>
+        <span className="text-xs text-cyan-100/80">Synthetic</span>
+      </div>
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-6"></div>
+
+      <div className="grid grid-cols-3 gap-5 mb-6">
+        <div
+          className="rounded-2xl p-4 bg-white/5 border"
+          style={{
+            borderColor:
+              "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
+          }}
+        >
+          <div className="text-xs text-cyan-100/80 mb-1">Unique Depositors</div>
+          <div className="text-3xl font-extrabold">{d.unique_count}</div>
+        </div>
+        <div
+          className="rounded-2xl p-4 bg-white/5 border"
+          style={{
+            borderColor:
+              "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
+          }}
+        >
+          <div className="text-xs text-cyan-100/80 mb-1">Top 10 Share</div>
+          <div className="text-3xl font-extrabold flex items-baseline gap-1">
+            <span>{d.top10_share}</span>
+            <span className="text-sm">%</span>
+          </div>
+          <div className="text-[10px] text-cyan-100/60">
+            Sum of top 10 suppliers / total
+          </div>
+        </div>
+        <div
+          className="rounded-2xl p-4 bg-white/5 border relative overflow-hidden"
+          style={{
+            borderColor:
+              "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
+          }}
+        >
+          <div className="text-xs text-cyan-100/80 mb-2">
+            Concentration Risk
+          </div>
+          <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-300 via-amber-300 to-rose-300"
+              style={{ width: "72%" }}
+            ></div>
+          </div>
+          <div className="flex justify-between text-[10px] text-cyan-100/60 mt-1">
+            <span>Low</span>
+            <span>Med</span>
+            <span>High</span>
+          </div>
+          <div className="text-[11px] text-amber-300 mt-2">
+            Gini: <span>{d.gini}</span> · HHI: <span>{d.hhi}</span>
+          </div>
+          <span className="pointer-events-none absolute -right-8 -bottom-8 w-28 h-28 rounded-full bg-amber-300/15 blur-2xl"></span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
+        <div
+          className="rounded-2xl p-5 bg-white/5 border relative overflow-hidden"
+          style={{
+            borderColor:
+              "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
+          }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm text-cyan-100/90">
+              Top Suppliers — Share of Pool
+            </div>
+            <div className="text-[11px] text-cyan-100/70">
+              Top N = {d.topSuppliers.length}
+            </div>
+          </div>
+          {/* Donut placeholder */}
+          <div className="h-[260px] flex items-center justify-center text-cyan-100/70">
+            Donut Chart (mock)
+          </div>
+        </div>
+
+        <div
+          className="rounded-2xl p-5 bg-white/5 border"
+          style={{
+            borderColor:
+              "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
+          }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm text-cyan-100/90">Top Suppliers</div>
+            <div className="text-[11px] text-cyan-100/70">masked addresses</div>
+          </div>
+          <div className="space-y-3">
+            {d.topSuppliers.map((s) => (
+              <div key={s.address} className="flex items-center gap-3">
+                <div
+                  className={`w-2 h-2 rounded-full ${colorToClass[s.color]}`}
+                ></div>
+                <div className="text-sm grow">{s.address}</div>
+                <div className="text-sm text-amber-300 font-semibold">
+                  {s.sharePct.toFixed(1)}%
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 text-[11px] text-cyan-100/70">
+            Remainder grouped as "Others".
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DepositorDistribution;

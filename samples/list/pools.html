@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leviathan — Pool Comparison</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-b from-[#020617] to-[#0b1226] min-h-screen py-10">
+  <div class="max-w-6xl mx-auto px-4 text-white">
+    <!-- Header -->
+    <div class="mb-6 flex items-end justify-between">
+      <div>
+        <h1 class="text-3xl font-extrabold tracking-wide text-amber-300 drop-shadow">Available Pools</h1>
+        <p class="text-sm text-cyan-100/80">Quickly compare and select a pool. (Two pools for now.)</p>
+      </div>
+      <!-- Global view toggle -->
+      <div class="rounded-2xl bg-white/10 border border-cyan-300/30 p-1 flex gap-1">
+        <button class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-400/20 to-blue-600/20 text-cyan-100 border border-cyan-300/30">Cards</button>
+        <button class="px-3 py-1.5 rounded-xl text-cyan-100/70 hover:text-white">Table</button>
+      </div>
+    </div>
+
+    <!-- Cards Grid (2 pools) -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Pool Card A -->
+      <div class="relative rounded-3xl p-6 bg-white/10 backdrop-blur-2xl backdrop-saturate-150 shadow-2xl border-2 border-amber-400/70 ring-1 ring-cyan-300/40">
+        <!-- Ambient glows -->
+        <div class="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-r from-amber-400/35 via-yellow-500/15 to-transparent blur-2xl -z-10"></div>
+        <div class="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-cyan-300/20 via-blue-700/20 to-transparent blur-2xl -z-20"></div>
+        <!-- Header row -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
+            <a href="#" class="text-cyan-200 underline decoration-cyan-400/40 text-sm" data-key="pools[0].id">pool:0x…AB12</a>
+          </div>
+          <div class="text-xs text-cyan-100/80">Asset: <span class="text-amber-300" data-key="pools[0].asset">USDC</span></div>
+        </div>
+        <div class="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent my-4"></div>
+        <!-- Metrics -->
+        <div class="grid grid-cols-4 gap-4">
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Supply (TVL)</div>
+            <div class="text-xl font-bold" data-key="pools[0].supply">1,250,000</div>
+          </div>
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Borrow</div>
+            <div class="text-xl font-bold" data-key="pools[0].borrow">820,000</div>
+          </div>
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Utilization</div>
+            <div class="text-xl font-bold"><span data-key="pools[0].util">65.6</span>%</div>
+          </div>
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Supply APR</div>
+            <div class="text-xl font-bold text-amber-300" data-key="pools[0].apr_supply">7.8%</div>
+          </div>
+        </div>
+        <!-- Depositor + Extras -->
+        <div class="grid grid-cols-2 gap-4 mt-4">
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Depositors</div>
+            <div class="text-lg font-semibold" data-key="pools[0].depositor_count">312</div>
+          </div>
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80 mb-1">Pool Age</div>
+            <div class="text-lg font-semibold" data-key="pools[0].age">34 days</div>
+          </div>
+        </div>
+        <!-- Sparkline -->
+        <div class="mt-4 rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+          <div class="text-[11px] text-cyan-100/80 mb-2">Recent Supply Growth</div>
+          <svg viewBox="0 0 200 60" class="w-full h-12">
+            <polyline fill="none" stroke="#22d3ee" stroke-width="2" points="0,50 40,45 80,35 120,25 160,20 200,15" />
+          </svg>
+        </div>
+        <!-- Actions -->
+        <div class="mt-5 flex items-center justify-between">
+          <div class="text-[12px] text-cyan-100/80">Linked DeepBook pool: <a href="#" class="text-cyan-200 underline decoration-cyan-400/40" data-key="pools[0].deepbook">0x…DB00</a></div>
+          <div class="flex gap-2">
+            <button class="px-3 py-2 rounded-xl bg-white/10 border border-cyan-300/40 text-cyan-100">View Pool</button>
+            <button class="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold shadow-lg">Deposit</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pool Card B -->
+      <div class="relative rounded-3xl p-6 bg-white/10 backdrop-blur-2xl backdrop-saturate-150 shadow-2xl border-2 border-amber-400/70 ring-1 ring-cyan-300/40">
+        <!-- Ambient glows -->
+        <div class="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-r from-amber-400/35 via-yellow-500/15 to-transparent blur-2xl -z-10"></div>
+        <div class="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-cyan-300/20 via-blue-700/20 to-transparent blur-2xl -z-20"></div>
+        <!-- Header row -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
+            <a href="#" class="text-cyan-200 underline decoration-cyan-400/40 text-sm" data-key="pools[1].id">pool:0x…CD44</a>
+          </div>
+          <div class="text-xs text-cyan-100/80">Asset: <span class="text-amber-300" data-key="pools[1].asset">SUI</span></div>
+        </div>
+        <div class="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent my-4"></div>
+        <!-- Metrics -->
+        <div class="grid grid-cols-4 gap-4">
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Supply (TVL)</div>
+            <div class="text-xl font-bold" data-key="pools[1].supply">980,000</div>
+          </div>
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Borrow</div>
+            <div class="text-xl font-bold" data-key="pools[1].borrow">620,000</div>
+          </div>
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Utilization</div>
+            <div class="text-xl font-bold"><span data-key="pools[1].util">63.3</span>%</div>
+          </div>
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Supply APR</div>
+            <div class="text-xl font-bold text-amber-300" data-key="pools[1].apr_supply">8.6%</div>
+          </div>
+        </div>
+        <!-- Depositor + Extras -->
+        <div class="grid grid-cols-2 gap-4 mt-4">
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80">Depositors</div>
+            <div class="text-lg font-semibold" data-key="pools[1].depositor_count">188</div>
+          </div>
+          <div class="rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+            <div class="text-[11px] text-cyan-100/80 mb-1">Pool Age</div>
+            <div class="text-lg font-semibold" data-key="pools[1].age">21 days</div>
+          </div>
+        </div>
+        <!-- Sparkline -->
+        <div class="mt-4 rounded-2xl p-3 bg-white/5 border border-amber-400/30">
+          <div class="text-[11px] text-cyan-100/80 mb-2">Recent Supply Growth</div>
+          <svg viewBox="0 0 200 60" class="w-full h-12">
+            <polyline fill="none" stroke="#22d3ee" stroke-width="2" points="0,50 40,48 80,44 120,36 160,30 200,28" />
+          </svg>
+        </div>
+        <!-- Actions -->
+        <div class="mt-5 flex items-center justify-between">
+          <div class="text-[12px] text-cyan-100/80">Linked DeepBook pool: <a href="#" class="text-cyan-200 underline decoration-cyan-400/40" data-key="pools[1].deepbook">0x…DB11</a></div>
+          <div class="flex gap-2">
+            <button class="px-3 py-2 rounded-xl bg-white/10 border border-cyan-300/40 text-cyan-100">View Pool</button>
+            <button class="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold shadow-lg">Deposit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compact comparison table (for later toggle) -->
+    <div class="mt-8 rounded-3xl p-5 bg-white/5 border border-amber-400/30">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-sm text-cyan-100/90">Comparison Table</div>
+        <div class="text-[11px] text-cyan-100/70">Use for quick scanning</div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-cyan-100/70">
+            <tr class="text-left">
+              <th class="py-2 pr-4">Pool</th>
+              <th class="py-2 pr-4 text-right">Asset</th>
+              <th class="py-2 pr-4 text-right">Supply</th>
+              <th class="py-2 pr-4 text-right">Borrow</th>
+              <th class="py-2 pr-4 text-right">Utilization</th>
+              <th class="py-2 pr-4 text-right">Supply APR</th>
+              <th class="py-2 pr-4 text-right">Depositors</th>
+              <th class="py-2 pr-4 text-right">Pool Age</th>
+              <th class="py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/10">
+            <tr class="hover:bg-white/5">
+              <td class="py-3 pr-4"><a href="#" class="text-cyan-200 underline decoration-cyan-400/40" data-key="pools[0].id">pool:0x…AB12</a></td>
+              <td class="py-3 pr-4 text-right" data-key="pools[0].asset">USDC</td>
+              <td class="py-3 pr-4 text-right" data-key="pools[0].supply">1,250,000</td>
+              <td class="py-3 pr-4 text-right" data-key="pools[0].borrow">820,000</td>
+              <td class="py-3 pr-4 text-right"><span data-key="pools[0].util">65.6</span>%</td>
+              <td class="py-3 pr-4 text-right text-amber-300" data-key="pools[0].apr_supply">7.8%</td>
+              <td class="py-3 pr-4 text-right" data-key="pools[0].depositor_count">312</td>
+              <td class="py-3 pr-4 text-right" data-key="pools[0].age">34 days</td>
+              <td class="py-3"><div class="flex gap-2"><button class="px-3 py-1.5 rounded-lg bg-white/10 border border-cyan-300/40 text-cyan-100">View</button><button class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold">Deposit</button></div></td>
+            </tr>
+            <tr class="hover:bg-white/5">
+              <td class="py-3 pr-4"><a href="#" class="text-cyan-200 underline decoration-cyan-400/40" data-key="pools[1].id">pool:0x…CD44</a></td>
+              <td class="py-3 pr-4 text-right" data-key="pools[1].asset">SUI</td>
+              <td class="py-3 pr-4 text-right" data-key="pools[1].supply">980,000</td>
+              <td class="py-3 pr-4 text-right" data-key="pools[1].borrow">620,000</td>
+              <td class="py-3 pr-4 text-right"><span data-key="pools[1].util">63.3</span>%</td>
+              <td class="py-3 pr-4 text-right text-amber-300" data-key="pools[1].apr_supply">8.6%</td>
+              <td class="py-3 pr-4 text-right" data-key="pools[1].depositor_count">188</td>
+              <td class="py-3 pr-4 text-right" data-key="pools[1].age">21 days</td>
+              <td
