@@ -1,11 +1,47 @@
 import type { FC } from "react";
+import React from "react";
 import { feesByPool } from "../../../data/synthetic/metrics";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
+import ChartTooltip from "../../shared/components/ChartTooltip";
 
 type Props = { poolId: string };
 
 export const ProtocolFees: FC<Props> = ({ poolId }) => {
   const f = feesByPool[poolId];
   if (!f) return null;
+
+  // Build a single aligned time series
+  const maxT = Math.max(
+    ...f.dailyFees.map((d) => d.t),
+    ...f.liquidations.map((l) => l.t)
+  );
+  const series = Array.from({ length: maxT + 1 }, (_, t) => {
+    const daily = f.dailyFees.find((d) => d.t === t)?.amount ?? 0;
+    const liq = f.liquidations.find((l) => l.t === t);
+    return {
+      t,
+      label: `T${t}`,
+      protocol_fees: daily,
+      liq_reward: liq?.pool_reward ?? 0,
+      liq_default: liq?.pool_default ?? 0,
+    };
+  });
+  // cumulative line = protocol fees + liquidations + defaults
+  let running = 0;
+  const chartData = series.map((pt) => {
+    running += pt.protocol_fees + pt.liq_reward + pt.liq_default;
+    return { ...pt, cumulative: running };
+  });
   return (
     <div className="relative card-surface card-ring glow-amber glow-cyan text-white">
       <div className="flex items-center justify-between mb-4">
@@ -94,70 +130,87 @@ export const ProtocolFees: FC<Props> = ({ poolId }) => {
             Fees & Liquidations Over Time
           </div>
           <div className="text-[11px] text-cyan-100/70">
-            Bars = Fees · Stacked Bars = Liquidations · Line = Cumulative Fees
-          </div>
-        </div>
-        <svg viewBox="0 0 840 340" className="w-full h-[300px]">
-          <line
-            x1="60"
-            y1="300"
-            x2="800"
-            y2="300"
-            stroke="rgba(255,255,255,0.25)"
-            strokeWidth="1"
-          />
-          <line
-            x1="60"
-            y1="40"
-            x2="60"
-            y2="300"
-            stroke="rgba(255,255,255,0.25)"
-            strokeWidth="1"
-          />
-          {f.dailyFees.map((d, idx) => (
-            <rect
-              key={idx}
-              x={80 + idx * 30}
-              y={300 - d.amount * 2}
-              width="18"
-              height={d.amount * 2}
-              fill="#fbbf24"
-              fillOpacity="0.55"
-            />
-          ))}
-          {f.liquidations.map((l, idx) => (
-            <g key={idx}>
-              <rect
-                x={200 + l.t * 60}
-                y={260}
-                width="18"
-                height={l.pool_reward}
-                fill="#fbbf24"
-              />
-              <rect
-                x={200 + l.t * 60}
-                y={260 - l.pool_default}
-                width="18"
-                height={l.pool_default}
-                fill="#fb7185"
-              />
-            </g>
-          ))}
-        </svg>
-        <div className="flex items-center gap-6 mt-3 text-[12px] text-cyan-100/80">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-amber-300 inline-block rounded-sm"></span>{" "}
-            Pool Reward
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-rose-400 inline-block rounded-sm"></span>{" "}
-            Pool Default
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-amber-300/60 inline-block"></span> Daily
+            Stack: Protocol Fees + Liquidations + Defaults · Line: Cumulative
             Fees
           </div>
         </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <ComposedChart
+            data={chartData}
+            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(255,255,255,0.15)"
+            />
+            <XAxis
+              dataKey="label"
+              tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              yAxisId="left"
+              tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              content={
+                <ChartTooltip
+                  labelFormatter={(l) => (
+                    <span className="text-cyan-100/90">{l}</span>
+                  )}
+                  valueFormatter={(v, n) =>
+                    n === "cumulative"
+                      ? `${Number(v).toLocaleString()}`
+                      : `${Number(v).toLocaleString()}`
+                  }
+                />
+              }
+            />
+            {/* Stacked bars order: 1) protocol fees 2) liquidation reward 3) defaults */}
+            <Bar
+              dataKey="protocol_fees"
+              stackId="a"
+              fill="var(--color-amber-400)"
+              opacity={0.7}
+              name="Protocol Fees"
+              yAxisId="left"
+            />
+            <Bar
+              dataKey="liq_reward"
+              stackId="a"
+              fill="var(--color-amber-300)"
+              name="Liquidations"
+              yAxisId="left"
+            />
+            <Bar
+              dataKey="liq_default"
+              stackId="a"
+              fill="var(--color-rose-400)"
+              name="Defaults"
+              yAxisId="left"
+            />
+            <Line
+              type="monotone"
+              dataKey="cumulative"
+              stroke="var(--color-cyan-300)"
+              strokeWidth={2.5}
+              dot={false}
+              name="Cumulative"
+              yAxisId="right"
+            />
+            <Legend wrapperStyle={{ color: "rgba(255,255,255,0.85)" }} />
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
 
       <div className="grid grid-cols-3 gap-5 mt-6">

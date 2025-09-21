@@ -6,6 +6,10 @@ export type Theme = {
     amber400: string;
     cyan200: string;
     cyan300: string;
+    rose400?: string;
+    emerald400?: string;
+    indigo400?: string;
+    blue400?: string;
     blue700: string;
   };
   radii: {

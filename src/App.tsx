@@ -22,11 +22,11 @@ function App() {
     <div className="min-h-screen py-8">
       <div className="max-w-[1400px] mx-auto mr-4 ml-4 text-white space-y-8">
         <div className="mb-4">
-          <h1 className="text-3xl font-extrabold tracking-wide text-amber-300 drop-shadow">
-            Deepbook — Lending Dashboard
+          <h1 className="text-3xl font-extrabold tracking-wide text-cyan-200 drop-shadow">
+            Available Pools
           </h1>
-          <p className="text-sm text-cyan-100/70">
-            Two pools (USDC & SUI). Synthetic data for now.
+          <p className="text-sm text-indigo-200/80">
+            Compare and select a pool to deposit. Glassmorphic Leviathan theme.
           </p>
         </div>
 

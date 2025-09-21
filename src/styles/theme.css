@@ -31,14 +31,15 @@
 /* Reusable component skins that mirror samples */
 .card-surface {
   @apply rounded-3xl p-6 shadow-2xl border-2;
-  background: var(--color-white-10);
-  border-color: color-mix(in oklab, var(--color-amber-400) 70%, transparent);
+  background: color-mix(in oklab, white 8%, transparent);
+  border-color: color-mix(in oklab, var(--color-indigo-400) 40%, transparent);
   box-shadow: var(--shadow-card);
+  backdrop-filter: blur(24px) saturate(140%);
 }
 
 .card-ring {
   @apply ring-1;
-  --tw-ring-color: color-mix(in oklab, var(--color-cyan-300) 40%, transparent);
+  --tw-ring-color: color-mix(in oklab, var(--color-cyan-300) 35%, transparent);
 }
 
 .glow-amber {
@@ -49,7 +50,7 @@
   position: absolute;
   inset: 0;
   border-radius: 1.5rem;
-  background: linear-gradient(90deg, color-mix(in oklab, var(--color-amber-400) 35%, transparent), color-mix(in oklab, #eab308 15%, transparent), transparent);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--color-indigo-400) 25%, transparent), color-mix(in oklab, var(--color-cyan-300) 20%, transparent), transparent);
   filter: blur(32px);
   z-index: -1;
 }
@@ -58,18 +59,18 @@
   position: absolute;
   inset: 0;
   border-radius: 1.5rem;
-  background: linear-gradient(135deg, color-mix(in oklab, var(--color-cyan-300) 20%, transparent), color-mix(in oklab, var(--color-blue-700) 20%, transparent), transparent);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-cyan-300) 25%, transparent), color-mix(in oklab, var(--color-indigo-400) 25%, transparent), transparent);
   filter: blur(32px);
   z-index: -2;
 }
 
 .btn-primary {
   @apply relative overflow-hidden w-full rounded-xl py-3 font-semibold shadow-lg;
-  background-image: linear-gradient(to right, var(--color-amber-400), #ca8a04);
-  color: black;
+  background-image: linear-gradient(90deg, var(--color-cyan-300), #6d28d9);
+  color: white;
 }
 .btn-primary:hover {
-  background-image: linear-gradient(to right, #fde68a, #f59e0b);
+  background-image: linear-gradient(90deg, #5eead4, #7c3aed);
 }
 
 .input-surface {
@@ -82,7 +83,7 @@
 
 .pill {
   @apply rounded-xl px-3 py-1.5 border text-cyan-100;
-  border-color: color-mix(in oklab, var(--color-cyan-300) 40%, transparent);
-  background: color-mix(in oklab, white 10%, transparent);
+  border-color: color-mix(in oklab, var(--color-cyan-300) 35%, transparent);
+  background: color-mix(in oklab, white 7%, transparent);
 }
 
