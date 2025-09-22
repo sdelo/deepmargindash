@@ -1,25 +1,34 @@
 import "./App.css";
 import React from "react";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 import { syntheticPools } from "./data/synthetic/pools";
 import PoolCards from "./features/lending/components/PoolCards";
-import OverviewStrip from "./features/lending/components/OverviewStrip";
 import DepositWithdrawPanel from "./features/lending/components/DepositWithdrawPanel";
 import PersonalPositions from "./features/lending/components/PersonalPositions";
 import HistoricalActivity from "./features/lending/components/HistoricalActivity";
 import DepositorDistribution from "./features/lending/components/DepositorDistribution";
 import ProtocolFees from "./features/lending/components/ProtocolFees";
 import YieldCurve from "./features/lending/components/YieldCurve";
+import NavBar from "./features/shared/components/NavBar";
+import SlidePanel from "./features/shared/components/SlidePanel";
 import PoolAdmin from "./features/lending/components/PoolAdmin";
+import {
+  getSyntheticUserPositions,
+  getSyntheticBalanceFormatted,
+} from "./data/synthetic/users";
 
 function App() {
+  const account = useCurrentAccount();
   const [selectedPoolId, setSelectedPoolId] = React.useState(
     syntheticPools[0]!.id
   );
   const selected =
     syntheticPools.find((p) => p.id === selectedPoolId) ?? syntheticPools[0]!;
+  const [adminOpen, setAdminOpen] = React.useState(false);
 
   return (
-    <div className="min-h-screen py-8 relative">
+    <div className="min-h-screen pt-20 pb-8 relative">
+      <NavBar />
       <div className="plankton-layer" aria-hidden>
         {Array.from({ length: 36 }).map((_, i) => (
           <span
@@ -39,21 +48,23 @@ function App() {
           <h1 className="text-3xl font-extrabold tracking-wide text-cyan-200 drop-shadow">
             Available Pools
           </h1>
-          <p className="text-sm text-indigo-200/80">
-            Compare and select a pool to deposit. Glassmorphic Leviathan theme.
-          </p>
         </div>
 
-        {/* Top section: left = pools + overview, right = deposit (sticky) + positions */}
-        <div className="grid md:grid-cols-[2fr_1fr] gap-6 items-start">
+        {/* Three columns: pool selection, deposit/withdraw, my positions */}
+        <div className="grid md:grid-cols-3 gap-6 items-stretch">
           <div className="space-y-6">
             <PoolCards
               pools={syntheticPools}
+              selectedPoolId={selectedPoolId}
+              onSelectPool={setSelectedPoolId}
               onDepositClick={(id) => setSelectedPoolId(id)}
+              onAdminAuditClick={(id) => {
+                setSelectedPoolId(id);
+                setAdminOpen(true);
+              }}
             />
-            <OverviewStrip pool={selected} />
           </div>
-          <div className="space-y-6 md:sticky md:top-6">
+          <div>
             <DepositWithdrawPanel
               asset={selected.asset}
               minBorrow={Number(
@@ -64,7 +75,10 @@ function App() {
                 selected.protocolConfig.fields.margin_pool_config.fields
                   .supply_cap
               )}
-              balance={`5,000 ${selected.asset}`}
+              balance={getSyntheticBalanceFormatted(
+                account?.address,
+                selected.asset
+              )}
               onDeposit={(amt) => {
                 console.log("deposit", selected.id, amt);
               }}
@@ -72,26 +86,21 @@ function App() {
                 console.log("withdraw all", selected.id);
               }}
             />
-            <PersonalPositions
-              positions={[
-                {
-                  address: "0xme",
-                  asset: "USDC",
-                  shares: 5000n,
-                  balanceFormatted: "5,000 USDC",
-                },
-                {
-                  address: "0xme",
-                  asset: "SUI",
-                  shares: 1200n,
-                  balanceFormatted: "1,200 SUI",
-                },
-              ]}
-            />
+          </div>
+          <div>
+            {account ? (
+              <PersonalPositions
+                positions={getSyntheticUserPositions(account.address)}
+              />
+            ) : (
+              <div className="card-surface text-center py-10 border border-white/10 text-cyan-100/80">
+                Connect wallet to view positions
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Middle section: charts side-by-side */}
+        {/* Charts */}
         <div className="grid md:grid-cols-2 gap-6">
           <YieldCurve pool={selected} />
           <HistoricalActivity poolId={selected.id} />
@@ -101,10 +110,16 @@ function App() {
 
         {/* Bottom section: protocol fees full-width */}
         <ProtocolFees poolId={selected.id} />
-
-        {/* Admin log */}
-        <PoolAdmin poolId={selected.id} />
       </div>
+
+      <SlidePanel
+        open={adminOpen}
+        onClose={() => setAdminOpen(false)}
+        title="Pool Admin Updates"
+        width={"50vw"}
+      >
+        <PoolAdmin poolId={selected.id} />
+      </SlidePanel>
     </div>
   );
 }
