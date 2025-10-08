@@ -12,7 +12,8 @@ import * as object from './deps/sui/object.js';
 import * as versioned from './deps/sui/versioned.js';
 import * as vec_set from './deps/sui/vec_set.js';
 import * as table from './deps/sui/table.js';
-const $moduleName = '@local-pkg/margin_trading::margin_registry';
+import * as vec_map from './deps/sui/vec_map.js';
+const $moduleName = '@local-pkg/deepbook-margin::margin_registry';
 export const MARGIN_REGISTRY = new MoveStruct({ name: `${$moduleName}::MARGIN_REGISTRY`, fields: {
         dummy_field: bcs.bool()
     } });
@@ -25,6 +26,7 @@ export const MarginRegistryInner = new MoveStruct({ name: `${$moduleName}::Margi
         allowed_versions: vec_set.VecSet(bcs.u64()),
         pool_registry: table.Table,
         margin_pools: table.Table,
+        margin_managers: table.Table,
         allowed_maintainers: vec_set.VecSet(bcs.Address)
     } });
 export const RiskRatios = new MoveStruct({ name: `${$moduleName}::RiskRatios`, fields: {
@@ -39,7 +41,8 @@ export const PoolConfig = new MoveStruct({ name: `${$moduleName}::PoolConfig`, f
         risk_ratios: RiskRatios,
         user_liquidation_reward: bcs.u64(),
         pool_liquidation_reward: bcs.u64(),
-        enabled: bcs.bool()
+        enabled: bcs.bool(),
+        extra_fields: vec_map.VecMap(bcs.string(), bcs.u64())
     } });
 export const ConfigKey = new MoveStruct({ name: `${$moduleName}::ConfigKey`, fields: {
         dummy_field: bcs.bool()
@@ -86,7 +89,7 @@ export interface MintMaintainerCapOptions {
 }
 /** Mint a `MaintainerCap`, only admin can mint a `MaintainerCap`. */
 export function mintMaintainerCap(options: MintMaintainerCapOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_registry::MarginAdminCap`,
@@ -115,7 +118,7 @@ export interface RevokeMaintainerCapOptions {
 }
 /** Revoke a `MaintainerCap`. Only the admin can revoke a `MaintainerCap`. */
 export function revokeMaintainerCap(options: RevokeMaintainerCapOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_registry::MarginAdminCap`,
@@ -151,7 +154,7 @@ export interface RegisterDeepbookPoolOptions {
 }
 /** Register a margin pool for margin trading with existing margin pools */
 export function registerDeepbookPool(options: RegisterDeepbookPoolOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_registry::MarginAdminCap`,
@@ -187,7 +190,7 @@ export interface EnableDeepbookPoolOptions {
 }
 /** Enables a deepbook pool for margin trading. */
 export function enableDeepbookPool(options: EnableDeepbookPoolOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_registry::MarginAdminCap`,
@@ -225,7 +228,7 @@ export interface DisableDeepbookPoolOptions {
  * and withdraw settled amounts are allowed.
  */
 export function disableDeepbookPool(options: DisableDeepbookPoolOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_registry::MarginAdminCap`,
@@ -262,7 +265,7 @@ export interface UpdateRiskParamsOptions {
 }
 /** Updates risk params for a deepbook pool as the admin. */
 export function updateRiskParams(options: UpdateRiskParamsOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_registry::MarginAdminCap`,
@@ -297,7 +300,7 @@ export interface AddConfigOptions<Config extends BcsType<any>> {
 }
 /** Add Pyth Config to the MarginRegistry. */
 export function addConfig<Config extends BcsType<any>>(options: AddConfigOptions<Config>) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_registry::MarginAdminCap`,
@@ -328,7 +331,7 @@ export interface RemoveConfigOptions {
 }
 /** Remove Pyth Config from the MarginRegistry. */
 export function removeConfig(options: RemoveConfigOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_registry::MarginAdminCap`
@@ -360,7 +363,7 @@ export interface EnableVersionOptions {
  * does not have version restrictions
  */
 export function enableVersion(options: EnableVersionOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         'u64',
@@ -392,7 +395,7 @@ export interface DisableVersionOptions {
  * function does not have version restrictions
  */
 export function disableVersion(options: DisableVersionOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         'u64',
@@ -436,7 +439,7 @@ export interface NewPoolConfigOptions {
  * default, must be enabled after registration
  */
 export function newPoolConfig(options: NewPoolConfigOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         'u64',
@@ -472,7 +475,7 @@ export interface NewPoolConfigWithLeverageOptions {
 }
 /** Create a PoolConfig with default risk parameters based on leverage */
 export function newPoolConfigWithLeverage(options: NewPoolConfigWithLeverageOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         'u64'
@@ -503,7 +506,7 @@ export interface PoolEnabledOptions {
 }
 /** Check if a deepbook pool is registered for margin trading */
 export function poolEnabled(options: PoolEnabledOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
@@ -531,7 +534,7 @@ export interface GetMarginPoolIdOptions {
 }
 /** Get the margin pool id for the given asset. */
 export function getMarginPoolId(options: GetMarginPoolIdOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`
     ] satisfies string[];
@@ -557,7 +560,7 @@ export interface GetDeepbookPoolMarginPoolIdsOptions {
 }
 /** Get the margin pool IDs for a deepbook pool */
 export function getDeepbookPoolMarginPoolIds(options: GetDeepbookPoolMarginPoolIdsOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
@@ -567,6 +570,258 @@ export function getDeepbookPoolMarginPoolIds(options: GetDeepbookPoolMarginPoolI
         package: packageAddress,
         module: 'margin_registry',
         function: 'get_deepbook_pool_margin_pool_ids',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface GetMarginManagerIdsArguments {
+    self: RawTransactionArgument<string>;
+    owner: RawTransactionArgument<string>;
+}
+export interface GetMarginManagerIdsOptions {
+    package?: string;
+    arguments: GetMarginManagerIdsArguments | [
+        self: RawTransactionArgument<string>,
+        owner: RawTransactionArgument<string>
+    ];
+}
+/** Get the margin manager IDs for a given owner */
+export function getMarginManagerIds(options: GetMarginManagerIdsOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        'address'
+    ] satisfies string[];
+    const parameterNames = ["self", "owner"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'get_margin_manager_ids',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface BaseMarginPoolIdArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+}
+export interface BaseMarginPoolIdOptions {
+    package?: string;
+    arguments: BaseMarginPoolIdArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>
+    ];
+}
+export function baseMarginPoolId(options: BaseMarginPoolIdOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'base_margin_pool_id',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface QuoteMarginPoolIdArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+}
+export interface QuoteMarginPoolIdOptions {
+    package?: string;
+    arguments: QuoteMarginPoolIdArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>
+    ];
+}
+export function quoteMarginPoolId(options: QuoteMarginPoolIdOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'quote_margin_pool_id',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface MinWithdrawRiskRatioArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+}
+export interface MinWithdrawRiskRatioOptions {
+    package?: string;
+    arguments: MinWithdrawRiskRatioArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>
+    ];
+}
+export function minWithdrawRiskRatio(options: MinWithdrawRiskRatioOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'min_withdraw_risk_ratio',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface MinBorrowRiskRatioArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+}
+export interface MinBorrowRiskRatioOptions {
+    package?: string;
+    arguments: MinBorrowRiskRatioArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>
+    ];
+}
+export function minBorrowRiskRatio(options: MinBorrowRiskRatioOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'min_borrow_risk_ratio',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface LiquidationRiskRatioArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+}
+export interface LiquidationRiskRatioOptions {
+    package?: string;
+    arguments: LiquidationRiskRatioArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>
+    ];
+}
+export function liquidationRiskRatio(options: LiquidationRiskRatioOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'liquidation_risk_ratio',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface TargetLiquidationRiskRatioArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+}
+export interface TargetLiquidationRiskRatioOptions {
+    package?: string;
+    arguments: TargetLiquidationRiskRatioArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>
+    ];
+}
+export function targetLiquidationRiskRatio(options: TargetLiquidationRiskRatioOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'target_liquidation_risk_ratio',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface UserLiquidationRewardArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+}
+export interface UserLiquidationRewardOptions {
+    package?: string;
+    arguments: UserLiquidationRewardArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>
+    ];
+}
+export function userLiquidationReward(options: UserLiquidationRewardOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'user_liquidation_reward',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface PoolLiquidationRewardArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+}
+export interface PoolLiquidationRewardOptions {
+    package?: string;
+    arguments: PoolLiquidationRewardArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>
+    ];
+}
+export function poolLiquidationReward(options: PoolLiquidationRewardOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'pool_liquidation_reward',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface GetPoolConfigArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+}
+export interface GetPoolConfigOptions {
+    package?: string;
+    arguments: GetPoolConfigArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>
+    ];
+}
+/** Get the pool configuration for a deepbook pool */
+export function getPoolConfig(options: GetPoolConfigOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'get_pool_config',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
     });
 }

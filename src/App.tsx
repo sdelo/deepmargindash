@@ -1,6 +1,11 @@
 import "./App.css";
 import React from "react";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import {
+  useCurrentAccount,
+  useSignAndExecuteTransaction,
+  useSuiClient,
+  useSuiClientContext,
+} from "@mysten/dapp-kit";
 import { syntheticPools } from "./data/synthetic/pools";
 import PoolCards from "./features/lending/components/PoolCards";
 import DepositWithdrawPanel from "./features/lending/components/DepositWithdrawPanel";
@@ -12,19 +17,80 @@ import YieldCurve from "./features/lending/components/YieldCurve";
 import NavBar from "./features/shared/components/NavBar";
 import SlidePanel from "./features/shared/components/SlidePanel";
 import PoolAdmin from "./features/lending/components/PoolAdmin";
+import DepositHistory from "./features/lending/components/DepositHistory";
+import { getSyntheticUserPositions } from "./data/synthetic/users";
+import { useCoinBalance } from "./hooks/useCoinBalance";
 import {
-  getSyntheticUserPositions,
-  getSyntheticBalanceFormatted,
-} from "./data/synthetic/users";
+  buildDepositTransaction,
+  buildWithdrawAllTransaction,
+} from "./lib/suiTransactions";
 
 function App() {
   const account = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const { network } = useSuiClientContext();
   const [selectedPoolId, setSelectedPoolId] = React.useState(
     syntheticPools[0]!.id
   );
   const selected =
     syntheticPools.find((p) => p.id === selectedPoolId) ?? syntheticPools[0]!;
   const [adminOpen, setAdminOpen] = React.useState(false);
+  const [historyOpen, setHistoryOpen] = React.useState(false);
+  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction({
+    execute: async ({ bytes, signature }) =>
+      suiClient.executeTransactionBlock({
+        transactionBlock: bytes,
+        signature,
+        options: {
+          showRawEffects: true,
+          showObjectChanges: true,
+        },
+      }),
+  });
+  const coinBalance = useCoinBalance(
+    account?.address,
+    selected.contracts.coinType,
+    selected.contracts.coinDecimals
+  );
+
+  const handleDeposit = React.useCallback(
+    async (amount: number) => {
+      if (!account) return;
+      const poolContracts = selected.contracts;
+      const tx = await buildDepositTransaction({
+        amount: BigInt(Math.floor(amount)),
+        owner: account.address,
+        coinType: poolContracts.coinType,
+        poolId: poolContracts.marginPoolId,
+        registryId: poolContracts.registryId,
+        referralId: poolContracts.referralId,
+        poolType: poolContracts.marginPoolType,
+        suiClient,
+      });
+      tx.setGasBudgetIfNotSet(50_000_000);
+      await signAndExecute({
+        transaction: tx,
+        chain: `sui:${network}`,
+      });
+    },
+    [account, selected, signAndExecute, suiClient, network]
+  );
+
+  const handleWithdrawAll = React.useCallback(async () => {
+    if (!account) return;
+    const poolContracts = selected.contracts;
+    const tx = buildWithdrawAllTransaction({
+      poolId: poolContracts.marginPoolId,
+      registryId: poolContracts.registryId,
+      poolType: poolContracts.marginPoolType,
+    });
+
+    tx.setGasBudgetIfNotSet(50_000_000);
+    await signAndExecute({
+      transaction: tx,
+      chain: `sui:${network}`,
+    });
+  }, [account, selected, signAndExecute, network]);
 
   return (
     <div className="min-h-screen pt-20 pb-8 relative">
@@ -75,22 +141,16 @@ function App() {
                 selected.protocolConfig.fields.margin_pool_config.fields
                   .supply_cap
               )}
-              balance={getSyntheticBalanceFormatted(
-                account?.address,
-                selected.asset
-              )}
-              onDeposit={(amt) => {
-                console.log("deposit", selected.id, amt);
-              }}
-              onWithdrawAll={() => {
-                console.log("withdraw all", selected.id);
-              }}
+              balance={coinBalance?.formatted}
+              onDeposit={handleDeposit}
+              onWithdrawAll={handleWithdrawAll}
             />
           </div>
           <div>
             {account ? (
               <PersonalPositions
                 positions={getSyntheticUserPositions(account.address)}
+                onShowHistory={() => setHistoryOpen(true)}
               />
             ) : (
               <div className="card-surface text-center py-10 border border-white/10 text-cyan-100/80">
@@ -100,16 +160,24 @@ function App() {
           </div>
         </div>
 
-        {/* Charts */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <YieldCurve pool={selected} />
-          <HistoricalActivity poolId={selected.id} />
+        {/* Charts: 1/3 vs 2/3 rows */}
+        <div className="grid md:grid-cols-3 gap-6 items-start">
+          <div className="md:col-span-1">
+            <YieldCurve pool={selected} />
+          </div>
+          <div className="md:col-span-2">
+            <DepositorDistribution poolId={selected.id} />
+          </div>
         </div>
 
-        <DepositorDistribution poolId={selected.id} />
-
-        {/* Bottom section: protocol fees full-width */}
-        <ProtocolFees poolId={selected.id} />
+        <div className="grid md:grid-cols-3 gap-6 items-start">
+          <div className="md:col-span-1">
+            <HistoricalActivity poolId={selected.id} />
+          </div>
+          <div className="md:col-span-2">
+            <ProtocolFees poolId={selected.id} />
+          </div>
+        </div>
       </div>
 
       <SlidePanel
@@ -119,6 +187,15 @@ function App() {
         width={"50vw"}
       >
         <PoolAdmin poolId={selected.id} />
+      </SlidePanel>
+
+      <SlidePanel
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        title="Deposit / Withdraw History"
+        width={"50vw"}
+      >
+        <DepositHistory address={account?.address} />
       </SlidePanel>
     </div>
   );

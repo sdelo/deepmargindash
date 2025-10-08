@@ -7,15 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "codegen": "sui-ts-codegen generate",
+    "mint-referral": "tsx scripts/mint-supply-referral.ts"
   },
   "dependencies": {
     "@mysten/bcs": "^1.8.0",
     "@mysten/dapp-kit": "^0.18.0",
-    "@mysten/sui": "^1.38.0",
+    "@mysten/sui": "1.38.0",
     "@tailwindcss/postcss": "^4.1.13",
     "@tanstack/react-query": "^5.89.0",
-    "@types/node": "^24.5.2",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "react": "^18.3.1",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@eslint/js": "^9.35.0",
     "@mysten/codegen": "^0.5.0",
+    "@types/node": "^24.5.2",
     "@vitejs/plugin-react": "^5.0.2",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.35.0",
@@ -33,6 +35,7 @@
     "globals": "^16.4.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
+    "tsx": "^4.7.0",
     "vite": "^7.1.6"
   }
 }

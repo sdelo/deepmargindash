@@ -1,4 +1,5 @@
 import type { PoolOverview } from '../../features/lending/types';
+import { CONTRACTS } from '../../config/contracts';
 
 function u64(n: number | bigint) {
   return BigInt(n);
@@ -49,6 +50,7 @@ function createProtocolConfig({ supplyCap, maxUtilizationRate, protocolSpread, m
 }
 
 const now = Math.floor(Date.now() / 1000);
+const contracts = CONTRACTS.testnet;
 
 export const syntheticPools: PoolOverview[] = [
   {
@@ -65,6 +67,15 @@ export const syntheticPools: PoolOverview[] = [
       optimalUtilization: 7000, // 70%
       excessSlope: 1500,
     }),
+    contracts: {
+      registryId: contracts.MARGIN_REGISTRY_ID,
+      marginPoolId: contracts.DBUSDC_MARGIN_POOL_ID,
+      marginPoolType: contracts.DBUSDC_MARGIN_POOL_TYPE,
+      referralId: contracts.DBUSDC_MARGIN_POOL_REFERRAL,
+      coinType: contracts.DBUSDC_MARGIN_POOL_TYPE,
+      coinDecimals: 6,
+      coinDepositSourceId: contracts.DBUSDC_ID,
+    },
     ui: {
       aprSupplyPct: 7.8,
       depositors: 312,
@@ -86,6 +97,15 @@ export const syntheticPools: PoolOverview[] = [
       optimalUtilization: 6800,
       excessSlope: 1600,
     }),
+    contracts: {
+      registryId: contracts.MARGIN_REGISTRY_ID,
+      marginPoolId: contracts.SUI_MARGIN_POOL_ID,
+      marginPoolType: contracts.SUI_MARGIN_POOL_TYPE,
+      referralId: contracts.SUI_MARGIN_POOL_REFERRAL,
+      coinType: contracts.SUI_MARGIN_POOL_TYPE,
+      coinDecimals: 9,
+      coinDepositSourceId: contracts.SUI_ID,
+    },
     ui: {
       aprSupplyPct: 8.6,
       depositors: 188,

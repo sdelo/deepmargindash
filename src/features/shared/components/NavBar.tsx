@@ -41,7 +41,7 @@ export default function NavBar() {
           {currentAccount ? (
             <>
               <span className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono text-sm text-indigo-100">
-                {getShortAddress(currentAccount.address)}
+                {getShortAddress(currentAccount.address)} s
               </span>
               <button
                 onClick={() => disconnectWallet()}

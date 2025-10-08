@@ -4,11 +4,12 @@
 import { MoveStruct, normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
-const $moduleName = '@local-pkg/margin_trading::protocol_config';
+import * as vec_map from './deps/sui/vec_map.js';
+const $moduleName = '@local-pkg/deepbook-margin::protocol_config';
 export const MarginPoolConfig = new MoveStruct({ name: `${$moduleName}::MarginPoolConfig`, fields: {
         supply_cap: bcs.u64(),
         max_utilization_rate: bcs.u64(),
-        protocol_spread: bcs.u64(),
+        referral_spread: bcs.u64(),
         min_borrow: bcs.u64()
     } });
 export const InterestConfig = new MoveStruct({ name: `${$moduleName}::InterestConfig`, fields: {
@@ -19,7 +20,8 @@ export const InterestConfig = new MoveStruct({ name: `${$moduleName}::InterestCo
     } });
 export const ProtocolConfig = new MoveStruct({ name: `${$moduleName}::ProtocolConfig`, fields: {
         margin_pool_config: MarginPoolConfig,
-        interest_config: InterestConfig
+        interest_config: InterestConfig,
+        extra_fields: vec_map.VecMap(bcs.string(), bcs.u64())
     } });
 export interface NewProtocolConfigArguments {
     marginPoolConfig: RawTransactionArgument<string>;
@@ -33,7 +35,7 @@ export interface NewProtocolConfigOptions {
     ];
 }
 export function newProtocolConfig(options: NewProtocolConfigOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::protocol_config::MarginPoolConfig`,
         `${packageAddress}::protocol_config::InterestConfig`
@@ -49,7 +51,7 @@ export function newProtocolConfig(options: NewProtocolConfigOptions) {
 export interface NewMarginPoolConfigArguments {
     supplyCap: RawTransactionArgument<number | bigint>;
     maxUtilizationRate: RawTransactionArgument<number | bigint>;
-    protocolSpread: RawTransactionArgument<number | bigint>;
+    referralSpread: RawTransactionArgument<number | bigint>;
     minBorrow: RawTransactionArgument<number | bigint>;
 }
 export interface NewMarginPoolConfigOptions {
@@ -57,19 +59,19 @@ export interface NewMarginPoolConfigOptions {
     arguments: NewMarginPoolConfigArguments | [
         supplyCap: RawTransactionArgument<number | bigint>,
         maxUtilizationRate: RawTransactionArgument<number | bigint>,
-        protocolSpread: RawTransactionArgument<number | bigint>,
+        referralSpread: RawTransactionArgument<number | bigint>,
         minBorrow: RawTransactionArgument<number | bigint>
     ];
 }
 export function newMarginPoolConfig(options: NewMarginPoolConfigOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         'u64',
         'u64',
         'u64',
         'u64'
     ] satisfies string[];
-    const parameterNames = ["supplyCap", "maxUtilizationRate", "protocolSpread", "minBorrow"];
+    const parameterNames = ["supplyCap", "maxUtilizationRate", "referralSpread", "minBorrow"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'protocol_config',
@@ -93,7 +95,7 @@ export interface NewInterestConfigOptions {
     ];
 }
 export function newInterestConfig(options: NewInterestConfigOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         'u64',
         'u64',

@@ -38,24 +38,16 @@ export const PoolCards: FC<Props> = ({
         <div className="flex items-center justify-between text-indigo-100/90">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
-            <a
-              href="#"
-              className="text-cyan-200 underline decoration-cyan-400/40 text-sm"
-            >
-              {p.id}
-            </a>
-          </div>
-          <div className="inline-flex items-center gap-3">
-            <div className="text-xs text-cyan-100/80 inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-2 text-sm">
               <img
                 src={getIcon(p.asset)}
                 alt={`${p.asset} logo`}
                 className="w-4 h-4 rounded"
               />
-              <span>
-                Asset: <span className="text-amber-300">{p.asset}</span>
-              </span>
-            </div>
+              <span className="text-cyan-200 font-semibold">{p.asset}</span>
+            </span>
+          </div>
+          <div className="inline-flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2">
               {pools.map((pool) => (
                 <button
@@ -75,6 +67,9 @@ export const PoolCards: FC<Props> = ({
                       className="w-3.5 h-3.5 rounded"
                     />
                     {pool.asset}
+                    <span className="text-amber-300/90 ml-1">
+                      {pool.ui.aprSupplyPct}%
+                    </span>
                   </span>
                 </button>
               ))}

@@ -1,12 +1,16 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
+
+
+/** Oracle module for margin trading. */
+
 import { MoveStruct, normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import * as type_name from './deps/std/type_name.js';
 import * as vec_map from './deps/sui/vec_map.js';
-const $moduleName = '@local-pkg/margin_trading::oracle';
+const $moduleName = '@local-pkg/deepbook-margin::oracle';
 export const CoinTypeData = new MoveStruct({ name: `${$moduleName}::CoinTypeData`, fields: {
         decimals: bcs.u8(),
         price_feed_id: bcs.vector(bcs.u8()),
@@ -41,7 +45,7 @@ export interface NewCoinTypeDataOptions {
  * errors in decimals.
  */
 export function newCoinTypeData(options: NewCoinTypeDataOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `0x0000000000000000000000000000000000000000000000000000000000000002::coin::CoinMetadata<${options.typeArguments[0]}>`,
         'vector<u8>'
@@ -71,7 +75,7 @@ export interface NewPythConfigOptions {
  * to allow oracle to work.
  */
 export function newPythConfig(options: NewPythConfigOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `vector<${packageAddress}::oracle::CoinTypeData>`,
         'u64'

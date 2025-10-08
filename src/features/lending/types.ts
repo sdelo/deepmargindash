@@ -32,6 +32,15 @@ export type PoolOverview = {
   asset: PoolAssetSymbol;
   state: { fields: StateFields };
   protocolConfig: { fields: ProtocolConfigFields };
+  contracts: {
+    registryId: string;
+    marginPoolId: string;
+    marginPoolType: string;
+    referralId?: string;
+    coinType: string;
+    coinDecimals: number;
+    coinDepositSourceId?: string;
+  };
   ui: {
     aprSupplyPct: number;
     depositors: number;

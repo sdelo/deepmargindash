@@ -8,7 +8,7 @@ export interface MarginVersionOptions {
     ];
 }
 export function marginVersion(options: MarginVersionOptions = {}) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
@@ -21,7 +21,7 @@ export interface MaxRiskRatioOptions {
     ];
 }
 export function maxRiskRatio(options: MaxRiskRatioOptions = {}) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
@@ -34,7 +34,7 @@ export interface DefaultUserLiquidationRewardOptions {
     ];
 }
 export function defaultUserLiquidationReward(options: DefaultUserLiquidationRewardOptions = {}) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
@@ -47,7 +47,7 @@ export interface DefaultPoolLiquidationRewardOptions {
     ];
 }
 export function defaultPoolLiquidationReward(options: DefaultPoolLiquidationRewardOptions = {}) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
@@ -60,7 +60,7 @@ export interface MinLeverageOptions {
     ];
 }
 export function minLeverage(options: MinLeverageOptions = {}) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
@@ -73,7 +73,7 @@ export interface MaxLeverageOptions {
     ];
 }
 export function maxLeverage(options: MaxLeverageOptions = {}) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
@@ -86,7 +86,7 @@ export interface YearMsOptions {
     ];
 }
 export function yearMs(options: YearMsOptions = {}) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
@@ -99,11 +99,24 @@ export interface MinMinBorrowOptions {
     ];
 }
 export function minMinBorrow(options: MinMinBorrowOptions = {}) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
         function: 'min_min_borrow',
+    });
+}
+export interface MaxMarginManagersOptions {
+    package?: string;
+    arguments?: [
+    ];
+}
+export function maxMarginManagers(options: MaxMarginManagersOptions = {}) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_constants',
+        function: 'max_margin_managers',
     });
 }
 export interface DefaultReferralOptions {
@@ -112,10 +125,23 @@ export interface DefaultReferralOptions {
     ];
 }
 export function defaultReferral(options: DefaultReferralOptions = {}) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
         function: 'default_referral',
+    });
+}
+export interface MaxReferralSpreadOptions {
+    package?: string;
+    arguments?: [
+    ];
+}
+export function maxReferralSpread(options: MaxReferralSpreadOptions = {}) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_constants',
+        function: 'max_referral_spread',
     });
 }

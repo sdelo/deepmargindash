@@ -38,7 +38,7 @@ export interface PlaceLimitOrderOptions {
 }
 /** Places a limit order in the pool. */
 export function placeLimitOrder(options: PlaceLimitOrderOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -91,7 +91,7 @@ export interface PlaceMarketOrderOptions {
 }
 /** Places a market order in the pool. */
 export function placeMarketOrder(options: PlaceMarketOrderOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -150,7 +150,7 @@ export interface PlaceReduceOnlyLimitOrderOptions {
 }
 /** Places a reduce-only order in the pool. Used when margin trading is disabled. */
 export function placeReduceOnlyLimitOrder(options: PlaceReduceOnlyLimitOrderOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -210,7 +210,7 @@ export interface PlaceReduceOnlyMarketOrderOptions {
  * disabled.
  */
 export function placeReduceOnlyMarketOrder(options: PlaceReduceOnlyMarketOrderOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -255,7 +255,7 @@ export interface ModifyOrderOptions {
 }
 /** Modifies an order */
 export function modifyOrder(options: ModifyOrderOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -294,7 +294,7 @@ export interface CancelOrderOptions {
 }
 /** Cancels an order */
 export function cancelOrder(options: CancelOrderOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -332,7 +332,7 @@ export interface CancelOrdersOptions {
 }
 /** Cancel multiple orders within a vector. */
 export function cancelOrders(options: CancelOrdersOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -368,7 +368,7 @@ export interface CancelAllOrdersOptions {
 }
 /** Cancels all orders for the given account. */
 export function cancelAllOrders(options: CancelAllOrdersOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -403,7 +403,7 @@ export interface WithdrawSettledAmountsOptions {
 }
 /** Withdraw settled amounts to balance_manager. */
 export function withdrawSettledAmounts(options: WithdrawSettledAmountsOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -439,7 +439,7 @@ export interface StakeOptions {
 }
 /** Stake DEEP tokens to the pool. */
 export function stake(options: StakeOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -474,7 +474,7 @@ export interface UnstakeOptions {
 }
 /** Unstake DEEP tokens from the pool. */
 export function unstake(options: UnstakeOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -514,7 +514,7 @@ export interface SubmitProposalOptions {
 }
 /** Submit proposal using the margin manager. */
 export function submitProposal(options: SubmitProposalOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -553,7 +553,7 @@ export interface VoteOptions {
 }
 /** Vote on a proposal using the margin manager. */
 export function vote(options: VoteOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
@@ -587,7 +587,7 @@ export interface ClaimRebatesOptions {
     ];
 }
 export function claimRebates(options: ClaimRebatesOptions) {
-    const packageAddress = options.package ?? '@local-pkg/margin_trading';
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
