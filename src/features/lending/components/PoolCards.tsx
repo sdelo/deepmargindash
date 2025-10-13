@@ -34,7 +34,7 @@ export const PoolCards: FC<Props> = ({
 
   return (
     <div className="space-y-4">
-      <div className="relative card-surface card-ring glow-amber glow-cyan h-full">
+      <div className="relative card-surface card-ring glow-amber glow-cyan animate-pulse-glow h-full">
         <div className="flex items-center justify-between text-indigo-100/90">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>

@@ -3,7 +3,7 @@ import NavBar from "../features/shared/components/NavBar";
 
 export function MainLayout() {
   return (
-    <div className="min-h-screen pt-20 pb-8 relative">
+    <div className="min-h-screen pb-8 relative">
       <NavBar />
       <div className="plankton-layer" aria-hidden>
         {Array.from({ length: 36 }).map((_, i) => (

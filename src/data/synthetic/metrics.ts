@@ -6,7 +6,7 @@ export type HistoricalActivity = {
   rateChanges: RateChange[];
 };
 
-export type DepositorTop = { address: string; sharePct: number; color: 'cyan' | 'amber' | 'blue' | 'emerald' | 'rose' | 'indigo' };
+export type DepositorTop = { address: string; sharePct: number; color: 'cyan' | 'amber' | 'teal' | 'emerald' | 'purple' | 'lavender' };
 export type DepositorDistribution = {
   unique_count: number;
   top10_share: number;
@@ -76,10 +76,10 @@ export const depositorByPool: Record<string, DepositorDistribution> = {
     topSuppliers: [
       { address: '0xA4…7C2F', sharePct: 28.0, color: 'cyan' },
       { address: '0x19…B0E1', sharePct: 18.0, color: 'amber' },
-      { address: '0xF3…99AA', sharePct: 12.0, color: 'blue' },
+      { address: '0xF3…99AA', sharePct: 12.0, color: 'teal' },
       { address: '0x8D…1120', sharePct: 10.0, color: 'emerald' },
-      { address: '0x77…4C11', sharePct: 8.0, color: 'rose' },
-      { address: '0xEA…D7F5', sharePct: 24.0, color: 'indigo' },
+      { address: '0x77…4C11', sharePct: 8.0, color: 'purple' },
+      { address: '0xEA…D7F5', sharePct: 24.0, color: 'lavender' },
     ],
   },
   '0xpool_sui': {
@@ -90,10 +90,10 @@ export const depositorByPool: Record<string, DepositorDistribution> = {
     topSuppliers: [
       { address: '0xA8…DD2B', sharePct: 22.0, color: 'cyan' },
       { address: '0x21…0ABE', sharePct: 16.0, color: 'amber' },
-      { address: '0x3F…1133', sharePct: 11.0, color: 'blue' },
+      { address: '0x3F…1133', sharePct: 11.0, color: 'teal' },
       { address: '0xB7…4499', sharePct: 9.0, color: 'emerald' },
-      { address: '0x42…77AC', sharePct: 7.0, color: 'rose' },
-      { address: '0x9C…00F1', sharePct: 25.0, color: 'indigo' },
+      { address: '0x42…77AC', sharePct: 7.0, color: 'purple' },
+      { address: '0x9C…00F1', sharePct: 25.0, color: 'lavender' },
     ],
   },
 };

@@ -9,10 +9,10 @@ type Props = { poolId: string };
 const colorToClass: Record<string, string> = {
   cyan: "bg-cyan-300",
   amber: "bg-amber-300",
-  blue: "bg-blue-400",
+  teal: "bg-cyan-400",
   emerald: "bg-emerald-400",
-  rose: "bg-rose-300",
-  indigo: "bg-indigo-400",
+  purple: "bg-indigo-400",
+  lavender: "bg-indigo-300",
 };
 
 export const DepositorDistribution: FC<Props> = ({ poolId }) => {
@@ -32,10 +32,10 @@ export const DepositorDistribution: FC<Props> = ({ poolId }) => {
   const colorMap: Record<string, string> = {
     cyan: "var(--color-cyan-300)",
     amber: "var(--color-amber-400)",
-    blue: "var(--color-blue-400)",
+    teal: "var(--color-cyan-400)",
     emerald: "var(--color-emerald-400)",
-    rose: "var(--color-rose-400)",
-    indigo: "var(--color-indigo-400)",
+    purple: "var(--color-indigo-400)",
+    lavender: "var(--color-indigo-300)",
   };
 
   function darken(hex: string, amount = 0.35) {
@@ -59,7 +59,7 @@ export const DepositorDistribution: FC<Props> = ({ poolId }) => {
   }
 
   return (
-    <div className="relative card-surface card-ring glow-amber glow-cyan text-white">
+    <div className="relative card-surface border border-white/10 text-white">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
           Depositor Distribution

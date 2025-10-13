@@ -50,7 +50,7 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
     }, [data.points, data.rateChanges, range]);
 
   return (
-    <div className="relative card-surface card-ring glow-amber glow-cyan text-white">
+    <div className="relative card-surface border border-white/10 text-white">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
