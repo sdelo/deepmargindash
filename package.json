@@ -1,5 +1,5 @@
 {
-  "name": "deepdashboard",
+  "name": "leviathan-margin-dashboard",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,6 +12,7 @@
     "mint-referral": "tsx scripts/mint-supply-referral.ts"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@mysten/bcs": "^1.8.0",
     "@mysten/dapp-kit": "^0.18.0",
     "@mysten/sui": "1.38.0",
@@ -21,6 +22,7 @@
     "@types/react-dom": "^18.3.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-router-dom": "^7.9.4",
     "recharts": "^2.12.7"
   },
   "devDependencies": {

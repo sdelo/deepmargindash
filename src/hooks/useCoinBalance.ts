@@ -14,7 +14,7 @@ export function useCoinBalance(
   coinType: string,
   decimals: number
 ) {
-  const { data } = useSuiClientQuery(
+  const { data, error, isLoading, refetch } = useSuiClientQuery(
     "getBalance",
     {
       owner: owner ?? "",
@@ -22,6 +22,9 @@ export function useCoinBalance(
     },
     {
       enabled: Boolean(owner),
+      retry: 3,
+      retryDelay: 1000,
+      refetchInterval: 10000, // Refetch every 10 seconds
       select: React.useCallback(
         (balance: CoinBalance | null) => {
           if (!balance) return undefined;
@@ -35,6 +38,11 @@ export function useCoinBalance(
     }
   );
 
-  return data;
+  return {
+    ...data,
+    error,
+    isLoading,
+    refetch,
+  };
 }
 

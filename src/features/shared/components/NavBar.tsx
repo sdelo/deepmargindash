@@ -4,11 +4,14 @@ import {
   useCurrentAccount,
   useDisconnectWallet,
 } from "@mysten/dapp-kit";
+import { Link, useLocation } from "react-router-dom";
+import { NetworkSwitcher } from "../../../components/NetworkSwitcher";
 
 export default function NavBar() {
   const currentAccount = useCurrentAccount();
   const [open, setOpen] = React.useState(false);
   const { mutate: disconnectWallet } = useDisconnectWallet();
+  const location = useLocation();
 
   function getShortAddress(address: string): string {
     if (!address) return "";
@@ -21,23 +24,26 @@ export default function NavBar() {
     <nav className="w-full sticky top-0 z-50 backdrop-blur bg-black/20 border-b border-white/10">
       <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between text-white">
         <div className="flex items-center gap-6">
-          <a href="/" className="font-extrabold tracking-wide text-cyan-200">
-            DeepDashboard
-          </a>
-          <div className="hidden md:flex items-center gap-4 text-sm text-indigo-200/80">
-            <a href="#pools" className="hover:text-white transition">
-              Pools
-            </a>
-            <a href="#analytics" className="hover:text-white transition">
-              Analytics
-            </a>
-            <a href="#admin" className="hover:text-white transition">
-              Admin
-            </a>
-          </div>
+          <Link to="/" className="font-extrabold tracking-wide text-cyan-200">
+            Leviathan
+          </Link>
+          {location.pathname !== "/" && (
+            <div className="hidden md:flex items-center gap-4 text-sm text-indigo-200/80">
+              <Link to="/pools" className="hover:text-white transition">
+                Pools
+              </Link>
+              <a href="#analytics" className="hover:text-white transition">
+                Analytics
+              </a>
+              <a href="#admin" className="hover:text-white transition">
+                Admin
+              </a>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
+          <NetworkSwitcher />
           {currentAccount ? (
             <>
               <span className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono text-sm text-indigo-100">
