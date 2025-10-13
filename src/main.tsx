@@ -1,6 +1,6 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
+import "./index.processed.css";
 import "@mysten/dapp-kit/dist/index.css";
 import App from "./App";
 import { setTheme } from "./theme";

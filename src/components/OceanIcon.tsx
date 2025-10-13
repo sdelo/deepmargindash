@@ -13,13 +13,20 @@ interface OceanIconProps {
   animated?: boolean;
 }
 
+import waveIcon from "../assets/icons/wave.svg";
+import anchorIcon from "../assets/icons/anchor.svg";
+import depthGaugeIcon from "../assets/icons/depth-gauge.svg";
+import treasureChestIcon from "../assets/icons/treasure-chest.svg";
+import submarineIcon from "../assets/icons/submarine.svg";
+import sonarIcon from "../assets/icons/sonar.svg";
+
 const iconPaths = {
-  wave: "/src/assets/icons/wave.svg",
-  anchor: "/src/assets/icons/anchor.svg",
-  "depth-gauge": "/src/assets/icons/depth-gauge.svg",
-  "treasure-chest": "/src/assets/icons/treasure-chest.svg",
-  submarine: "/src/assets/icons/submarine.svg",
-  sonar: "/src/assets/icons/sonar.svg",
+  wave: waveIcon,
+  anchor: anchorIcon,
+  "depth-gauge": depthGaugeIcon,
+  "treasure-chest": treasureChestIcon,
+  submarine: submarineIcon,
+  sonar: sonarIcon,
 };
 
 const sizeClasses = {
@@ -48,4 +55,3 @@ export function OceanIcon({
     </div>
   );
 }
-

@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "bun scripts/build-css.ts && bun --hot --serve index.html",
+    "build": "bun scripts/build-css.ts && bun build ./src/main.tsx --outdir ./dist && cp index.html dist/",
     "lint": "eslint .",
-    "preview": "vite preview",
+    "preview": "bun --serve dist",
     "codegen": "sui-ts-codegen generate",
-    "mint-referral": "tsx scripts/mint-supply-referral.ts"
+    "mint-referral": "bun scripts/mint-supply-referral.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -29,15 +29,13 @@
     "@eslint/js": "^9.35.0",
     "@mysten/codegen": "^0.5.0",
     "@types/node": "^24.5.2",
-    "@vitejs/plugin-react": "^5.0.2",
     "autoprefixer": "^10.4.21",
+    "bun-types": "^1.3.0",
     "eslint": "^9.35.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.4.0",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.13",
-    "tsx": "^4.7.0",
-    "vite": "^7.1.6"
+    "tailwindcss": "^4.1.13"
   }
 }

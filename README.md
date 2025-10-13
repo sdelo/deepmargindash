@@ -17,13 +17,13 @@ A comprehensive dashboard for monitoring and interacting with DeepBook Margin le
 1. Install dependencies:
 
    ```bash
-   pnpm install
+   bun install
    ```
 
 2. Start the development server:
 
    ```bash
-   pnpm dev
+   bun dev
    ```
 
 3. Open your browser and navigate to `http://localhost:5173`
@@ -37,7 +37,7 @@ A comprehensive dashboard for monitoring and interacting with DeepBook Margin le
 ## Technology Stack
 
 - React 18 with TypeScript
-- Vite for build tooling
+- Bun for build tooling and runtime
 - Tailwind CSS for styling
 - React Router for navigation
 - Sui dApp Kit for blockchain integration
