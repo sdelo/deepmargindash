@@ -39,3 +39,4 @@ export function useElementOnScreen(options: UseElementOnScreenOptions = {}) {
 
   return [containerRef, isVisible] as const;
 }
+
