@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import type { PoolOverview } from "../types";
 import { formatNumber, utilizationPct } from "../../../data/synthetic/pools";
+import { Tooltip } from "../../../components/Tooltip";
 
 type Props = {
   pools: PoolOverview[];
@@ -19,7 +20,8 @@ export const PoolCards: FC<Props> = ({
 }) => {
   const ICONS: Record<string, string> = {
     SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
-    USDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+    DBUSDC:
+      "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
   };
   const getIcon = (asset: string) => ICONS[asset] || "";
   const p = pools.find((x) => x.id === selectedPoolId) ?? pools[0]!;
@@ -32,8 +34,44 @@ export const PoolCards: FC<Props> = ({
 
   return (
     <div className="space-y-4">
+      {/* Pool Selection Navigation */}
+      <div className="mb-8 px-2">
+        <div className="text-lg font-bold text-cyan-200 mb-6 flex items-center gap-3">
+          <span className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
+          Select Pool
+        </div>
+        <div className="flex items-center gap-6 pr-6">
+          {pools.map((pool) => (
+            <button
+              key={pool.id}
+              onClick={() => onSelectPool?.(pool.id)}
+              className={
+                "px-8 py-5 rounded-3xl text-lg border-2 transition-all duration-300 transform hover:scale-110 hover:shadow-2xl " +
+                (pool.id === p.id
+                  ? "bg-gradient-to-r from-cyan-500/40 to-blue-500/40 border-cyan-400 text-cyan-100 shadow-2xl shadow-cyan-500/40 scale-105 ring-2 ring-cyan-400/30"
+                  : "bg-white/8 border-white/40 text-indigo-100/90 hover:text-white hover:bg-white/15 hover:border-cyan-300/60 hover:shadow-xl hover:shadow-cyan-500/20")
+              }
+            >
+              <span className="inline-flex items-center gap-3 min-w-0">
+                <img
+                  src={getIcon(pool.asset)}
+                  alt={`${pool.asset} logo`}
+                  className="w-6 h-6 rounded-lg shadow-lg flex-shrink-0"
+                />
+                <span className="font-bold text-lg flex-shrink-0">
+                  {pool.asset}
+                </span>
+                <span className="text-amber-300 font-bold text-lg flex-shrink-0">
+                  {Number(pool.ui.aprSupplyPct).toFixed(2)}%
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="relative card-surface card-ring glow-amber glow-cyan animate-pulse-glow h-full">
-        <div className="flex items-center justify-between text-indigo-100/90">
+        <div className="flex items-center justify-between text-indigo-100/90 mb-4">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
             <span className="inline-flex items-center gap-2 text-sm">
@@ -42,36 +80,10 @@ export const PoolCards: FC<Props> = ({
                 alt={`${p.asset} logo`}
                 className="w-4 h-4 rounded"
               />
-              <span className="text-cyan-200 font-semibold">{p.asset}</span>
+              <span className="text-cyan-200 font-semibold">
+                {p.asset} Margin Pool
+              </span>
             </span>
-          </div>
-          <div className="inline-flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2">
-              {pools.map((pool) => (
-                <button
-                  key={pool.id}
-                  onClick={() => onSelectPool?.(pool.id)}
-                  className={
-                    "px-3 py-1.5 rounded-full text-xs border transition " +
-                    (pool.id === p.id
-                      ? "bg-cyan-500/20 border-cyan-400/40 text-cyan-200"
-                      : "bg-white/5 border-white/10 text-indigo-100/80 hover:text-white")
-                  }
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <img
-                      src={getIcon(pool.asset)}
-                      alt={`${pool.asset} logo`}
-                      className="w-3.5 h-3.5 rounded"
-                    />
-                    {pool.asset}
-                    <span className="text-amber-300/90 ml-1">
-                      {pool.ui.aprSupplyPct}%
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent my-3"></div>
@@ -86,7 +98,9 @@ export const PoolCards: FC<Props> = ({
           >
             <div className="text-xs text-indigo-200/80 tracking-wide flex items-center gap-1">
               <span>Supply (TVL)</span>
-              <span title="Total assets supplied to the pool.">ⓘ</span>
+              <Tooltip content="Total assets supplied to the pool.">
+                <span className="cursor-help">ⓘ</span>
+              </Tooltip>
             </div>
             <div className="text-lg md:text-xl lg:text-2xl font-extrabold text-white leading-tight tabular-nums">
               {formatNumber(p.state.supply)}
@@ -111,7 +125,9 @@ export const PoolCards: FC<Props> = ({
           >
             <div className="text-xs text-indigo-200/80 tracking-wide flex items-center gap-1">
               <span>Borrow</span>
-              <span title="Total assets borrowed from the pool.">ⓘ</span>
+              <Tooltip content="Total assets borrowed from the pool.">
+                <span className="cursor-help">ⓘ</span>
+              </Tooltip>
             </div>
             <div className="text-lg md:text-xl lg:text-2xl font-extrabold text-white leading-tight tabular-nums">
               {formatNumber(p.state.borrow)}
@@ -128,10 +144,15 @@ export const PoolCards: FC<Props> = ({
           >
             <div className="text-xs text-indigo-200/80 tracking-wide flex items-center gap-1">
               <span>Utilization</span>
-              <span title="Borrow / Supply, indicates pool usage.">ⓘ</span>
+              <Tooltip content="Borrow / Supply, indicates pool usage.">
+                <span className="cursor-help">ⓘ</span>
+              </Tooltip>
             </div>
             <div className="text-lg md:text-xl lg:text-2xl font-extrabold text-cyan-300 leading-tight tabular-nums">
-              {p.state.supply / p.state.borrow}%
+              {p.state.supply > 0
+                ? ((p.state.borrow / p.state.supply) * 100).toFixed(2)
+                : "0.00"}
+              %
             </div>
             <div className="h-1" />
           </div>
@@ -145,16 +166,18 @@ export const PoolCards: FC<Props> = ({
           >
             <div className="text-xs text-indigo-200/80 tracking-wide flex items-center gap-1">
               <span>Supply APR</span>
-              <span title="Current annualized supply rate.">ⓘ</span>
+              <Tooltip content="Current annualized supply rate.">
+                <span className="cursor-help">ⓘ</span>
+              </Tooltip>
             </div>
             <div className="text-lg md:text-xl lg:text-2xl font-extrabold text-amber-300 leading-tight tabular-nums">
-              {p.ui.aprSupplyPct}%
+              {Number(p.ui.aprSupplyPct).toFixed(2)}%
             </div>
             <div className="h-1" />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="mt-4">
           <div
             className="rounded-2xl p-3 bg-white/5 border"
             style={{
@@ -164,25 +187,12 @@ export const PoolCards: FC<Props> = ({
           >
             <div className="text-[11px] text-cyan-100/80 flex items-center gap-1">
               <span>Depositors</span>
-              <span title="Number of unique addresses supplying.">ⓘ</span>
+              <Tooltip content="Number of unique addresses supplying.">
+                <span className="cursor-help">ⓘ</span>
+              </Tooltip>
             </div>
             <div className="text-base md:text-lg font-semibold">
               {formatNumber(p.ui.depositors)}
-            </div>
-          </div>
-          <div
-            className="rounded-2xl p-3 bg-white/5 border"
-            style={{
-              borderColor:
-                "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
-            }}
-          >
-            <div className="text-[11px] text-cyan-100/80 mb-1 flex items-center gap-1">
-              <span>Pool Age</span>
-              <span title="Time since pool creation.">ⓘ</span>
-            </div>
-            <div className="text-base md:text-lg font-semibold">
-              {p.ui.ageDays} days
             </div>
           </div>
         </div>

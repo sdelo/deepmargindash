@@ -9,7 +9,8 @@ interface LandingPoolCardProps {
 
 const ICONS: Record<string, string> = {
   SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
-  USDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  DBUSDC:
+    "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
 };
 
 export function LandingPoolCard({ pool }: LandingPoolCardProps) {
@@ -40,7 +41,7 @@ export function LandingPoolCard({ pool }: LandingPoolCardProps) {
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-amber-300 animate-counter">
-            {pool.ui.aprSupplyPct}%
+            {Number(pool.ui.aprSupplyPct).toFixed(2)}%
           </div>
           <p className="text-xs text-indigo-200/80">APY</p>
         </div>
@@ -77,7 +78,7 @@ export function LandingPoolCard({ pool }: LandingPoolCardProps) {
       {/* Stats */}
       <div className="flex justify-between text-sm text-indigo-200/80 mb-6">
         <span>{formatNumber(pool.ui.depositors)} depositors</span>
-        <span>{pool.ui.ageDays} days old</span>
+        <span>Live Pool</span>
       </div>
 
       {/* CTA */}

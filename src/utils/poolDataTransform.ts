@@ -31,7 +31,7 @@ export function transformMarginPoolData(
 ): PoolOverview {
   // Determine asset type
   const isSui = assetType.includes('0x2::sui::SUI');
-  const asset: 'SUI' | 'USDC' = isSui ? 'SUI' : 'USDC';
+  const asset: 'SUI' | 'DBUSDC' = isSui ? 'SUI' : 'DBUSDC';
 
   // Get the appropriate decimal places for this asset
   const decimals = isSui ? 9 : 6; // SUI has 9 decimals, DBUSDC has 6 decimals
@@ -109,6 +109,8 @@ export function transformMarginPoolData(
     ui: {
       ...tempPool.ui,
       aprSupplyPct: supplyApr,
+      depositors: Number(marginPool.positions.positions.size),
+      ageDays: 0, // Not available from blockchain data
     },
   };
 }

@@ -15,10 +15,47 @@ import { LandingNavBar } from "../components/LandingNavBar";
 import { LandingPoolCard } from "../components/LandingPoolCard";
 import { OceanIcon } from "../components/OceanIcon";
 import { AnimatedSection } from "../components/AnimatedSection";
+import { usePoolData } from "../hooks/usePoolData";
+import { CONTRACTS } from "../config/contracts";
 import { syntheticPools } from "../data/synthetic/pools";
 import "../styles/landing.css";
 
 export function LandingPage() {
+  // Fetch live pool data
+  const suiPoolData = usePoolData(CONTRACTS.testnet.SUI_MARGIN_POOL_ID);
+  const dbusdcPoolData = usePoolData(CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID);
+
+  // Create pools array with live data, fallback to synthetic if loading/error
+  const pools = React.useMemo(() => {
+    const livePools = [];
+
+    if (suiPoolData.data) {
+      livePools.push(suiPoolData.data);
+    } else if (!suiPoolData.isLoading && !suiPoolData.error) {
+      // Fallback to synthetic data if no real data available
+      livePools.push(syntheticPools.find((p) => p.asset === "SUI")!);
+    }
+
+    if (dbusdcPoolData.data) {
+      livePools.push(dbusdcPoolData.data);
+    } else if (!dbusdcPoolData.isLoading && !dbusdcPoolData.error) {
+      // Fallback to synthetic data if no real data available
+      livePools.push(syntheticPools.find((p) => p.asset === "DBUSDC")!);
+    }
+
+    return livePools.length > 0 ? livePools : syntheticPools;
+  }, [
+    suiPoolData.data,
+    suiPoolData.isLoading,
+    suiPoolData.error,
+    dbusdcPoolData.data,
+    dbusdcPoolData.isLoading,
+    dbusdcPoolData.error,
+  ]);
+
+  const isLoading = suiPoolData.isLoading || dbusdcPoolData.isLoading;
+  const hasError = suiPoolData.error || dbusdcPoolData.error;
+
   return (
     <div className="min-h-screen relative">
       <LandingNavBar />
@@ -41,11 +78,22 @@ export function LandingPage() {
               Earn competitive yields on Sui's DeepBook Margin Protocol. Supply
               liquidity to margin pools and start earning today.
             </p>
+            {isLoading && (
+              <div className="text-sm text-cyan-100/80 mt-4">
+                Loading live pool data from blockchain...
+              </div>
+            )}
+            {hasError && (
+              <div className="text-sm text-red-400 mt-4">
+                Error loading pool data:{" "}
+                {suiPoolData.error?.message || dbusdcPoolData.error?.message}
+              </div>
+            )}
           </AnimatedSection>
 
           {/* Live Pool Cards */}
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-16">
-            {syntheticPools.map((pool, index) => (
+            {pools.map((pool, index) => (
               <AnimatedSection
                 key={pool.id}
                 animation={index === 0 ? "slide-in-left" : "slide-in-right"}
@@ -95,7 +143,7 @@ export function LandingPage() {
                   Choose Pool
                 </h3>
                 <p className="text-indigo-200/90">
-                  Select from available pools (USDC, SUI) and review current
+                  Select from available pools (DBUSDC, SUI) and review current
                   yields, utilization, and risk parameters.
                 </p>
               </div>
@@ -149,7 +197,7 @@ export function LandingPage() {
                         Liquidity Provision
                       </h4>
                       <p className="text-indigo-200/90">
-                        Users deposit assets (USDC, SUI) into margin pools to
+                        Users deposit assets (DBUSDC, SUI) into margin pools to
                         provide liquidity for traders.
                       </p>
                     </div>

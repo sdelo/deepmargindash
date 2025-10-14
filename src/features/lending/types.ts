@@ -1,4 +1,4 @@
-export type PoolAssetSymbol = 'USDC' | 'SUI';
+export type PoolAssetSymbol = 'DBUSDC' | 'SUI';
 
 export type StateFields = {
   supply: number;

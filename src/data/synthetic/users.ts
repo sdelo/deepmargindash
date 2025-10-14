@@ -7,7 +7,7 @@ const DEFAULT_ADDRESS = "0x0f97e5774fa2d0ad786ee0a562c4f65762e141397e469a7367033
 
 const addressToPositions: Record<string, UserPosition[]> = {
   [DEFAULT_ADDRESS]: [
-    { address: DEFAULT_ADDRESS, asset: "USDC", shares: 5000n, balanceFormatted: "5,000 USDC" },
+    { address: DEFAULT_ADDRESS, asset: "DBUSDC", shares: 5000n, balanceFormatted: "5,000 DBUSDC" },
     { address: DEFAULT_ADDRESS, asset: "SUI", shares: 1200n, balanceFormatted: "1,200 SUI" },
   ],
 };

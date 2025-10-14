@@ -4,7 +4,7 @@ import { ConnectModal, useCurrentAccount } from "@mysten/dapp-kit";
 import { MIN_DEPOSIT_AMOUNT } from "../../../constants";
 
 type Props = {
-  asset: "USDC" | "SUI";
+  asset: "DBUSDC" | "SUI";
   onDeposit?: (amount: number) => void;
   onWithdrawAll?: () => void;
   onWithdraw?: (amount: number) => void;
@@ -161,8 +161,8 @@ export const DepositWithdrawPanel: FC<Props> = ({
                 {txStatus === "pending"
                   ? "Depositing..."
                   : suiBalanceNum < 0.01
-                  ? "Insufficient SUI for Gas"
-                  : "Deposit"}
+                    ? "Insufficient SUI for Gas"
+                    : "Deposit"}
               </span>
             </button>
           ) : (
@@ -221,8 +221,8 @@ export const DepositWithdrawPanel: FC<Props> = ({
                 {txStatus === "pending"
                   ? "Withdrawing..."
                   : suiBalanceNum < 0.01
-                  ? "Insufficient SUI for Gas"
-                  : "Withdraw"}
+                    ? "Insufficient SUI for Gas"
+                    : "Withdraw"}
               </button>
             ) : (
               <ConnectModal

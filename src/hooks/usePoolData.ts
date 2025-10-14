@@ -1,36 +1,64 @@
 import React from 'react';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { fetchMarginPool } from '../api/poolData';
-import type { PoolOverview } from '../features/lending/types';
+import { fetchUserPositionFromPool } from '../api/userPositions';
+import type { PoolOverview, UserPosition } from '../features/lending/types';
 
 export type PoolDataResult = {
   data: PoolOverview | null;
+  userPosition: UserPosition | null;
   error: Error | null;
   isLoading: boolean;
   refetch: () => void;
 };
 
-export function usePoolData(poolId: string): PoolDataResult {
+export function usePoolData(poolId: string, userAddress?: string): PoolDataResult {
   const suiClient = useSuiClient();
   const [data, setData] = React.useState<PoolOverview | null>(null);
+  const [userPosition, setUserPosition] = React.useState<UserPosition | null>(null);
   const [error, setError] = React.useState<Error | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
   const fetchData = React.useCallback(async () => {
     if (!poolId) return;
     
+    console.log(`🔄 usePoolData fetchData called for pool ${poolId} with user ${userAddress}`);
+    
     try {
       setIsLoading(true);
       setError(null);
-      const result = await fetchMarginPool(suiClient, poolId);
-      setData(result);
+      
+      // Fetch pool data
+      console.log(`📡 Fetching pool data for ${poolId}`);
+      const poolResult = await fetchMarginPool(suiClient, poolId);
+      setData(poolResult);
+      console.log(`📊 Pool data result:`, poolResult ? 'Success' : 'Failed');
+      
+      // Fetch user position if user address is provided
+      if (userAddress && poolResult) {
+        console.log(`👤 Fetching user position for ${userAddress} in ${poolResult.asset} pool`);
+        const position = await fetchUserPositionFromPool(
+          suiClient,
+          poolId,
+          userAddress,
+          poolResult.asset,
+          poolResult.contracts.coinDecimals
+        );
+        setUserPosition(position);
+        console.log(`👤 User position result:`, position ? 'Found' : 'Not found');
+      } else {
+        console.log(`👤 No user address or pool data, setting position to null`);
+        setUserPosition(null);
+      }
     } catch (err) {
+      console.error(`❌ Error in usePoolData fetchData:`, err);
       setError(err as Error);
       setData(null);
+      setUserPosition(null);
     } finally {
       setIsLoading(false);
     }
-  }, [suiClient, poolId]);
+  }, [suiClient, poolId, userAddress]);
 
   // Initial fetch
   React.useEffect(() => {
@@ -47,6 +75,7 @@ export function usePoolData(poolId: string): PoolDataResult {
 
   return {
     data,
+    userPosition,
     error,
     isLoading,
     refetch: fetchData,

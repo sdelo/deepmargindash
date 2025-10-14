@@ -16,7 +16,6 @@ import YieldCurve from "../features/lending/components/YieldCurve";
 import SlidePanel from "../features/shared/components/SlidePanel";
 import PoolAdmin from "../features/lending/components/PoolAdmin";
 import DepositHistory from "../features/lending/components/DepositHistory";
-import { getSyntheticUserPositions } from "../data/synthetic/users";
 import { useCoinBalance } from "../hooks/useCoinBalance";
 import { usePoolData } from "../hooks/usePoolData";
 import { CONTRACTS } from "../config/contracts";
@@ -40,8 +39,14 @@ export function PoolsPage() {
   const { network } = useSuiClientContext();
 
   // Fetch real pool data
-  const suiPoolData = usePoolData(CONTRACTS.testnet.SUI_MARGIN_POOL_ID);
-  const dbusdcPoolData = usePoolData(CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID);
+  const suiPoolData = usePoolData(
+    CONTRACTS.testnet.SUI_MARGIN_POOL_ID,
+    account?.address
+  );
+  const dbusdcPoolData = usePoolData(
+    CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID,
+    account?.address
+  );
 
   // Create pools array with real data, fallback to synthetic if loading/error
   const pools: PoolOverview[] = React.useMemo(() => {
@@ -58,7 +63,7 @@ export function PoolsPage() {
       realPools.push(dbusdcPoolData.data);
     } else if (!dbusdcPoolData.isLoading && !dbusdcPoolData.error) {
       // Fallback to synthetic data if no real data available
-      realPools.push(syntheticPools.find((p) => p.asset === "USDC")!);
+      realPools.push(syntheticPools.find((p) => p.asset === "DBUSDC")!);
     }
 
     return realPools.length > 0 ? realPools : syntheticPools;
@@ -337,7 +342,10 @@ export function PoolsPage() {
         )}
       </div>
 
-      <DashboardNav />
+      <DashboardNav
+        selectedPoolId={selectedPoolId}
+        onSelectPool={setSelectedPoolId}
+      />
 
       {/* Primary Action Zone */}
       <section id="pools-deposit" className="scroll-mt-24">
@@ -387,7 +395,8 @@ export function PoolsPage() {
             </h3>
             {account ? (
               <PersonalPositions
-                positions={getSyntheticUserPositions(account.address)}
+                userAddress={account.address}
+                pools={pools}
                 onShowHistory={() => setHistoryOpen(true)}
               />
             ) : (

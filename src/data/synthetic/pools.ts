@@ -42,8 +42,8 @@ const contracts = CONTRACTS.testnet;
 
 export const syntheticPools: PoolOverview[] = [
   {
-    id: '0xpool_usdc',
-    asset: 'USDC',
+    id: '0xpool_dbusdc',
+    asset: 'DBUSDC',
     state: createState({ supply: 1_250_000, borrow: 820_000, supplyShares: 1_250_000, borrowShares: 820_000, lastUpdate: now }),
     protocolConfig: createProtocolConfig({
       supplyCap: 2_000_000,
@@ -109,6 +109,6 @@ export function formatNumber(n: number | number) {
 
 export function utilizationPct(supply: number, borrow: number) {
   if (supply === 0) return 0;
-  return Number((borrow * 10000) / supply) / 100; // two decimals
+  return Number(((borrow / supply) * 100).toFixed(2));
 }
 
