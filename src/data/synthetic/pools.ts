@@ -1,50 +1,38 @@
 import type { PoolOverview } from '../../features/lending/types';
 import { CONTRACTS } from '../../config/contracts';
 
-function u64(n: number | bigint) {
-  return BigInt(n);
-}
-
-function createState({ supply, borrow, supplyShares, borrowShares, lastUpdate }: { supply: number | bigint; borrow: number | bigint; supplyShares: number | bigint; borrowShares: number | bigint; lastUpdate: number | bigint; }) {
+function createState({ supply, borrow, supplyShares, borrowShares, lastUpdate }: { supply: number ; borrow: number ; supplyShares: number ; borrowShares: number ; lastUpdate: number ; }) {
   return {
-    fields: {
-      supply: u64(supply),
-      borrow: u64(borrow),
-      supply_shares: u64(supplyShares),
-      borrow_shares: u64(borrowShares),
-      last_update_timestamp: u64(lastUpdate),
-    },
+    supply: supply,
+    borrow: borrow,
+    supply_shares: supplyShares,
+    borrow_shares: borrowShares,
+    last_update_timestamp: lastUpdate,
   };
 }
 
 function createProtocolConfig({ supplyCap, maxUtilizationRate, protocolSpread, minBorrow, baseRate, baseSlope, optimalUtilization, excessSlope }: {
-  supplyCap: number | bigint;
-  maxUtilizationRate: number | bigint;
-  protocolSpread: number | bigint;
-  minBorrow: number | bigint;
-  baseRate: number | bigint;
-  baseSlope: number | bigint;
-  optimalUtilization: number | bigint;
-  excessSlope: number | bigint;
+  supplyCap: number ;
+  maxUtilizationRate: number ;
+  protocolSpread: number ;
+  minBorrow: number ;
+  baseRate: number ;
+  baseSlope: number ;
+  optimalUtilization: number ;
+  excessSlope: number ;
 }) {
   return {
-    fields: {
-      margin_pool_config: {
-        fields: {
-          supply_cap: u64(supplyCap),
-          max_utilization_rate: u64(maxUtilizationRate),
-          protocol_spread: u64(protocolSpread),
-          min_borrow: u64(minBorrow),
-        },
-      },
-      interest_config: {
-        fields: {
-          base_rate: u64(baseRate),
-          base_slope: u64(baseSlope),
-          optimal_utilization: u64(optimalUtilization),
-          excess_slope: u64(excessSlope),
-        },
-      },
+    margin_pool_config: {
+      supply_cap: supplyCap,
+      max_utilization_rate: maxUtilizationRate,
+      protocol_spread: protocolSpread,
+      min_borrow: minBorrow,
+    },
+    interest_config: {
+      base_rate: baseRate,
+      base_slope: baseSlope,
+      optimal_utilization: optimalUtilization,
+      excess_slope: excessSlope,
     },
   };
 }
@@ -115,12 +103,12 @@ export const syntheticPools: PoolOverview[] = [
   },
 ];
 
-export function formatNumber(n: number | bigint) {
+export function formatNumber(n: number | number) {
   return Intl.NumberFormat('en-US').format(Number(n));
 }
 
-export function utilizationPct(supply: bigint, borrow: bigint) {
-  if (supply === 0n) return 0;
-  return Number((borrow * 10000n) / supply) / 100; // two decimals
+export function utilizationPct(supply: number, borrow: number) {
+  if (supply === 0) return 0;
+  return Number((borrow * 10000) / supply) / 100; // two decimals
 }
 

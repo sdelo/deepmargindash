@@ -18,6 +18,8 @@ import PoolAdmin from "../features/lending/components/PoolAdmin";
 import DepositHistory from "../features/lending/components/DepositHistory";
 import { getSyntheticUserPositions } from "../data/synthetic/users";
 import { useCoinBalance } from "../hooks/useCoinBalance";
+import { usePoolData } from "../hooks/usePoolData";
+import { CONTRACTS } from "../config/contracts";
 import {
   ONE_BILLION,
   GAS_AMOUNT_MIST,
@@ -30,16 +32,58 @@ import {
 } from "../lib/suiTransactions";
 import { DebugInfo } from "../components/DebugInfo";
 import { DashboardNav } from "../components/DashboardNav";
+import type { PoolOverview } from "../features/lending/types";
 
 export function PoolsPage() {
   const account = useCurrentAccount();
   const suiClient = useSuiClient();
   const { network } = useSuiClientContext();
+
+  // Fetch real pool data
+  const suiPoolData = usePoolData(CONTRACTS.testnet.SUI_MARGIN_POOL_ID);
+  const dbusdcPoolData = usePoolData(CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID);
+
+  // Create pools array with real data, fallback to synthetic if loading/error
+  const pools: PoolOverview[] = React.useMemo(() => {
+    const realPools: PoolOverview[] = [];
+
+    if (suiPoolData.data) {
+      realPools.push(suiPoolData.data);
+    } else if (!suiPoolData.isLoading && !suiPoolData.error) {
+      // Fallback to synthetic data if no real data available
+      realPools.push(syntheticPools.find((p) => p.asset === "SUI")!);
+    }
+
+    if (dbusdcPoolData.data) {
+      realPools.push(dbusdcPoolData.data);
+    } else if (!dbusdcPoolData.isLoading && !dbusdcPoolData.error) {
+      // Fallback to synthetic data if no real data available
+      realPools.push(syntheticPools.find((p) => p.asset === "USDC")!);
+    }
+
+    return realPools.length > 0 ? realPools : syntheticPools;
+  }, [
+    suiPoolData.data,
+    suiPoolData.isLoading,
+    suiPoolData.error,
+    dbusdcPoolData.data,
+    dbusdcPoolData.isLoading,
+    dbusdcPoolData.error,
+  ]);
+
   const [selectedPoolId, setSelectedPoolId] = React.useState(
     syntheticPools[0]!.id
   );
-  const selected =
-    syntheticPools.find((p) => p.id === selectedPoolId) ?? syntheticPools[0]!;
+
+  // Ensure we always have a valid selected pool
+  const selected = React.useMemo(() => {
+    return (
+      pools.find((p) => p.id === selectedPoolId) ??
+      pools[0] ??
+      syntheticPools[0]!
+    );
+  }, [pools, selectedPoolId]);
+
   const [adminOpen, setAdminOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [txStatus, setTxStatus] = React.useState<
@@ -57,10 +101,12 @@ export function PoolsPage() {
         },
       }),
   });
+
+  // Only fetch coin balance if we have a valid selected pool
   const coinBalance = useCoinBalance(
     account?.address,
-    selected.contracts.coinType,
-    selected.contracts.coinDecimals
+    selected?.contracts?.coinType,
+    selected?.contracts?.coinDecimals
   );
 
   // Get SUI balance for gas fees
@@ -68,7 +114,7 @@ export function PoolsPage() {
 
   const handleDeposit = React.useCallback(
     async (amount: number) => {
-      if (!account) return;
+      if (!account || !selected) return;
 
       // Check if user has enough SUI for gas
       const suiBalanceNum = parseFloat(suiBalance?.raw || "0") / ONE_BILLION;
@@ -174,7 +220,7 @@ export function PoolsPage() {
 
   const handleWithdraw = React.useCallback(
     async (amount: number) => {
-      if (!account) return;
+      if (!account || !selected) return;
 
       // Check if user has enough SUI for gas
       const suiBalanceNum = parseFloat(suiBalance?.raw || "0") / ONE_BILLION;
@@ -216,7 +262,7 @@ export function PoolsPage() {
   );
 
   const handleWithdrawAll = React.useCallback(async () => {
-    if (!account) return;
+    if (!account || !selected) return;
 
     // Check if user has enough SUI for gas
     const suiBalanceNum = parseFloat(suiBalance?.raw || "0") / ONE_BILLION;
@@ -252,12 +298,43 @@ export function PoolsPage() {
     }
   }, [account, selected, signAndExecute, network, suiBalance]);
 
+  // Show loading state if we're still fetching data
+  const isLoading = suiPoolData.isLoading || dbusdcPoolData.isLoading;
+  const hasError = suiPoolData.error || dbusdcPoolData.error;
+
+  // Don't render until we have a valid selected pool with all required properties
+  if (!selected || !selected.protocolConfig?.margin_pool_config) {
+    return (
+      <div className="max-w-[1400px] mx-auto pl-4 lg:pl-72 pr-4 text-white space-y-8">
+        <div className="mb-4">
+          <h1 className="text-3xl font-extrabold tracking-wide text-cyan-200 drop-shadow">
+            Available Pools
+          </h1>
+          <div className="text-sm text-cyan-100/80 mt-2">
+            Loading pool data...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1400px] mx-auto pl-4 lg:pl-72 pr-4 text-white space-y-8">
       <div className="mb-4">
         <h1 className="text-3xl font-extrabold tracking-wide text-cyan-200 drop-shadow">
           Available Pools
         </h1>
+        {isLoading && (
+          <div className="text-sm text-cyan-100/80 mt-2">
+            Loading live pool data from blockchain...
+          </div>
+        )}
+        {hasError && (
+          <div className="text-sm text-red-400 mt-2">
+            Error loading pool data:{" "}
+            {suiPoolData.error?.message || dbusdcPoolData.error?.message}
+          </div>
+        )}
       </div>
 
       <DashboardNav />
@@ -271,7 +348,7 @@ export function PoolsPage() {
               Available Pools
             </h3>
             <PoolCards
-              pools={syntheticPools}
+              pools={pools}
               selectedPoolId={selectedPoolId}
               onSelectPool={setSelectedPoolId}
               onDepositClick={(id) => setSelectedPoolId(id)}
@@ -289,12 +366,10 @@ export function PoolsPage() {
             <DepositWithdrawPanel
               asset={selected.asset}
               minBorrow={Number(
-                selected.protocolConfig.fields.margin_pool_config.fields
-                  .min_borrow
+                selected.protocolConfig?.margin_pool_config?.min_borrow || 0
               )}
               supplyCap={Number(
-                selected.protocolConfig.fields.margin_pool_config.fields
-                  .supply_cap
+                selected.protocolConfig?.margin_pool_config?.supply_cap || 0
               )}
               balance={coinBalance?.formatted}
               suiBalance={suiBalance?.formatted}
@@ -358,7 +433,9 @@ export function PoolsPage() {
             View concentration risk and top supplier positions in this pool
           </p>
         </div>
-        <DepositorDistribution poolId={selected.id} />
+        <DepositorDistribution
+          poolId={selected?.asset === "SUI" ? "0xpool_sui" : "0xpool_usdc"}
+        />
       </section>
 
       <section id="activity" className="scroll-mt-24 mb-12">
@@ -370,7 +447,9 @@ export function PoolsPage() {
             Track supply, borrow, and rate changes over time
           </p>
         </div>
-        <HistoricalActivity poolId={selected.id} />
+        <HistoricalActivity
+          poolId={selected?.asset === "SUI" ? "0xpool_sui" : "0xpool_usdc"}
+        />
       </section>
 
       <section id="fees" className="scroll-mt-24 mb-12">
@@ -382,7 +461,9 @@ export function PoolsPage() {
             Monitor protocol earnings and liquidation events
           </p>
         </div>
-        <ProtocolFees poolId={selected.id} />
+        <ProtocolFees
+          poolId={selected?.asset === "SUI" ? "0xpool_sui" : "0xpool_usdc"}
+        />
       </section>
 
       <SlidePanel
@@ -391,7 +472,9 @@ export function PoolsPage() {
         title="Pool Admin Updates"
         width={"50vw"}
       >
-        <PoolAdmin poolId={selected.id} />
+        <PoolAdmin
+          poolId={selected?.asset === "SUI" ? "0xpool_sui" : "0xpool_usdc"}
+        />
       </SlidePanel>
 
       <SlidePanel

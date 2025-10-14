@@ -5,10 +5,7 @@ import { utilizationPct } from "../../../data/synthetic/pools";
 type Props = { pool: PoolOverview };
 
 export const OverviewStrip: FC<Props> = ({ pool }) => {
-  const util = utilizationPct(
-    pool.state.fields.supply,
-    pool.state.fields.borrow
-  );
+  const util = utilizationPct(pool.state.supply, pool.state.borrow);
   return (
     <div
       className="rounded-2xl p-5 bg-white/10 border"
@@ -25,13 +22,13 @@ export const OverviewStrip: FC<Props> = ({ pool }) => {
         <div>
           <p className="text-xs text-cyan-100/70">Total Supply</p>
           <p className="text-lg font-bold text-amber-300">
-            {Number(pool.state.fields.supply).toLocaleString()}
+            {Number(pool.state.supply).toLocaleString()}
           </p>
         </div>
         <div>
           <p className="text-xs text-cyan-100/70">Total Borrow</p>
           <p className="text-lg font-bold text-amber-300">
-            {Number(pool.state.fields.borrow).toLocaleString()}
+            {Number(pool.state.borrow).toLocaleString()}
           </p>
         </div>
         <div>

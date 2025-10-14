@@ -23,10 +23,8 @@ export const PoolCards: FC<Props> = ({
   };
   const getIcon = (asset: string) => ICONS[asset] || "";
   const p = pools.find((x) => x.id === selectedPoolId) ?? pools[0]!;
-  const supplyCap = Number(
-    p.protocolConfig.fields.margin_pool_config.fields.supply_cap
-  );
-  const supply = Number(p.state.fields.supply);
+  const supplyCap = Number(p.protocolConfig.margin_pool_config.supply_cap);
+  const supply = Number(p.state.supply);
   const capPct = Math.min(
     100,
     Math.round((supply / Math.max(1, supplyCap)) * 100)
@@ -91,7 +89,7 @@ export const PoolCards: FC<Props> = ({
               <span title="Total assets supplied to the pool.">ⓘ</span>
             </div>
             <div className="text-lg md:text-xl lg:text-2xl font-extrabold text-white leading-tight tabular-nums">
-              {formatNumber(p.state.fields.supply)}
+              {formatNumber(p.state.supply)}
             </div>
             <div className="text-[11px] text-indigo-200/70 mt-1">
               {formatNumber(supply)} / {formatNumber(supplyCap)} max
@@ -116,7 +114,7 @@ export const PoolCards: FC<Props> = ({
               <span title="Total assets borrowed from the pool.">ⓘ</span>
             </div>
             <div className="text-lg md:text-xl lg:text-2xl font-extrabold text-white leading-tight tabular-nums">
-              {formatNumber(p.state.fields.borrow)}
+              {formatNumber(p.state.borrow)}
             </div>
             <div className="h-1" />
           </div>
@@ -133,7 +131,7 @@ export const PoolCards: FC<Props> = ({
               <span title="Borrow / Supply, indicates pool usage.">ⓘ</span>
             </div>
             <div className="text-lg md:text-xl lg:text-2xl font-extrabold text-cyan-300 leading-tight tabular-nums">
-              {utilizationPct(p.state.fields.supply, p.state.fields.borrow)}%
+              {p.state.supply / p.state.borrow}%
             </div>
             <div className="h-1" />
           </div>

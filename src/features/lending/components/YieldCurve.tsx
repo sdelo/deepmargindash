@@ -16,32 +16,122 @@ import { utilizationPct } from "../../../data/synthetic/pools";
 
 type Props = { pool: PoolOverview };
 
-function toPercent(value: bigint) {
-  return Number(value) / 100; // 100 = basis points with 2 decimals
-}
-
 export const YieldCurve: FC<Props> = ({ pool }) => {
-  const ic = pool.protocolConfig.fields.interest_config.fields;
-  const mc = pool.protocolConfig.fields.margin_pool_config.fields;
+  // Basic error handling for malformed data
+  const componentId = Math.random().toString(36).substr(2, 9);
+  console.log(`[${componentId}] YieldCurve rendering with pool:`, pool);
+  if (
+    !pool?.protocolConfig?.interest_config ||
+    !pool?.protocolConfig?.margin_pool_config ||
+    !pool?.state
+  ) {
+    return (
+      <div className="relative card-surface border border-white/10 text-white">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+            Yield & Interest
+          </h2>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent my-4"></div>
+        <div className="text-center py-8 text-red-400">
+          Error: Invalid pool data structure
+        </div>
+      </div>
+    );
+  }
 
-  const utilPct = utilizationPct(
-    pool.state.fields.supply,
-    pool.state.fields.borrow
-  ); // 0..100
+  const ic = pool.protocolConfig.interest_config;
+  const mc = pool.protocolConfig.margin_pool_config;
+
+  const utilPct = utilizationPct(pool.state.supply, pool.state.borrow); // 0..100
   const u = utilPct / 100; // 0..1
 
-  const baseRate = toPercent(ic.base_rate); // %
-  const baseSlope = toPercent(ic.base_slope); // % per utilization
-  const optimalPct = toPercent(ic.optimal_utilization); // % (e.g., 70)
-  const optimalU = optimalPct / 100; // 0..1
-  const excessSlope = toPercent(ic.excess_slope); // % per utilization over optimal
-  const spreadPct = toPercent(mc.protocol_spread); // %
+  const baseRate = ic.base_rate; // decimal (e.g., 0.02 for 2%)
+  const baseSlope = ic.base_slope; // decimal per utilization
+  const optimalU = ic.optimal_utilization; // decimal (e.g., 0.7 for 70%)
+  const excessSlope = ic.excess_slope; // decimal per utilization over optimal
+  const spreadPct = mc.protocol_spread; // decimal (e.g., 0.015 for 1.5%)
+
+  // Debug logging for interest rate calculations
+  console.group(`🔍 YieldCurve Debug Info [${componentId}]`);
+  console.log("📊 Raw Config Values:");
+  console.log("  baseRate:", baseRate, "(should be decimal like 0.02 for 2%)");
+  console.log(
+    "  baseSlope:",
+    baseSlope,
+    "(should be decimal like 0.001 for 0.1%)"
+  );
+  console.log("  optimalU:", optimalU, "(should be decimal like 0.7 for 70%)");
+  console.log(
+    "  excessSlope:",
+    excessSlope,
+    "(should be decimal like 0.03 for 3%)"
+  );
+  console.log(
+    "  spreadPct:",
+    spreadPct,
+    "(should be decimal like 0.015 for 1.5%)"
+  );
+
+  console.log("📈 Utilization Values:");
+  console.log("  utilPct:", utilPct, "(utilization percentage 0-100)");
+  console.log("  u:", u, "(utilization decimal 0-1)");
+  console.log("  optimalU:", optimalU, "(optimal utilization decimal)");
+
+  console.log("🧮 Interest Rate Calculations:");
+  const isBelowOptimal = u <= optimalU;
+  console.log("  isBelowOptimal:", isBelowOptimal, "(u <= optimalU)");
 
   const borrowApr =
     u <= optimalU
       ? baseRate + baseSlope * u
       : baseRate + baseSlope * optimalU + excessSlope * (u - optimalU);
-  const supplyApr = borrowApr * u * (1 - spreadPct / 100);
+
+  console.log("  borrowApr calculation:");
+  if (isBelowOptimal) {
+    console.log("    Using formula: baseRate + baseSlope * u");
+    console.log("    =", baseRate, "+", baseSlope, "*", u);
+    console.log("    =", baseRate, "+", baseSlope * u);
+    console.log("    =", borrowApr);
+  } else {
+    console.log(
+      "    Using formula: baseRate + baseSlope * optimalU + excessSlope * (u - optimalU)"
+    );
+    console.log(
+      "    =",
+      baseRate,
+      "+",
+      baseSlope,
+      "*",
+      optimalU,
+      "+",
+      excessSlope,
+      "*",
+      u - optimalU
+    );
+    console.log(
+      "    =",
+      baseRate,
+      "+",
+      baseSlope * optimalU,
+      "+",
+      excessSlope * (u - optimalU)
+    );
+    console.log("    =", borrowApr);
+  }
+
+  const supplyApr = borrowApr * u * (1 - spreadPct);
+  console.log("  supplyApr calculation:");
+  console.log("    = borrowApr * u * (1 - spreadPct)");
+  console.log("    =", borrowApr, "*", u, "* (1 -", spreadPct, ")");
+  console.log("    =", borrowApr, "*", u, "*", 1 - spreadPct);
+  console.log("    =", supplyApr);
+
+  console.log("📋 Final Results:");
+  console.log("  Supply APR:", supplyApr.toFixed(4) + "%");
+  console.log("  Borrow APR:", borrowApr.toFixed(4) + "%");
+  console.log("  Utilization:", utilPct.toFixed(2) + "%");
+  console.groupEnd();
 
   // Build data points to draw the piecewise linear curve in Recharts
   const steps = 16;
@@ -78,7 +168,17 @@ export const YieldCurve: FC<Props> = ({ pool }) => {
         >
           <div className="text-sm text-cyan-100/80">Supply APR</div>
           <div className="text-3xl font-extrabold">
-            {supplyApr.toFixed(1)}
+            {(() => {
+              console.log(
+                `[${componentId}] Display supplyApr:`,
+                supplyApr,
+                "type:",
+                typeof supplyApr
+              );
+              return supplyApr < 0.01
+                ? supplyApr.toFixed(4)
+                : supplyApr.toFixed(1);
+            })()}
             <span className="text-xl">%</span>
           </div>
           <div className="text-[11px] text-cyan-100/60">
@@ -94,7 +194,17 @@ export const YieldCurve: FC<Props> = ({ pool }) => {
         >
           <div className="text-sm text-cyan-100/80">Borrow APR</div>
           <div className="text-3xl font-extrabold">
-            {borrowApr.toFixed(1)}
+            {(() => {
+              console.log(
+                `[${componentId}] Display borrowApr:`,
+                borrowApr,
+                "type:",
+                typeof borrowApr
+              );
+              return borrowApr < 0.01
+                ? borrowApr.toFixed(4)
+                : borrowApr.toFixed(1);
+            })()}
             <span className="text-xl">%</span>
           </div>
           <div className="text-[11px] text-cyan-100/60">what borrowers pay</div>
@@ -201,7 +311,7 @@ export const YieldCurve: FC<Props> = ({ pool }) => {
         >
           <div className="text-xs text-cyan-100/80 mb-1">base_rate</div>
           <div className="text-lg font-bold text-amber-300">
-            {baseRate.toFixed(1)}%
+            {(baseRate * 100).toFixed(1)}%
           </div>
         </div>
         <div
@@ -213,7 +323,7 @@ export const YieldCurve: FC<Props> = ({ pool }) => {
         >
           <div className="text-xs text-cyan-100/80 mb-1">base_slope</div>
           <div className="text-lg font-bold text-amber-300">
-            {baseSlope.toFixed(1)}%
+            {(baseSlope * 100).toFixed(1)}%
           </div>
         </div>
         <div
@@ -227,7 +337,7 @@ export const YieldCurve: FC<Props> = ({ pool }) => {
             optimal_utilization
           </div>
           <div className="text-lg font-bold text-amber-300">
-            {optimalPct.toFixed(0)}%
+            {(optimalU * 100).toFixed(0)}%
           </div>
         </div>
         <div
@@ -239,7 +349,7 @@ export const YieldCurve: FC<Props> = ({ pool }) => {
         >
           <div className="text-xs text-cyan-100/80 mb-1">excess_slope</div>
           <div className="text-lg font-bold text-amber-300">
-            {excessSlope.toFixed(1)}%
+            {(excessSlope * 100).toFixed(1)}%
           </div>
         </div>
       </div>

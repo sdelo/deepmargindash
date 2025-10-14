@@ -1,37 +1,33 @@
 export type PoolAssetSymbol = 'USDC' | 'SUI';
 
 export type StateFields = {
-  supply: bigint;
-  borrow: bigint;
-  supply_shares: bigint;
-  borrow_shares: bigint;
-  last_update_timestamp: bigint;
+  supply: number;
+  borrow: number;
+  supply_shares: number;
+  borrow_shares: number;
+  last_update_timestamp: number;
 };
 
 export type ProtocolConfigFields = {
   margin_pool_config: {
-    fields: {
-      supply_cap: bigint;
-      max_utilization_rate: bigint;
-      protocol_spread: bigint;
-      min_borrow: bigint;
-    };
+    supply_cap: number;
+    max_utilization_rate: number;
+    protocol_spread: number;
+    min_borrow: number;
   };
   interest_config: {
-    fields: {
-      base_rate: bigint;
-      base_slope: bigint;
-      optimal_utilization: bigint;
-      excess_slope: bigint;
-    };
+    base_rate: number;
+    base_slope: number;
+    optimal_utilization: number;
+    excess_slope: number;
   };
 };
 
 export type PoolOverview = {
   id: string;
   asset: PoolAssetSymbol;
-  state: { fields: StateFields };
-  protocolConfig: { fields: ProtocolConfigFields };
+  state: StateFields;
+  protocolConfig: ProtocolConfigFields;
   contracts: {
     registryId: string;
     marginPoolId: string;
@@ -52,7 +48,7 @@ export type PoolOverview = {
 export type UserPosition = {
   address: string;
   asset: PoolAssetSymbol;
-  shares: bigint;
+  shares: number;
   balanceFormatted: string;
 };
 

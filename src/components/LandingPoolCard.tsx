@@ -14,15 +14,10 @@ const ICONS: Record<string, string> = {
 
 export function LandingPoolCard({ pool }: LandingPoolCardProps) {
   const getIcon = (asset: string) => ICONS[asset] || "";
-  const supply = Number(pool.state.fields.supply);
-  const borrow = Number(pool.state.fields.borrow);
-  const utilization = utilizationPct(
-    pool.state.fields.supply,
-    pool.state.fields.borrow
-  );
-  const supplyCap = Number(
-    pool.protocolConfig.fields.margin_pool_config.fields.supply_cap
-  );
+  const supply = Number(pool.state.supply);
+  const borrow = Number(pool.state.borrow);
+  const utilization = utilizationPct(pool.state.supply, pool.state.borrow);
+  const supplyCap = Number(pool.protocolConfig.margin_pool_config.supply_cap);
   const capPct = Math.min(
     100,
     Math.round((supply / Math.max(1, supplyCap)) * 100)
