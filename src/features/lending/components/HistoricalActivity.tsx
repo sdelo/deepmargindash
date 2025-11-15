@@ -3,7 +3,6 @@ import React from "react";
 import {
   AreaChart,
   Area,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -12,42 +11,101 @@ import {
   ReferenceLine,
   Legend,
 } from "recharts";
-import { historicalByPool } from "../../../data/synthetic/metrics";
+import { useSupplyWithdrawEvents } from "../hooks/useEvents";
+import { useInterestRateHistory } from "../hooks/useEvents";
+import type { TimeRange } from "../api/types";
 
 type Props = { poolId: string };
 
 export const HistoricalActivity: FC<Props> = ({ poolId }) => {
-  const data = historicalByPool[poolId];
-  if (!data) return null;
-
-  type RangeKey = "1W" | "1M" | "3M" | "YTD";
+  type RangeKey = "1W" | "1M" | "3M" | "YTD" | "ALL";
   const [range, setRange] = React.useState<RangeKey>("1M");
 
-  const { filteredPoints, startIndex, filteredRateChanges } =
-    React.useMemo(() => {
-      const total = data.points.length;
-      const windowSize = (rk: RangeKey) => {
-        switch (rk) {
-          case "1W":
-            return Math.min(6, total);
-          case "1M":
-            return Math.min(12, total);
-          case "3M":
-            return total;
-          case "YTD":
-            return total;
-        }
-      };
-      const count = windowSize(range);
-      const start = Math.max(0, total - count);
-      const pts = data.points.slice(start);
-      const rc = data.rateChanges.filter((r) => r.t >= start);
-      return {
-        filteredPoints: pts,
-        startIndex: start,
-        filteredRateChanges: rc,
-      };
-    }, [data.points, data.rateChanges, range]);
+  // Fetch real event data
+  const supplyWithdrawEvents = useSupplyWithdrawEvents(poolId, undefined, range as TimeRange);
+  const interestRateHistory = useInterestRateHistory(poolId, range as TimeRange);
+
+  // Prepare chart data from real events
+  const chartData = React.useMemo(() => {
+    if (!supplyWithdrawEvents.aggregated) return [];
+
+    return supplyWithdrawEvents.aggregated.map((point, idx) => ({
+      time: new Date(point.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      timeIndex: idx,
+      supply: point.supply,
+      borrow: point.borrow,
+    }));
+  }, [supplyWithdrawEvents.aggregated]);
+
+  // Prepare rate change markers
+  const rateChangeMarkers = React.useMemo(() => {
+    if (!interestRateHistory.transformed || !supplyWithdrawEvents.aggregated) return [];
+
+    return interestRateHistory.transformed.map((rateChange) => {
+      // Find the closest data point index for this timestamp
+      const closestIndex = supplyWithdrawEvents.aggregated!.findIndex(
+        (point) => point.timestamp >= rateChange.timestamp
+      );
+      return closestIndex >= 0 ? closestIndex : null;
+    }).filter((idx): idx is number => idx !== null);
+  }, [interestRateHistory.transformed, supplyWithdrawEvents.aggregated]);
+
+  // Loading state
+  if (supplyWithdrawEvents.isLoading || interestRateHistory.isLoading) {
+    return (
+      <div className="relative card-surface border border-white/10 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+              Historical Pool Activity
+            </h2>
+          </div>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-6"></div>
+        <div className="rounded-2xl p-5 bg-white/5 border flex items-center justify-center h-[300px]">
+          <div className="text-cyan-100/80">Loading historical data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (supplyWithdrawEvents.error || interestRateHistory.error) {
+    return (
+      <div className="relative card-surface border border-white/10 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+              Historical Pool Activity
+            </h2>
+          </div>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-6"></div>
+        <div className="rounded-2xl p-5 bg-white/5 border flex items-center justify-center h-[300px]">
+          <div className="text-red-400">Error loading historical data. Please try again.</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className="relative card-surface border border-white/10 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+              Historical Pool Activity
+            </h2>
+          </div>
+        </div>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-6"></div>
+        <div className="rounded-2xl p-5 bg-white/5 border flex items-center justify-center h-[300px]">
+          <div className="text-cyan-100/80">No historical data available for the selected time range.</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative card-surface border border-white/10 text-white">
@@ -60,11 +118,11 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
         <div className="flex items-center gap-3">
           <span className="text-xs text-cyan-100/80">Range</span>
           <div className="rounded-xl bg-white/10 border border-cyan-300/30 overflow-hidden">
-            {(["1W", "1M", "3M", "YTD"] as RangeKey[]).map((rk) => (
+            {(["1W", "1M", "3M", "YTD", "ALL"] as RangeKey[]).map((rk) => (
               <button
                 key={rk}
                 onClick={() => setRange(rk)}
-                className={`px-3 py-1 ${
+                className={`px-3 py-1 transition-all ${
                   range === rk
                     ? "bg-gradient-to-r from-cyan-400/20 to-blue-600/20 text-white border-l border-cyan-300/30"
                     : "text-cyan-100/80 hover:text-white"
@@ -87,11 +145,7 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
       >
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart
-            data={filteredPoints.map((point, idx) => ({
-              time: `T${startIndex + idx}`,
-              supply: point.supply,
-              borrow: point.borrow,
-            }))}
+            data={chartData}
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
           >
             <defs>
@@ -147,15 +201,19 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
             />
 
             {/* Rate change vertical markers */}
-            {filteredRateChanges.map((r, i) => (
-              <ReferenceLine
-                key={`rc-${i}`}
-                x={`T${r.t}`}
-                stroke="var(--color-rose-400)"
-                strokeOpacity={0.9}
-                strokeWidth={2}
-              />
-            ))}
+            {rateChangeMarkers.map((idx, i) => {
+              const dataPoint = chartData[idx];
+              if (!dataPoint) return null;
+              return (
+                <ReferenceLine
+                  key={`rc-${i}`}
+                  x={dataPoint.time}
+                  stroke="var(--color-rose-400)"
+                  strokeOpacity={0.9}
+                  strokeWidth={2}
+                />
+              );
+            })}
 
             <Legend
               align="left"

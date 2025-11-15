@@ -33,14 +33,14 @@ export const PoolCards: FC<Props> = ({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
       {/* Pool Selection Navigation */}
-      <div className="mb-8 px-2">
+      <div className="mb-8 px-2 relative z-20">
         <div className="text-lg font-bold text-cyan-200 mb-6 flex items-center gap-3">
           <span className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
           Select Pool
         </div>
-        <div className="flex items-center gap-6 pr-6">
+        <div className="flex items-center gap-6 pr-6 relative z-20">
           {pools.map((pool) => (
             <button
               key={pool.id}

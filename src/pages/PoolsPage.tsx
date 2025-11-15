@@ -349,8 +349,8 @@ export function PoolsPage() {
 
       {/* Primary Action Zone */}
       <section id="pools-deposit" className="scroll-mt-24">
-        <div className="grid md:grid-cols-3 gap-6 items-stretch mb-12">
-          <div className="space-y-6">
+        <div className="grid md:grid-cols-3 gap-6 items-start mb-12">
+          <div className="space-y-6 relative z-10">
             <h3 className="text-xl font-bold text-amber-300 flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
               Available Pools
@@ -366,7 +366,7 @@ export function PoolsPage() {
               }}
             />
           </div>
-          <div>
+          <div className="relative z-0">
             <h3 className="text-xl font-bold text-cyan-300 flex items-center gap-2 mb-4">
               <span className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
               Deposit & Withdraw
@@ -388,7 +388,7 @@ export function PoolsPage() {
               txError={txError}
             />
           </div>
-          <div>
+          <div className="relative z-10">
             <h3 className="text-xl font-bold text-indigo-300 flex items-center gap-2 mb-4">
               <span className="w-3 h-3 rounded-full bg-indigo-400 animate-pulse"></span>
               Your Positions

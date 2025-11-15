@@ -50,7 +50,7 @@ export const DepositWithdrawPanel: FC<Props> = ({
   }, [assetBalanceNum]);
 
   return (
-    <div className="w-full h-full card-surface card-ring glow-amber glow-cyan animate-pulse-glow p-5 flex flex-col">
+    <div className="w-full card-surface card-ring glow-amber glow-cyan animate-pulse-glow p-5 flex flex-col relative">
       <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 mb-3 text-center drop-shadow">
         Leviathan Margin Pool
       </h2>
