@@ -14,7 +14,6 @@ type DepositOptions = {
   referralId?: string;
   poolType: string;
   suiClient: SuiClient;
-  decimals: number; // Asset decimals (9 for SUI, 6 for DBUSDC)
 };
 
 type WithdrawOptions = {
@@ -32,7 +31,6 @@ type WithdrawAmountOptions = {
   poolType: string;
   owner: string;
   suiClient: SuiClient;
-  decimals: number; // Asset decimals (9 for SUI, 6 for DBUSDC)
 };
 
 export async function buildDepositTransaction({
@@ -44,15 +42,9 @@ export async function buildDepositTransaction({
   referralId,
   poolType,
   suiClient,
-  decimals,
 }: DepositOptions) {
   const tx = new Transaction();
   tx.setSender(owner);
-
-  // Validate amount is positive
-  if (amount <= 0n) {
-    throw new Error("Deposit amount must be greater than 0");
-  }
 
   // Get coins for the asset we're depositing
   const coins: PaginatedCoins = await suiClient.getCoins({
@@ -62,45 +54,36 @@ export async function buildDepositTransaction({
   });
 
   if (!coins.data.length) {
-    throw new Error(`No ${coinType} coins available to deposit`);
+    throw new Error("No available balance to deposit");
   }
-
-  // Calculate total balance
-  const totalBalance = coins.data.reduce((sum, coin) => sum + BigInt(coin.balance), 0n);
 
   let coinForDeposit;
 
-  // For SUI deposits, need to ensure we have enough for both deposit AND gas
+  // For SUI deposits, pick a specific SUI coin (not the gas coin)
   if (coinType === "0x2::sui::SUI") {
-    const gasAmount = BigInt(GAS_AMOUNT_MIST); // 0.2 SUI for gas
-    const totalNeeded = amount + gasAmount;
+    const suiCoins = await suiClient.getCoins({
+      owner,
+      coinType: "0x2::sui::SUI",
+      limit: 200,
+    });
     
-    if (totalBalance < totalNeeded) {
-      const totalBalanceFormatted = Number(totalBalance) / ONE_BILLION;
-      const totalNeededFormatted = Number(totalNeeded) / ONE_BILLION;
-      const amountFormatted = Number(amount) / ONE_BILLION;
-      throw new Error(
-        `Insufficient SUI balance. Need ${totalNeededFormatted.toFixed(4)} SUI ` +
-        `(${amountFormatted.toFixed(4)} for deposit + 0.2 for gas) but have ${totalBalanceFormatted.toFixed(4)} SUI.`
-      );
+    // Calculate total SUI balance
+    const totalSuiBalance = suiCoins.data.reduce((sum, coin) => sum + BigInt(coin.balance), 0n);
+    const gasAmount = BigInt(GAS_AMOUNT_MIST); // 0.2 SUI for gas
+    const depositAmount = amount;
+    const totalNeeded = depositAmount + gasAmount;
+    
+    if (totalSuiBalance < totalNeeded) {
+      throw new Error(`Insufficient SUI balance. Need ${Number(totalNeeded) / ONE_BILLION} SUI but have ${Number(totalSuiBalance) / ONE_BILLION} SUI.`);
     }
     
-    // Find a coin large enough for the deposit amount, or use the first coin
-    const depositCoin = coins.data.find(c => BigInt(c.balance) >= amount) ?? coins.data[0];
+    // Choose a coin big enough for the deposit, or use the first available
+    const depositCoin = suiCoins.data.find(c => BigInt(c.balance) >= amount) ?? suiCoins.data[0];
     
     const source = tx.object(depositCoin.coinObjectId);
     [coinForDeposit] = tx.splitCoins(source, [amount]);
   } else {
-    // For non-SUI deposits, just check we have enough of the asset
-    if (totalBalance < amount) {
-      const totalBalanceFormatted = Number(totalBalance) / (10 ** decimals);
-      const amountFormatted = Number(amount) / (10 ** decimals);
-      throw new Error(
-        `Insufficient balance. Need ${amountFormatted.toFixed(decimals)} but have ${totalBalanceFormatted.toFixed(decimals)}.`
-      );
-    }
-    
-    // Split from the first coin (or merge if needed)
+    // For non-SUI deposits, split from the specific coin
     const source = tx.object(coins.data[0].coinObjectId);
     [coinForDeposit] = tx.splitCoins(source, [amount]);
   }
@@ -122,35 +105,40 @@ export async function buildDepositTransaction({
   // Set gas budget to 0.5 SUI
   tx.setGasBudget(500_000_000n);
 
-  // Explicitly set gas payment
-  const suiCoins = await suiClient.getCoins({
-    owner,
-    coinType: "0x2::sui::SUI",
-    limit: 200,
-  });
-  
-  if (suiCoins.data.length === 0) {
-    throw new Error("No SUI available for gas payment");
-  }
-
-  // For SUI deposits, try to use a different coin for gas
+  // Explicitly set gas payment for SUI deposits
   if (coinType === "0x2::sui::SUI") {
-    const depositCoin = coins.data.find(c => BigInt(c.balance) >= amount) ?? coins.data[0];
+    const suiCoins = await suiClient.getCoins({
+      owner,
+      coinType: "0x2::sui::SUI",
+      limit: 200,
+    });
+    
+    // Find a different coin for gas payment (not the one used for deposit)
+    const depositCoin = suiCoins.data.find(c => BigInt(c.balance) >= amount) ?? suiCoins.data[0];
     const gasCoin = suiCoins.data.find(c => c.coinObjectId !== depositCoin.coinObjectId) ?? suiCoins.data[0];
     
+    // Set explicit gas payment
     tx.setGasPayment([{
       objectId: gasCoin.coinObjectId,
       version: gasCoin.version,
       digest: gasCoin.digest,
     }]);
   } else {
-    // For non-SUI deposits, use the first SUI coin for gas
-    const gasCoin = suiCoins.data[0];
-    tx.setGasPayment([{
-      objectId: gasCoin.coinObjectId,
-      version: gasCoin.version,
-      digest: gasCoin.digest,
-    }]);
+    // For non-SUI deposits, get SUI coins for gas
+    const suiCoins = await suiClient.getCoins({
+      owner,
+      coinType: "0x2::sui::SUI",
+      limit: 200,
+    });
+    
+    if (suiCoins.data.length > 0) {
+      const gasCoin = suiCoins.data[0];
+      tx.setGasPayment([{
+        objectId: gasCoin.coinObjectId,
+        version: gasCoin.version,
+        digest: gasCoin.digest,
+      }]);
+    }
   }
 
   return tx;
@@ -163,17 +151,10 @@ export async function buildWithdrawTransaction({
   poolType,
   owner,
   suiClient,
-  decimals,
 }: WithdrawAmountOptions) {
   const tx = new Transaction();
   tx.setSender(owner);
 
-  // Validate amount is positive
-  if (amount <= 0n) {
-    throw new Error("Withdraw amount must be greater than 0");
-  }
-
-  // Call withdraw function with specific amount
   const [withdrawnCoin] = withdraw({
     arguments: {
       self: poolId,
@@ -196,16 +177,14 @@ export async function buildWithdrawTransaction({
     limit: 200,
   });
   
-  if (suiCoins.data.length === 0) {
-    throw new Error("No SUI available for gas payment");
+  if (suiCoins.data.length > 0) {
+    const gasCoin = suiCoins.data[0];
+    tx.setGasPayment([{
+      objectId: gasCoin.coinObjectId,
+      version: gasCoin.version,
+      digest: gasCoin.digest,
+    }]);
   }
-
-  const gasCoin = suiCoins.data[0];
-  tx.setGasPayment([{
-    objectId: gasCoin.coinObjectId,
-    version: gasCoin.version,
-    digest: gasCoin.digest,
-  }]);
 
   return tx;
 }
@@ -220,7 +199,6 @@ export async function buildWithdrawAllTransaction({
   const tx = new Transaction();
   tx.setSender(owner);
 
-  // Call withdraw function with null amount (withdraw all)
   const [withdrawnCoin] = withdraw({
     arguments: {
       self: poolId,
@@ -243,16 +221,14 @@ export async function buildWithdrawAllTransaction({
     limit: 200,
   });
   
-  if (suiCoins.data.length === 0) {
-    throw new Error("No SUI available for gas payment");
+  if (suiCoins.data.length > 0) {
+    const gasCoin = suiCoins.data[0];
+    tx.setGasPayment([{
+      objectId: gasCoin.coinObjectId,
+      version: gasCoin.version,
+      digest: gasCoin.digest,
+    }]);
   }
-
-  const gasCoin = suiCoins.data[0];
-  tx.setGasPayment([{
-    objectId: gasCoin.coinObjectId,
-    version: gasCoin.version,
-    digest: gasCoin.digest,
-  }]);
 
   return tx;
 }

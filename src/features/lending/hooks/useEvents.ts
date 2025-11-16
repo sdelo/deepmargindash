@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { timeRangeToParams, DEFAULT_TIME_RANGE } from '../api/types';
+import { timeRangeToParams } from '../api/types';
 import type { QueryParams, TimeRange } from '../api/types';
 import {
   fetchLoanBorrowed,
@@ -31,7 +31,7 @@ export function useLoanEvents(
   const params: QueryParams = {
     margin_pool_id: poolId,
     margin_manager_id: managerId,
-    ...timeRangeToParams(timeRange), // Now defaults to 1 year
+    ...(timeRange ? timeRangeToParams(timeRange) : {}),
   };
 
   const borrowedQuery = useQuery({
@@ -81,7 +81,7 @@ export function useLiquidationEvents(
   const params: QueryParams = {
     margin_pool_id: poolId,
     margin_manager_id: managerId,
-    ...timeRangeToParams(timeRange), // Now defaults to 1 year
+    ...(timeRange ? timeRangeToParams(timeRange) : {}),
   };
 
   return useQuery({
@@ -103,7 +103,7 @@ export function useSupplyWithdrawEvents(
   const params: QueryParams = {
     margin_pool_id: poolId,
     supplier: userAddress,
-    ...timeRangeToParams(timeRange), // Now defaults to 1 year
+    ...(timeRange ? timeRangeToParams(timeRange) : {}),
   };
 
   const suppliedQuery = useQuery({
@@ -156,7 +156,7 @@ export function useInterestRateHistory(
 ) {
   const params: QueryParams = {
     margin_pool_id: poolId,
-    ...timeRangeToParams(timeRange), // Now defaults to 1 year
+    ...(timeRange ? timeRangeToParams(timeRange) : {}),
   };
 
   const query = useQuery({
@@ -187,7 +187,7 @@ export function usePoolConfigHistory(
 ) {
   const params: QueryParams = {
     margin_pool_id: poolId,
-    ...timeRangeToParams(timeRange), // Now defaults to 1 year
+    ...(timeRange ? timeRangeToParams(timeRange) : {}),
   };
 
   return useQuery({

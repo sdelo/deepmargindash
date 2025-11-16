@@ -14,7 +14,7 @@ interface TimeRangeSelectorProps {
 export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
   value,
   onChange,
-  options = ['1W', '1M', '3M', '1Y', 'YTD', 'ALL'],
+  options = ['1W', '1M', '3M', 'YTD', 'ALL'],
   className = '',
 }) => {
   return (

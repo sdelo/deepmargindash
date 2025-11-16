@@ -41,7 +41,7 @@ export function useUserActivity(
   const params: QueryParams = {
     margin_pool_id: poolId,
     supplier: userAddress,
-    ...timeRangeToParams(timeRange), // Always includes default time range
+    ...(timeRange ? timeRangeToParams(timeRange) : {}),
   };
 
   const suppliedQuery = useQuery({
