@@ -50,17 +50,23 @@ export const DepositWithdrawPanel: FC<Props> = ({
   }, [assetBalanceNum]);
 
   return (
-    <div className="w-full card-surface card-ring glow-amber glow-cyan animate-pulse-glow p-5 flex flex-col relative">
-      <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 mb-3 text-center drop-shadow">
-        Leviathan Margin Pool
-      </h2>
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent"></div>
+    <div className="w-full card-surface card-ring glow-amber glow-cyan animate-pulse-glow p-8 flex flex-col relative min-h-[600px]">
+      <div className="mb-6">
+        <h2 className="text-3xl font-extrabold tracking-wide text-amber-300 mb-2 flex items-center gap-3">
+          <span className="w-4 h-4 rounded-full bg-amber-400 animate-pulse shadow-[0_0_20px_4px_rgba(251,191,36,0.6)]"></span>
+          Leviathan Margin Pool
+        </h2>
+        <p className="text-sm text-cyan-100/70">
+          Deposit or withdraw from the {asset} margin pool
+        </p>
+      </div>
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-6"></div>
 
-      <div className="flex items-center gap-2 justify-center">
+      <div className="flex items-center gap-3 justify-center mb-6">
         <button
-          className={`pill px-4 py-2 flex-1 max-w-[220px] ${
+          className={`pill px-8 py-3.5 text-lg flex-1 max-w-[280px] ${
             tab === "deposit"
-              ? "ring-2 ring-cyan-300 bg-gradient-to-r from-cyan-300/20 to-indigo-500/20 text-white"
+              ? "ring-2 ring-cyan-300 bg-gradient-to-r from-cyan-300/20 to-indigo-500/20 text-white font-bold"
               : "text-indigo-100/80"
           }`}
           onClick={() => setTab("deposit")}
@@ -68,9 +74,9 @@ export const DepositWithdrawPanel: FC<Props> = ({
           Deposit
         </button>
         <button
-          className={`pill px-4 py-2 flex-1 max-w-[220px] ${
+          className={`pill px-8 py-3.5 text-lg flex-1 max-w-[280px] ${
             tab === "withdraw"
-              ? "ring-2 ring-cyan-300 bg-gradient-to-r from-cyan-300/20 to-indigo-500/20 text-white"
+              ? "ring-2 ring-cyan-300 bg-gradient-to-r from-cyan-300/20 to-indigo-500/20 text-white font-bold"
               : "text-indigo-100/80"
           }`}
           onClick={() => setTab("withdraw")}
@@ -81,11 +87,11 @@ export const DepositWithdrawPanel: FC<Props> = ({
 
       {/* Deposit */}
       <div className={`flex-1 ${tab === "deposit" ? "block" : "hidden"}`}>
-        <h3 className="text-lg font-semibold text-cyan-200 mb-2 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_12px_2px_rgba(251,191,36,0.6)]"></span>
+        <h3 className="text-xl font-semibold text-cyan-200 mb-4 flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_12px_2px_rgba(251,191,36,0.6)]"></span>
           Deposit
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-5">
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -93,17 +99,17 @@ export const DepositWithdrawPanel: FC<Props> = ({
               max={assetBalanceNum}
               step="0.000001"
               placeholder={`Enter ${asset} amount`}
-              className="input-surface flex-1"
+              className="input-surface flex-1 text-lg px-5 py-4"
               id="deposit-amount"
             />
           </div>
-          <div className="flex items-center justify-between text-xs text-indigo-200/80">
+          <div className="flex items-center justify-between text-sm text-indigo-200/80">
             <span>Quick %</span>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {([25, 50, 75, 100] as const).map((p) => (
                 <button
                   key={p}
-                  className="pill"
+                  className="pill px-5 py-2.5 text-base hover:scale-105 transition-transform"
                   onClick={() => {
                     const el = document.getElementById(
                       "deposit-amount"
@@ -126,20 +132,20 @@ export const DepositWithdrawPanel: FC<Props> = ({
 
           {/* Balance Information for Deposit */}
           {balance && (
-            <p className="text-xs text-cyan-100/80">
+            <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
               Available {asset}:{" "}
-              <span className="text-amber-300">{roundedAssetBalance}</span>
+              <span className="text-amber-300 font-bold">{roundedAssetBalance}</span>
             </p>
           )}
 
-          <p className="text-xs text-cyan-100/80">
-            Min Borrow: <span className="text-amber-300">{minBorrow}</span> ·
+          <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
+            Min Borrow: <span className="text-amber-300 font-semibold">{minBorrow}</span> ·
             Supply Cap:{" "}
-            <span className="text-amber-300">{supplyCap.toLocaleString()}</span>
+            <span className="text-amber-300 font-semibold">{supplyCap.toLocaleString()}</span>
           </p>
           {account ? (
             <button
-              className={`btn-primary ${
+              className={`btn-primary text-lg py-4 ${
                 txStatus === "pending"
                   ? "opacity-50 cursor-not-allowed"
                   : "animate-[pulse_2.2s_ease-in-out_infinite] hover:opacity-95"
@@ -157,7 +163,7 @@ export const DepositWithdrawPanel: FC<Props> = ({
                 onDeposit?.(v);
               }}
             >
-              <span className="relative z-10">
+              <span className="relative z-10 font-bold">
                 {txStatus === "pending"
                   ? "Depositing..."
                   : suiBalanceNum < 0.01
@@ -172,9 +178,9 @@ export const DepositWithdrawPanel: FC<Props> = ({
               trigger={
                 <button
                   onClick={() => setConnectOpen(true)}
-                  className="btn-primary hover:opacity-95"
+                  className="btn-primary text-lg py-4 hover:opacity-95"
                 >
-                  <span className="relative z-10">Connect Wallet</span>
+                  <span className="relative z-10 font-bold">Connect Wallet</span>
                 </button>
               }
             />
@@ -184,11 +190,11 @@ export const DepositWithdrawPanel: FC<Props> = ({
 
       {/* Withdraw */}
       <div className={`flex-1 ${tab === "withdraw" ? "block" : "hidden"}`}>
-        <h3 className="text-lg font-semibold text-cyan-200 mb-2 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
+        <h3 className="text-xl font-semibold text-cyan-200 mb-4 flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
           Withdraw
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-5">
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -196,14 +202,14 @@ export const DepositWithdrawPanel: FC<Props> = ({
               max={assetBalanceNum}
               step="0.000001"
               placeholder="Enter amount"
-              className="input-surface flex-1"
+              className="input-surface flex-1 text-lg px-5 py-4"
               id="withdraw-amount"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             {account ? (
               <button
-                className={`pill flex-1 ${
+                className={`pill flex-1 text-base py-3 ${
                   txStatus === "pending" ? "opacity-50 cursor-not-allowed" : ""
                 }`}
                 disabled={txStatus === "pending" || suiBalanceNum < 0.01}
@@ -231,7 +237,7 @@ export const DepositWithdrawPanel: FC<Props> = ({
                 trigger={
                   <button
                     onClick={() => setConnectOpen(true)}
-                    className="pill flex-1"
+                    className="pill flex-1 text-base py-3"
                   >
                     Connect Wallet
                   </button>
@@ -241,17 +247,17 @@ export const DepositWithdrawPanel: FC<Props> = ({
           </div>
         </div>
         {/* Balance Information */}
-        <div className="mt-2 space-y-1">
+        <div className="mt-4 space-y-2">
           {balance && (
-            <p className="text-xs text-cyan-100/80">
-              {asset} Balance: <span className="text-amber-300">{balance}</span>
+            <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
+              {asset} Balance: <span className="text-amber-300 font-bold">{balance}</span>
             </p>
           )}
           {suiBalance && (
-            <p className="text-xs text-cyan-100/80">
+            <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
               SUI Balance:{" "}
               <span
-                className={`${
+                className={`font-bold ${
                   suiBalanceNum < 0.01 ? "text-red-300" : "text-amber-300"
                 }`}
               >
@@ -260,7 +266,7 @@ export const DepositWithdrawPanel: FC<Props> = ({
             </p>
           )}
           {suiBalanceNum < 0.01 && (
-            <p className="text-xs text-red-300">
+            <p className="text-sm text-red-300 bg-red-900/20 px-4 py-3 rounded-xl border border-red-400/30">
               ⚠️ Low SUI balance! You need at least 0.01 SUI for gas fees.
             </p>
           )}

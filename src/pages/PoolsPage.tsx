@@ -185,7 +185,9 @@ export function PoolsPage() {
         setTxError(null);
         const poolContracts = selected.contracts;
 
-        const finalAmount = BigInt(Math.round(amount * ONE_BILLION));
+        // Use proper decimals for the asset
+        const decimals = poolContracts.coinDecimals;
+        const finalAmount = BigInt(Math.round(amount * (10 ** decimals)));
 
         const tx = await buildDepositTransaction({
           amount: finalAmount,
@@ -196,6 +198,7 @@ export function PoolsPage() {
           referralId: poolContracts.referralId,
           poolType: poolContracts.marginPoolType,
           suiClient,
+          decimals,
         });
 
         const result = await signAndExecute({
@@ -241,13 +244,19 @@ export function PoolsPage() {
         setTxStatus("pending");
         setTxError(null);
         const poolContracts = selected.contracts;
+
+        // Use proper decimals for the asset
+        const decimals = poolContracts.coinDecimals;
+        const finalAmount = BigInt(Math.round(amount * (10 ** decimals)));
+
         const tx = await buildWithdrawTransaction({
-          amount: BigInt(Math.round(amount * ONE_BILLION)),
+          amount: finalAmount,
           poolId: poolContracts.marginPoolId,
           registryId: poolContracts.registryId,
           poolType: poolContracts.marginPoolType,
           owner: account.address,
           suiClient,
+          decimals,
         });
         const result = await signAndExecute({
           transaction: tx,
@@ -349,28 +358,24 @@ export function PoolsPage() {
 
       {/* Primary Action Zone */}
       <section id="pools-deposit" className="scroll-mt-24">
-        <div className="grid md:grid-cols-3 gap-6 items-start mb-12">
-          <div className="space-y-6 relative z-10">
-            <h3 className="text-xl font-bold text-amber-300 flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
-              Available Pools
-            </h3>
-            <PoolCards
-              pools={pools}
-              selectedPoolId={selectedPoolId}
-              onSelectPool={setSelectedPoolId}
-              onDepositClick={(id) => setSelectedPoolId(id)}
-              onAdminAuditClick={(id) => {
-                setSelectedPoolId(id);
-                setAdminOpen(true);
-              }}
-            />
-          </div>
-          <div className="relative z-0">
-            <h3 className="text-xl font-bold text-cyan-300 flex items-center gap-2 mb-4">
-              <span className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
-              Deposit & Withdraw
-            </h3>
+        {/* Pool Selection & Info - Full Width Hero */}
+        <div className="mb-8">
+          <PoolCards
+            pools={pools}
+            selectedPoolId={selectedPoolId}
+            onSelectPool={setSelectedPoolId}
+            onDepositClick={(id) => setSelectedPoolId(id)}
+            onAdminAuditClick={(id) => {
+              setSelectedPoolId(id);
+              setAdminOpen(true);
+            }}
+          />
+        </div>
+
+        {/* Main Action Area - Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start mb-12">
+          {/* Deposit & Withdraw - Left, larger (3/5) */}
+          <div className="lg:col-span-3 space-y-6">
             <DepositWithdrawPanel
               asset={selected.asset}
               minBorrow={Number(
@@ -388,22 +393,32 @@ export function PoolsPage() {
               txError={txError}
             />
           </div>
-          <div className="relative z-10">
-            <h3 className="text-xl font-bold text-indigo-300 flex items-center gap-2 mb-4">
-              <span className="w-3 h-3 rounded-full bg-indigo-400 animate-pulse"></span>
-              Your Positions
-            </h3>
-            {account ? (
-              <PersonalPositions
-                userAddress={account.address}
-                pools={pools}
-                onShowHistory={() => setHistoryOpen(true)}
-              />
-            ) : (
-              <div className="card-surface text-center py-10 border border-white/10 text-cyan-100/80">
-                Connect wallet to view positions
-              </div>
-            )}
+
+          {/* Your Positions - Right (2/5) */}
+          <div className="lg:col-span-2 space-y-6">
+            <div>
+              <h3 className="text-2xl font-bold text-indigo-300 flex items-center gap-2 mb-6">
+                <span className="w-3 h-3 rounded-full bg-indigo-400 animate-pulse"></span>
+                Your Positions
+              </h3>
+              {account ? (
+                <PersonalPositions
+                  userAddress={account.address}
+                  pools={pools}
+                  onShowHistory={() => setHistoryOpen(true)}
+                />
+              ) : (
+                <div className="card-surface text-center py-16 border border-white/10 text-cyan-100/80 rounded-3xl">
+                  <div className="mb-4 text-4xl">🔐</div>
+                  <div className="text-lg font-semibold mb-2">
+                    Connect Your Wallet
+                  </div>
+                  <div className="text-sm text-indigo-200/60">
+                    View and manage your positions
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -44,17 +44,25 @@ export interface QueryParams {
 /**
  * Time range selection for UI components
  */
-export type TimeRange = '1W' | '1M' | '3M' | 'YTD' | 'ALL';
+export type TimeRange = '1W' | '1M' | '3M' | '1Y' | 'YTD' | 'ALL';
+
+/**
+ * Default time range for API calls (1 year)
+ */
+export const DEFAULT_TIME_RANGE: TimeRange = '1Y';
 
 /**
  * Helper to convert TimeRange to start/end timestamps
  */
-export function timeRangeToParams(range: TimeRange): { start_time: number; end_time: number } {
+export function timeRangeToParams(range?: TimeRange): { start_time: number; end_time: number } {
   const now = Date.now();
   const end_time = now;
 
+  // Default to 1 year if no range specified
+  const effectiveRange = range || DEFAULT_TIME_RANGE;
+
   let start_time: number;
-  switch (range) {
+  switch (effectiveRange) {
     case '1W':
       start_time = now - 7 * 24 * 60 * 60 * 1000;
       break;
@@ -63,6 +71,9 @@ export function timeRangeToParams(range: TimeRange): { start_time: number; end_t
       break;
     case '3M':
       start_time = now - 90 * 24 * 60 * 60 * 1000;
+      break;
+    case '1Y':
+      start_time = now - 365 * 24 * 60 * 60 * 1000;
       break;
     case 'YTD':
       const yearStart = new Date(new Date().getFullYear(), 0, 1);

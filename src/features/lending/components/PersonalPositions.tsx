@@ -29,22 +29,22 @@ export const PersonalPositions: FC<Props> = ({
   if (isLoading) {
     return (
       <div
-        className="rounded-3xl p-5 bg-white/5 border"
+        className="rounded-3xl p-6 bg-white/5 border min-h-[400px]"
         style={{
           borderColor:
             "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
         }}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-cyan-100/90">My Positions</div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-lg font-semibold text-cyan-100/90">My Positions</div>
           <button
-            className="text-[11px] text-cyan-200 underline decoration-cyan-400/40 hover:text-white"
+            className="text-sm text-cyan-200 underline decoration-cyan-400/40 hover:text-white"
             onClick={onShowHistory}
           >
             Show deposit history
           </button>
         </div>
-        <div className="text-center py-8 text-cyan-100/70">
+        <div className="text-center py-16 text-cyan-100/70 text-base">
           Loading positions...
         </div>
       </div>
@@ -54,22 +54,22 @@ export const PersonalPositions: FC<Props> = ({
   if (error) {
     return (
       <div
-        className="rounded-3xl p-5 bg-white/5 border"
+        className="rounded-3xl p-6 bg-white/5 border min-h-[400px]"
         style={{
           borderColor:
             "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
         }}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-cyan-100/90">My Positions</div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-lg font-semibold text-cyan-100/90">My Positions</div>
           <button
-            className="text-[11px] text-cyan-200 underline decoration-cyan-400/40 hover:text-white"
+            className="text-sm text-cyan-200 underline decoration-cyan-400/40 hover:text-white"
             onClick={onShowHistory}
           >
             Show deposit history
           </button>
         </div>
-        <div className="text-center py-8 text-red-400">
+        <div className="text-center py-16 text-red-400 text-base">
           Error loading positions: {error.message}
         </div>
       </div>
@@ -79,22 +79,22 @@ export const PersonalPositions: FC<Props> = ({
   if (!userAddress) {
     return (
       <div
-        className="rounded-3xl p-5 bg-white/5 border"
+        className="rounded-3xl p-6 bg-white/5 border min-h-[400px]"
         style={{
           borderColor:
             "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
         }}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-cyan-100/90">My Positions</div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-lg font-semibold text-cyan-100/90">My Positions</div>
           <button
-            className="text-[11px] text-cyan-200 underline decoration-cyan-400/40 hover:text-white"
+            className="text-sm text-cyan-200 underline decoration-cyan-400/40 hover:text-white"
             onClick={onShowHistory}
           >
             Show deposit history
           </button>
         </div>
-        <div className="text-center py-8 text-cyan-100/70">
+        <div className="text-center py-16 text-cyan-100/70 text-base">
           Connect your wallet to view positions
         </div>
       </div>
@@ -104,22 +104,22 @@ export const PersonalPositions: FC<Props> = ({
   if (positions.length === 0) {
     return (
       <div
-        className="rounded-3xl p-5 bg-white/5 border"
+        className="rounded-3xl p-6 bg-white/5 border min-h-[400px]"
         style={{
           borderColor:
             "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
         }}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-cyan-100/90">My Positions</div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-lg font-semibold text-cyan-100/90">My Positions</div>
           <button
-            className="text-[11px] text-cyan-200 underline decoration-cyan-400/40 hover:text-white"
+            className="text-sm text-cyan-200 underline decoration-cyan-400/40 hover:text-white"
             onClick={onShowHistory}
           >
             Show deposit history
           </button>
         </div>
-        <div className="text-center py-8 text-cyan-100/70">
+        <div className="text-center py-16 text-cyan-100/70 text-base">
           No positions found
         </div>
       </div>
@@ -128,28 +128,28 @@ export const PersonalPositions: FC<Props> = ({
 
   return (
     <div
-      className="rounded-3xl p-5 bg-white/5 border"
+      className="rounded-3xl p-6 bg-white/5 border min-h-[400px]"
       style={{
         borderColor:
           "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
       }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-sm text-cyan-100/90">My Positions</div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="text-lg font-semibold text-cyan-100/90">My Positions</div>
         <button
-          className="text-[11px] text-cyan-200 underline decoration-cyan-400/40 hover:text-white"
+          className="text-sm text-cyan-200 underline decoration-cyan-400/40 hover:text-white transition-colors"
           onClick={onShowHistory}
         >
           Show deposit history
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="text-cyan-100/70">
+        <table className="w-full text-base">
+          <thead className="text-cyan-100/70 border-b border-white/10">
             <tr className="text-left">
-              <th className="py-2 pr-4">Asset</th>
-              <th className="py-2 pr-4">Deposited</th>
-              <th className="py-2 pr-4">Interest Earned</th>
+              <th className="py-3 pr-4 font-semibold">Asset</th>
+              <th className="py-3 pr-4 font-semibold">Deposited</th>
+              <th className="py-3 pr-4 font-semibold">Interest Earned</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -165,11 +165,11 @@ export const PersonalPositions: FC<Props> = ({
               return (
                 <tr
                   key={`${pos.address}-${pos.asset}`}
-                  className="hover:bg-white/5"
+                  className="hover:bg-white/5 transition-colors"
                 >
-                  <td className="py-3 pr-4">{pos.asset}</td>
-                  <td className="py-3 pr-4">{currentBalance}</td>
-                  <td className="py-3 pr-4">{interestEarned}</td>
+                  <td className="py-4 pr-4 font-medium">{pos.asset}</td>
+                  <td className="py-4 pr-4 text-amber-300 font-semibold">{currentBalance}</td>
+                  <td className="py-4 pr-4 text-green-300 font-semibold">{interestEarned}</td>
                 </tr>
               );
             })}

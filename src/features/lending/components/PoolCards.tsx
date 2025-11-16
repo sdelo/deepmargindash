@@ -34,42 +34,6 @@ export const PoolCards: FC<Props> = ({
 
   return (
     <div className="space-y-4 relative">
-      {/* Pool Selection Navigation */}
-      <div className="mb-8 px-2 relative z-20">
-        <div className="text-lg font-bold text-cyan-200 mb-6 flex items-center gap-3">
-          <span className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_12px_2px_rgba(34,211,238,0.6)]"></span>
-          Select Pool
-        </div>
-        <div className="flex items-center gap-6 pr-6 relative z-20">
-          {pools.map((pool) => (
-            <button
-              key={pool.id}
-              onClick={() => onSelectPool?.(pool.id)}
-              className={
-                "px-8 py-5 rounded-3xl text-lg border-2 transition-all duration-300 transform hover:scale-110 hover:shadow-2xl " +
-                (pool.id === p.id
-                  ? "bg-gradient-to-r from-cyan-500/40 to-blue-500/40 border-cyan-400 text-cyan-100 shadow-2xl shadow-cyan-500/40 scale-105 ring-2 ring-cyan-400/30"
-                  : "bg-white/8 border-white/40 text-indigo-100/90 hover:text-white hover:bg-white/15 hover:border-cyan-300/60 hover:shadow-xl hover:shadow-cyan-500/20")
-              }
-            >
-              <span className="inline-flex items-center gap-3 min-w-0">
-                <img
-                  src={getIcon(pool.asset)}
-                  alt={`${pool.asset} logo`}
-                  className="w-6 h-6 rounded-lg shadow-lg flex-shrink-0"
-                />
-                <span className="font-bold text-lg flex-shrink-0">
-                  {pool.asset}
-                </span>
-                <span className="text-amber-300 font-bold text-lg flex-shrink-0">
-                  {Number(pool.ui.aprSupplyPct).toFixed(2)}%
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="relative card-surface card-ring glow-amber glow-cyan animate-pulse-glow h-full">
         <div className="flex items-center justify-between text-indigo-100/90 mb-4">
           <div className="flex items-center gap-3">

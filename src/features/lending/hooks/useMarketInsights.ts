@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { timeRangeToParams } from '../api/types';
+import { timeRangeToParams, DEFAULT_TIME_RANGE } from '../api/types';
 import type { QueryParams, TimeRange } from '../api/types';
 import {
   fetchLoanBorrowed,
@@ -52,7 +52,7 @@ export function useMarketInsights(
 ) {
   const params: QueryParams = {
     margin_pool_id: poolId,
-    ...(timeRange ? timeRangeToParams(timeRange) : {}),
+    ...timeRangeToParams(timeRange), // Now defaults to 1 year
   };
 
   // Fetch all relevant events

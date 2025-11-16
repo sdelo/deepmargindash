@@ -18,7 +18,7 @@ import type { TimeRange } from "../api/types";
 type Props = { poolId: string };
 
 export const HistoricalActivity: FC<Props> = ({ poolId }) => {
-  type RangeKey = "1W" | "1M" | "3M" | "YTD" | "ALL";
+  type RangeKey = "1W" | "1M" | "3M" | "1Y" | "YTD" | "ALL";
   const [range, setRange] = React.useState<RangeKey>("1M");
 
   // Fetch real event data
@@ -118,7 +118,7 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
         <div className="flex items-center gap-3">
           <span className="text-xs text-cyan-100/80">Range</span>
           <div className="rounded-xl bg-white/10 border border-cyan-300/30 overflow-hidden">
-            {(["1W", "1M", "3M", "YTD", "ALL"] as RangeKey[]).map((rk) => (
+            {(["1W", "1M", "3M", "1Y", "YTD", "ALL"] as RangeKey[]).map((rk) => (
               <button
                 key={rk}
                 onClick={() => setRange(rk)}
@@ -149,11 +149,11 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
           >
             <defs>
-              <linearGradient id="gradSupply" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="historicalActivityGradSupply" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.45} />
                 <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.05} />
               </linearGradient>
-              <linearGradient id="gradBorrow" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="historicalActivityGradBorrow" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.45} />
                 <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.05} />
               </linearGradient>
@@ -186,7 +186,7 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
               dataKey="supply"
               stroke="var(--color-cyan-300)"
               strokeWidth={2}
-              fill="url(#gradSupply)"
+              fill="url(#historicalActivityGradSupply)"
               name="Supply"
               dot={false}
             />
@@ -195,7 +195,7 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
               dataKey="borrow"
               stroke="var(--color-amber-400)"
               strokeWidth={2}
-              fill="url(#gradBorrow)"
+              fill="url(#historicalActivityGradBorrow)"
               name="Borrow"
               dot={false}
             />
