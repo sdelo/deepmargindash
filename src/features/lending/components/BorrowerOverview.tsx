@@ -77,12 +77,12 @@ export function BorrowerOverview() {
               .sort(([, a], [, b]) => b - a)
               .slice(0, 10)
               .map(([poolId, count]) => {
-                const percentage = (count / totalManagers) * 100;
+                const percentage = totalManagers > 0 ? (count / totalManagers) * 100 : 0;
                 return (
                   <div key={poolId} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-white/80 font-mono text-xs">
-                        {poolId.slice(0, 8)}...{poolId.slice(-6)}
+                        {poolId && poolId.length >= 14 ? `${poolId.slice(0, 8)}...${poolId.slice(-6)}` : poolId || 'N/A'}
                       </span>
                       <span className="text-white font-semibold">{count} managers</span>
                     </div>
@@ -123,18 +123,18 @@ export function BorrowerOverview() {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-mono text-cyan-300 mb-1">
-                      {manager.id.slice(0, 12)}...{manager.id.slice(-8)}
+                      {manager.id ? `${manager.id.slice(0, 12)}...${manager.id.slice(-8)}` : 'N/A'}
                     </div>
                     <div className="text-xs text-white/60 font-mono">
-                      Owner: {manager.owner.slice(0, 8)}...{manager.owner.slice(-6)}
+                      Owner: {manager.owner ? `${manager.owner.slice(0, 8)}...${manager.owner.slice(-6)}` : 'N/A'}
                     </div>
                   </div>
                   <div className="text-xs text-white/60">
-                    {new Date(manager.creationTimestamp).toLocaleString()}
+                    {manager.creationTimestamp ? new Date(manager.creationTimestamp).toLocaleString() : 'N/A'}
                   </div>
                 </div>
                 <div className="text-xs text-white/60 font-mono">
-                  Pool: {manager.deepbookPoolId.slice(0, 8)}...{manager.deepbookPoolId.slice(-6)}
+                  Pool: {manager.deepbookPoolId ? `${manager.deepbookPoolId.slice(0, 8)}...${manager.deepbookPoolId.slice(-6)}` : 'N/A'}
                 </div>
               </div>
             ))}

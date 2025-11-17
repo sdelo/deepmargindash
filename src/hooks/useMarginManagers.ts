@@ -55,6 +55,12 @@ export function useMarginManagers(): MarginManagerAnalytics {
 
       // Process each manager event
       for (const event of managerEvents) {
+        // Skip events with missing critical data
+        if (!event.margin_manager_id || !event.deepbook_pool_id || !event.sender || !event.checkpoint_timestamp_ms) {
+          console.warn('Skipping margin manager event with missing data:', event);
+          continue;
+        }
+
         const detail: MarginManagerDetails = {
           id: event.margin_manager_id,
           owner: event.sender,
