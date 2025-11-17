@@ -1,0 +1,83 @@
+import React from 'react';
+import { useSuiClient } from '@mysten/dapp-kit';
+import { fetchAssetSupplied, fetchAssetWithdrawn, fetchLoanBorrowed, fetchLoanRepaid, fetchMarginManagerCreated, fetchLiquidations } from '../features/lending/api/events';
+import { CONTRACTS } from '../config/contracts';
+import { fetchMarginPool } from '../api/poolData';
+
+export interface ProtocolMetrics {
+  totalValueLocked: number; // Total across all pools
+  totalBorrowed: number; // Total across all pools
+  totalSupply: number; // Total supplied by lenders
+  activeMarginManagers: number; // Count of unique margin managers
+  totalLiquidations: number; // Count of liquidation events
+  isLoading: boolean;
+  error: Error | null;
+}
+
+/**
+ * Hook to fetch aggregated protocol-level metrics
+ */
+export function useProtocolMetrics(): ProtocolMetrics {
+  const suiClient = useSuiClient();
+  const [metrics, setMetrics] = React.useState<ProtocolMetrics>({
+    totalValueLocked: 0,
+    totalBorrowed: 0,
+    totalSupply: 0,
+    activeMarginManagers: 0,
+    totalLiquidations: 0,
+    isLoading: true,
+    error: null,
+  });
+
+  const fetchMetrics = React.useCallback(async () => {
+    try {
+      // Fetch pool states for TVL and total borrowed
+      const [suiPool, dbusdcPool] = await Promise.all([
+        fetchMarginPool(suiClient, CONTRACTS.testnet.SUI_MARGIN_POOL_ID),
+        fetchMarginPool(suiClient, CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID),
+      ]);
+
+      // Calculate TVL (total supply across pools)
+      const totalSupply = (suiPool?.state.supply || 0) + (dbusdcPool?.state.supply || 0);
+      const totalBorrowed = (suiPool?.state.borrow || 0) + (dbusdcPool?.state.borrow || 0);
+
+      // Fetch unique margin managers (from margin_manager_created events)
+      const marginManagers = await fetchMarginManagerCreated({ limit: 10000 });
+      const uniqueManagerIds = new Set(marginManagers.map(m => m.margin_manager_id));
+
+      // Fetch liquidation events to count total
+      const liquidations = await fetchLiquidations({ limit: 10000 });
+
+      setMetrics({
+        totalValueLocked: totalSupply,
+        totalBorrowed,
+        totalSupply,
+        activeMarginManagers: uniqueManagerIds.size,
+        totalLiquidations: liquidations.length,
+        isLoading: false,
+        error: null,
+      });
+    } catch (error) {
+      console.error('Error fetching protocol metrics:', error);
+      setMetrics(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error as Error,
+      }));
+    }
+  }, [suiClient]);
+
+  // Initial fetch
+  React.useEffect(() => {
+    fetchMetrics();
+  }, [fetchMetrics]);
+
+  // Refresh every 30 seconds
+  React.useEffect(() => {
+    const interval = setInterval(fetchMetrics, 30000);
+    return () => clearInterval(interval);
+  }, [fetchMetrics]);
+
+  return metrics;
+}
+
