@@ -1,5 +1,6 @@
 import { apiClient } from '../../../lib/api/client';
 import type { QueryParams, ApiEventResponse } from './types';
+import { getDefaultTimeRange } from './types';
 
 /**
  * API Event Response Types
@@ -141,13 +142,20 @@ export type MarginManagerStatesResponse = unknown[];
 
 /**
  * Helper function to build query string from params
+ * Automatically adds default time range (1 year) if start_time/end_time are not provided
  */
 function buildQuery(params?: QueryParams): string {
-  if (!params) return '';
+  // Merge with default time range if not provided
+  const defaultTimeRange = getDefaultTimeRange();
+  const mergedParams: QueryParams = {
+    start_time: defaultTimeRange.start_time,
+    end_time: defaultTimeRange.end_time,
+    ...params, // User-provided params override defaults
+  };
   
   const searchParams = new URLSearchParams();
   
-  Object.entries(params).forEach(([key, value]) => {
+  Object.entries(mergedParams).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       searchParams.append(key, String(value));
     }

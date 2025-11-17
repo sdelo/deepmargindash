@@ -43,6 +43,7 @@ export function useMarginManagers(): MarginManagerAnalytics {
   const fetchAnalytics = React.useCallback(async () => {
     try {
       // Fetch all margin manager created events
+      // Default time range (1 year) is automatically applied
       const managerEvents = await fetchMarginManagerCreated({ limit: 10000 });
       
       const managersPerPool: Record<string, number> = {};

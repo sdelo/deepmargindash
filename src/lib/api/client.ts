@@ -1,4 +1,4 @@
-import { buildApiUrl } from '../../config/api';
+import { getApiBaseUrl } from '../../config/api';
 
 /**
  * API Error class for handling API-specific errors
@@ -31,7 +31,8 @@ export class ApiClient {
   private baseUrl: string;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || buildApiUrl('');
+    // Get base URL without trailing slash to avoid double slashes in URL construction
+    this.baseUrl = baseUrl || getApiBaseUrl();
   }
 
   /**

@@ -42,10 +42,12 @@ export function useProtocolMetrics(): ProtocolMetrics {
       const totalBorrowed = (suiPool?.state.borrow || 0) + (dbusdcPool?.state.borrow || 0);
 
       // Fetch unique margin managers (from margin_manager_created events)
+      // Default time range (1 year) is automatically applied
       const marginManagers = await fetchMarginManagerCreated({ limit: 10000 });
       const uniqueManagerIds = new Set(marginManagers.map(m => m.margin_manager_id));
 
       // Fetch liquidation events to count total
+      // Default time range (1 year) is automatically applied
       const liquidations = await fetchLiquidations({ limit: 10000 });
 
       setMetrics({
