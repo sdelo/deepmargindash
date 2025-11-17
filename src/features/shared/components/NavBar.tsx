@@ -6,6 +6,7 @@ import {
 } from "@mysten/dapp-kit";
 import { Link, useLocation } from "react-router-dom";
 import { NetworkSwitcher } from "../../../components/NetworkSwitcher";
+import DivingHelmetIcon from "../../../assets/diving-helment.svg";
 
 export default function NavBar() {
   const currentAccount = useCurrentAccount();
@@ -24,7 +25,8 @@ export default function NavBar() {
     <nav className="w-full sticky top-0 z-50 backdrop-blur bg-black/20 border-b border-white/10">
       <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between text-white">
         <div className="flex items-center gap-6">
-          <Link to="/" className="font-extrabold tracking-wide text-cyan-200">
+          <Link to="/" className="flex items-center gap-2 font-extrabold tracking-wide text-cyan-200 hover:opacity-80 transition-opacity">
+            <img src={DivingHelmetIcon} alt="Diving Helmet" className="w-8 h-8" />
             Leviathan
           </Link>
           {location.pathname !== "/" && (

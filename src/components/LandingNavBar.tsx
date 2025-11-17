@@ -5,6 +5,7 @@ import {
   useCurrentAccount,
   useDisconnectWallet,
 } from "@mysten/dapp-kit";
+import DivingHelmetIcon from "../assets/diving-helment.svg";
 
 export function LandingNavBar() {
   const currentAccount = useCurrentAccount();
@@ -24,8 +25,13 @@ export function LandingNavBar() {
         <div className="flex items-center gap-6">
           <Link
             to="/"
-            className="font-extrabold tracking-wide text-cyan-200 text-xl"
+            className="flex items-center gap-2 font-extrabold tracking-wide text-cyan-200 text-xl hover:opacity-80 transition-opacity"
           >
+            <img
+              src={DivingHelmetIcon}
+              alt="Diving Helmet"
+              className="w-6 h-6"
+            />
             Leviathan
           </Link>
         </div>
