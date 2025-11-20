@@ -5,7 +5,7 @@ import {
   useSuiClient,
   useSuiClientContext,
 } from "@mysten/dapp-kit";
-import PoolCards from "../features/lending/components/PoolCards";
+import PoolCarousel from "../features/lending/components/PoolCarousel";
 import DepositWithdrawPanel from "../features/lending/components/DepositWithdrawPanel";
 import PersonalPositions from "../features/lending/components/PersonalPositions";
 import YieldCurve from "../features/lending/components/YieldCurve";
@@ -16,6 +16,9 @@ import { SupplierAnalytics } from "../features/lending/components/SupplierAnalyt
 import { BorrowerOverview } from "../features/lending/components/BorrowerOverview";
 import { LiquidationDashboard } from "../features/lending/components/LiquidationDashboard";
 import { AdministrativePanel } from "../features/lending/components/AdministrativePanel";
+import { LiquidityHealthCheck } from "../features/lending/components/LiquidityHealthCheck";
+import { LiquidationWall } from "../features/lending/components/LiquidationWall";
+import { WhaleWatch } from "../features/lending/components/WhaleWatch";
 import {
   SectionNav,
   type DashboardSection,
@@ -46,9 +49,9 @@ export function PoolsPage() {
 
   const [isHelpVisible, setIsHelpVisible] = React.useState(true);
 
-  const [overviewTab, setOverviewTab] = React.useState<"analytics" | "yield">(
-    "analytics"
-  );
+  const [overviewTab, setOverviewTab] = React.useState<
+    "analytics" | "yield" | "liquidity" | "liquidations" | "whales"
+  >("analytics");
 
   // Fetch real pool data
   const suiPoolData = usePoolData(
@@ -412,102 +415,136 @@ export function PoolsPage() {
             </div>
           )}
 
-          <div>
-            <h2 className="text-2xl font-bold text-cyan-200 mb-6">
-              Pool Selection & Actions
-            </h2>
-            <PoolCards
-              pools={pools}
-              selectedPoolId={selectedPoolId}
-              onSelectPool={setSelectedPoolId}
-              onDepositClick={(id) => setSelectedPoolId(id)}
-              onAdminAuditClick={(id) => setSelectedPoolId(id)}
-              isLoading={isLoading}
-            />
-          </div>
-
           {selectedPool ? (
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-              {/* Left Column: Core Actions (stacked on mobile, side by side on larger screens) */}
+              {/* Left Column: Pool Selection + Core Actions */}
               <div className="xl:col-span-7 space-y-6">
-                <h2 className="text-xl font-bold text-cyan-200">
-                  Core Actions
-                </h2>
-                {/* Two panels side by side on larger screens */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Deposit/Withdraw Panel */}
-                  <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
-                    <DepositWithdrawPanel
-                      asset={selectedPool.asset}
-                      apy={selectedPool.ui.aprSupplyPct}
-                      minBorrow={Number(
-                        selectedPool.protocolConfig?.margin_pool_config
-                          ?.min_borrow || 0
-                      )}
-                      supplyCap={Number(
-                        selectedPool.protocolConfig?.margin_pool_config
-                          ?.supply_cap || 0
-                      )}
-                      balance={coinBalance?.formatted}
-                      suiBalance={suiBalance?.formatted}
-                      onDeposit={handleDeposit}
-                      onWithdraw={handleWithdraw}
-                      onWithdrawAll={handleWithdrawAll}
-                      txStatus={txStatus}
-                      txError={txError}
-                    />
-                  </div>
+                {/* Pool Selection Carousel */}
+                <div>
+                  <h2 className="text-xl font-bold text-cyan-200 mb-4">
+                    Pool Selection
+                  </h2>
+                  <PoolCarousel
+                    pools={pools}
+                    selectedPoolId={selectedPoolId}
+                    onSelectPool={setSelectedPoolId}
+                    onDepositClick={(id) => setSelectedPoolId(id)}
+                    onAdminAuditClick={(id) => setSelectedPoolId(id)}
+                    isLoading={isLoading}
+                  />
+                </div>
 
-                  {/* Your Positions Panel */}
-                  <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
-                    <h3 className="text-lg font-bold text-indigo-300 flex items-center gap-2 mb-3">
-                      <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-                      Your Positions
-                    </h3>
-                    {account ? (
-                      <PersonalPositions
-                        userAddress={account.address}
-                        pools={pools}
-                        onShowHistory={() => setHistoryOpen(true)}
+                {/* Core Actions */}
+                <div>
+                  <h2 className="text-xl font-bold text-cyan-200 mb-4">
+                    Core Actions
+                  </h2>
+                  {/* Two panels side by side on larger screens */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Deposit/Withdraw Panel */}
+                    <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
+                      <DepositWithdrawPanel
+                        asset={selectedPool.asset}
+                        apy={selectedPool.ui.aprSupplyPct}
+                        minBorrow={Number(
+                          selectedPool.protocolConfig?.margin_pool_config
+                            ?.min_borrow || 0
+                        )}
+                        supplyCap={Number(
+                          selectedPool.protocolConfig?.margin_pool_config
+                            ?.supply_cap || 0
+                        )}
+                        balance={coinBalance?.formatted}
+                        suiBalance={suiBalance?.formatted}
+                        onDeposit={handleDeposit}
+                        onWithdraw={handleWithdraw}
+                        onWithdrawAll={handleWithdrawAll}
+                        txStatus={txStatus}
+                        txError={txError}
                       />
-                    ) : (
-                      <div className="card-surface text-center py-6 border border-white/10 text-cyan-100/80 rounded-2xl bg-white/5">
-                        <div className="mb-2 text-2xl">🔐</div>
-                        <div className="text-sm font-semibold mb-1">
-                          Connect Your Wallet
+                    </div>
+
+                    {/* Your Positions Panel */}
+                    <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
+                      <h3 className="text-lg font-bold text-indigo-300 flex items-center gap-2 mb-3">
+                        <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+                        Your Positions
+                      </h3>
+                      {account ? (
+                        <PersonalPositions
+                          userAddress={account.address}
+                          pools={pools}
+                          onShowHistory={() => setHistoryOpen(true)}
+                        />
+                      ) : (
+                        <div className="card-surface text-center py-6 border border-white/10 text-cyan-100/80 rounded-2xl bg-white/5">
+                          <div className="mb-2 text-2xl">🔐</div>
+                          <div className="text-sm font-semibold mb-1">
+                            Connect Your Wallet
+                          </div>
+                          <div className="text-xs text-indigo-200/60">
+                            View and manage your positions
+                          </div>
                         </div>
-                        <div className="text-xs text-indigo-200/60">
-                          View and manage your positions
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Right Column: Data Panels (Tabbed View) */}
               <div className="xl:col-span-5 space-y-6">
-                <div className="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/10">
+                <div className="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/10 overflow-x-auto">
                   <div className="flex gap-2">
                     <button
                       onClick={() => setOverviewTab("analytics")}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                         overviewTab === "analytics"
                           ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      📊 Pool Analytics
+                      📊 Analytics
                     </button>
                     <button
                       onClick={() => setOverviewTab("yield")}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                         overviewTab === "yield"
                           ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      📈 Yield Curve
+                      📈 Yield
+                    </button>
+                    <button
+                      onClick={() => setOverviewTab("liquidity")}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                        overviewTab === "liquidity"
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      🏦 Liquidity
+                    </button>
+                    <button
+                      onClick={() => setOverviewTab("liquidations")}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                        overviewTab === "liquidations"
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      📉 Liquidations
+                    </button>
+                    <button
+                      onClick={() => setOverviewTab("whales")}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                        overviewTab === "whales"
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      🐋 Whales
                     </button>
                   </div>
                 </div>
@@ -539,6 +576,23 @@ export function PoolsPage() {
                       </div>
                       <YieldCurve pool={selectedPool} />
                     </div>
+                  )}
+
+                  {overviewTab === "liquidity" && (
+                    <LiquidityHealthCheck pool={selectedPool} />
+                  )}
+
+                  {overviewTab === "liquidations" && (
+                    <LiquidationWall
+                      poolId={selectedPool.contracts?.marginPoolId}
+                    />
+                  )}
+
+                  {overviewTab === "whales" && (
+                    <WhaleWatch
+                      poolId={selectedPool.contracts?.marginPoolId}
+                      decimals={selectedPool.contracts?.coinDecimals}
+                    />
                   )}
                 </div>
               </div>
