@@ -19,13 +19,16 @@ export function usePoolData(poolId: string, userAddress?: string): PoolDataResul
   const [error, setError] = React.useState<Error | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
-  const fetchData = React.useCallback(async () => {
+  const fetchData = React.useCallback(async (isRefetch = false) => {
     if (!poolId) return;
     
     console.log(`🔄 usePoolData fetchData called for pool ${poolId} with user ${userAddress}`);
     
     try {
-      setIsLoading(true);
+      // Only set loading state on initial load, not on refetches
+      if (!isRefetch) {
+        setIsLoading(true);
+      }
       setError(null);
       
       // Fetch pool data
@@ -53,8 +56,11 @@ export function usePoolData(poolId: string, userAddress?: string): PoolDataResul
     } catch (err) {
       console.error(`❌ Error in usePoolData fetchData:`, err);
       setError(err as Error);
-      setData(null);
-      setUserPosition(null);
+      // Only clear data on initial load errors, keep existing data on refetch errors
+      if (!isRefetch) {
+        setData(null);
+        setUserPosition(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -62,22 +68,26 @@ export function usePoolData(poolId: string, userAddress?: string): PoolDataResul
 
   // Initial fetch
   React.useEffect(() => {
-    fetchData();
+    fetchData(false);
   }, [fetchData]);
 
   // Set up automatic refetching every 15 seconds
   React.useEffect(() => {
     if (!poolId) return;
     
-    const interval = setInterval(fetchData, 15000);
+    const interval = setInterval(() => fetchData(true), 15000);
     return () => clearInterval(interval);
   }, [fetchData, poolId]);
+
+  const refetch = React.useCallback(() => {
+    fetchData(true);
+  }, [fetchData]);
 
   return {
     data,
     userPosition,
     error,
     isLoading,
-    refetch: fetchData,
+    refetch,
   };
 }
