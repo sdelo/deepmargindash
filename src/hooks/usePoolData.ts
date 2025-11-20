@@ -22,8 +22,6 @@ export function usePoolData(poolId: string, userAddress?: string): PoolDataResul
   const fetchData = React.useCallback(async (isRefetch = false) => {
     if (!poolId) return;
     
-    console.log(`🔄 usePoolData fetchData called for pool ${poolId} with user ${userAddress}`);
-    
     try {
       // Only set loading state on initial load, not on refetches
       if (!isRefetch) {
@@ -32,14 +30,11 @@ export function usePoolData(poolId: string, userAddress?: string): PoolDataResul
       setError(null);
       
       // Fetch pool data
-      console.log(`📡 Fetching pool data for ${poolId}`);
       const poolResult = await fetchMarginPool(suiClient, poolId);
       setData(poolResult);
-      console.log(`📊 Pool data result:`, poolResult ? 'Success' : 'Failed');
       
       // Fetch user position if user address is provided
       if (userAddress && poolResult) {
-        console.log(`👤 Fetching user position for ${userAddress} in ${poolResult.asset} pool`);
         const position = await fetchUserPositionFromPool(
           suiClient,
           poolId,
@@ -48,13 +43,11 @@ export function usePoolData(poolId: string, userAddress?: string): PoolDataResul
           poolResult.contracts.coinDecimals
         );
         setUserPosition(position);
-        console.log(`👤 User position result:`, position ? 'Found' : 'Not found');
       } else {
-        console.log(`👤 No user address or pool data, setting position to null`);
         setUserPosition(null);
       }
     } catch (err) {
-      console.error(`❌ Error in usePoolData fetchData:`, err);
+      console.error(`Error fetching pool data:`, err);
       setError(err as Error);
       // Only clear data on initial load errors, keep existing data on refetch errors
       if (!isRefetch) {

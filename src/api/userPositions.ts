@@ -1,6 +1,5 @@
 import { SuiClient } from '@mysten/sui/client';
 import { MarginPool } from '../contracts/deepbook_margin/margin_pool';
-import { Position } from '../contracts/deepbook_margin/position_manager';
 import { CONTRACTS } from '../config/contracts';
 import type { UserPosition, PoolAssetSymbol } from '../features/lending/types';
 
@@ -29,6 +28,32 @@ function convertSharesToBalance(
 }
 
 /**
+ * Extracts shares value from dynamic field content structure
+ * Handles the nested structure: Field<address, Position> -> Position -> shares
+ */
+function extractSharesFromDynamicField(content: any): string | number | null {
+  // Standard structure: content.fields.value.fields.shares
+  const fields = content?.fields;
+  const value = fields?.value;
+  const valueFields = value?.fields;
+  
+  if (valueFields?.shares !== undefined) {
+    return valueFields.shares;
+  }
+  
+  // Fallback patterns
+  if (value?.shares !== undefined) {
+    return value.shares;
+  }
+  
+  if (content?.value?.fields?.shares !== undefined) {
+    return content.value.fields.shares;
+  }
+  
+  return null;
+}
+
+/**
  * Fetches a user's position from a specific margin pool
  */
 export async function fetchUserPositionFromPool(
@@ -38,11 +63,8 @@ export async function fetchUserPositionFromPool(
   asset: PoolAssetSymbol,
   decimals: number
 ): Promise<UserPosition | null> {
-  console.log(`🔍 Fetching user position for ${userAddress} in ${asset} pool (${poolId})`);
-  
   try {
-    // First, get the margin pool to access the position manager
-    console.log(`📡 Fetching margin pool object for ${poolId}`);
+    // Fetch the margin pool to access the position manager
     const poolResponse = await suiClient.getObject({
       id: poolId,
       options: {
@@ -51,84 +73,53 @@ export async function fetchUserPositionFromPool(
       },
     });
 
-    if (!poolResponse.data || !poolResponse.data.bcs) {
-      console.warn(`❌ No BCS data found for pool ${poolId}`);
-      return null;
-    }
-
-    const bcsData = poolResponse.data.bcs;
-    console.log(`📦 Pool BCS data type: ${bcsData.dataType}`);
-    
-    if (bcsData.dataType !== 'moveObject') {
-      console.warn(`❌ Object ${poolId} is not a move object`);
+    if (!poolResponse.data?.bcs || poolResponse.data.bcs.dataType !== 'moveObject') {
       return null;
     }
 
     // Parse the MarginPool to get the position manager
-    console.log(`🔧 Parsing MarginPool from BCS data`);
-    const marginPool = MarginPool.fromBase64(bcsData.bcsBytes);
-    const positionManager = marginPool.positions;
-    
-    console.log(`📊 Position manager table ID: ${positionManager.positions.id.id}`);
-    console.log(`📊 Position manager table size: ${positionManager.positions.size}`);
+    const marginPool = MarginPool.fromBase64(poolResponse.data.bcs.bcsBytes);
+    const positionTableId = marginPool.positions.positions.id.id;
     
     // Query the dynamic field for this user's position
-    console.log(`🔍 Querying dynamic field for user ${userAddress} ${positionManager.positions.id.id}`);
     const positionField = await suiClient.getDynamicFieldObject({
-      parentId: positionManager.positions.id.id,
+      parentId: positionTableId,
       name: {
         type: 'address',
         value: userAddress,
       },
     });
 
-    console.log(`📋 Dynamic field response:`, {
-      hasData: !!positionField.data,
-      hasBcs: !!(positionField.data?.bcs),
-      dataType: positionField.data?.bcs?.dataType,
-    });
-
-    if (!positionField.data || !positionField.data.bcs) {
-      console.log(`❌ No position found for user ${userAddress} in ${asset} pool`);
-      return null;
-    }
-
-    // Parse the Position object
-    const positionBcsData = positionField.data.bcs;
-    if (positionBcsData.dataType !== 'moveObject') {
-      console.warn(`❌ Position field is not a move object for user ${userAddress}`);
+    // Dynamic fields return content, not BCS
+    if (!positionField.data?.content) {
       return null;
     }
     
-    console.log(`🔧 Parsing Position from BCS data`);
-    const position = Position.fromBase64(positionBcsData.bcsBytes);
-    console.log(`📊 Position shares: ${position.shares}`);
+    // Extract shares from the nested dynamic field structure
+    const shares = extractSharesFromDynamicField(positionField.data.content);
+    
+    if (!shares) {
+      console.warn(`Could not extract shares from position for ${userAddress} in ${asset} pool`);
+      return null;
+    }
     
     // Convert shares to balance using pool state
     const balanceFormatted = convertSharesToBalance(
-      BigInt(position.shares),
+      BigInt(shares),
       BigInt(marginPool.state.total_supply),
       BigInt(marginPool.state.supply_shares),
       decimals,
       asset
     );
 
-    console.log(`✅ Successfully fetched position:`, {
-      asset,
-      shares: position.shares,
-      balanceFormatted,
-      totalSupply: marginPool.state.total_supply,
-      supplyShares: marginPool.state.supply_shares,
-    });
-
     return {
       address: userAddress,
       asset,
-      shares: Number(position.shares),
+      shares: Number(shares),
       balanceFormatted,
     };
   } catch (error) {
-    console.error(`❌ Error fetching user position from pool ${poolId}:`, error);
+    console.error(`Error fetching user position from ${asset} pool:`, error);
     return null;
   }
 }
@@ -140,17 +131,11 @@ export async function fetchUserPositions(
   suiClient: SuiClient,
   userAddress: string
 ): Promise<UserPosition[]> {
-  console.log(`🚀 Starting to fetch all user positions for ${userAddress}`);
-  
   if (!userAddress) {
-    console.log(`❌ No user address provided`);
     return [];
   }
 
-  const positions: UserPosition[] = [];
-
   // Fetch positions from both pools in parallel
-  console.log(`🔄 Fetching positions from both pools in parallel...`);
   const [suiPosition, dbusdcPosition] = await Promise.all([
     fetchUserPositionFromPool(
       suiClient,
@@ -168,21 +153,6 @@ export async function fetchUserPositions(
     ),
   ]);
 
-  console.log(`📊 Pool fetch results:`, {
-    suiPosition: suiPosition ? 'Found' : 'Not found',
-    dbusdcPosition: dbusdcPosition ? 'Found' : 'Not found',
-  });
-
-  // Add non-null positions to the result
-  if (suiPosition) {
-    positions.push(suiPosition);
-    console.log(`✅ Added SUI position:`, suiPosition);
-  }
-  if (dbusdcPosition) {
-    positions.push(dbusdcPosition);
-    console.log(`✅ Added DBUSDC position:`, dbusdcPosition);
-  }
-
-  console.log(`🎯 Total positions found: ${positions.length}`, positions);
-  return positions;
+  // Return only non-null positions
+  return [suiPosition, dbusdcPosition].filter((pos): pos is UserPosition => pos !== null);
 }
