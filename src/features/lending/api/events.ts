@@ -95,13 +95,13 @@ export interface DeepbookPoolUpdatedEventResponse extends ApiEventResponse<{
 export interface MaintainerFeesWithdrawnEventResponse extends ApiEventResponse<{
   margin_pool_id: string;
   margin_pool_cap_id: string;
-  amount: string;
+  maintainer_fees: string;
 }> {}
 
 // Protocol Fees Withdrawn Event Response
 export interface ProtocolFeesWithdrawnEventResponse extends ApiEventResponse<{
   margin_pool_id: string;
-  amount: string;
+  protocol_fees: string;
 }> {}
 
 // Protocol Fees Increased Event Response
@@ -120,9 +120,10 @@ export interface ReferralFeesClaimedEventResponse extends ApiEventResponse<{
 // Margin Manager Created Event Response
 export interface MarginManagerCreatedEventResponse extends ApiEventResponse<{
   margin_manager_id: string;
-  deepbook_pool_id: string;
-  base_margin_pool_id: string | null;
-  quote_margin_pool_id: string | null;
+  balance_manager_id: string;
+  deepbook_pool_id: string | null;
+  base_margin_pool_id?: string | null;
+  quote_margin_pool_id?: string | null;
 }> {}
 
 // Margin Managers Info Response

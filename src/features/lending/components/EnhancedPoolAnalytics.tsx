@@ -1,7 +1,7 @@
-import React from 'react';
-import type { PoolOverview } from '../types';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { MarginPool } from '../../../contracts/deepbook_margin/margin_pool';
+import React from "react";
+import type { PoolOverview } from "../types";
+import { useSuiClient } from "@mysten/dapp-kit";
+import { MarginPool } from "../../../contracts/deepbook_margin/margin_pool";
 
 interface EnhancedPoolAnalytics extends PoolOverview {
   vaultBalance: number;
@@ -26,14 +26,19 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
           },
         });
 
-        if (response.data && response.data.bcs && response.data.bcs.dataType === 'moveObject') {
+        if (
+          response.data &&
+          response.data.bcs &&
+          response.data.bcs.dataType === "moveObject"
+        ) {
           const marginPool = MarginPool.fromBase64(response.data.bcs.bcsBytes);
           // Vault is a Balance<Asset> which contains a u64 value
-          const vaultValue = Number(marginPool.vault.value) / (10 ** pool.contracts.coinDecimals);
+          const vaultValue =
+            Number(marginPool.vault.value) / 10 ** pool.contracts.coinDecimals;
           setVaultBalance(vaultValue);
         }
       } catch (error) {
-        console.error('Error fetching vault balance:', error);
+        console.error("Error fetching vault balance:", error);
       } finally {
         setIsLoadingVault(false);
       }
@@ -47,9 +52,8 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
 
   // Calculate enhanced metrics
   const analytics: EnhancedPoolAnalytics = React.useMemo(() => {
-    const utilizationPercent = pool.state.supply > 0 
-      ? (pool.state.borrow / pool.state.supply) * 100 
-      : 0;
+    const utilizationPercent =
+      pool.state.supply > 0 ? (pool.state.borrow / pool.state.supply) * 100 : 0;
 
     // Calculate borrow APR from interest rate model
     const interestConfig = pool.protocolConfig.interest_config;
@@ -59,17 +63,22 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
     let borrowApr: number;
     if (currentUtilization <= optimalUtilization) {
       // Below optimal: base_rate + base_slope * utilization
-      borrowApr = interestConfig.base_rate + (interestConfig.base_slope * currentUtilization);
+      borrowApr =
+        interestConfig.base_rate +
+        interestConfig.base_slope * currentUtilization;
     } else {
       // Above optimal: base_rate + base_slope * optimal_u + excess_slope * (u - optimal_u)
-      borrowApr = 
+      borrowApr =
         interestConfig.base_rate +
-        (interestConfig.base_slope * optimalUtilization) +
-        (interestConfig.excess_slope * (currentUtilization - optimalUtilization));
+        interestConfig.base_slope * optimalUtilization +
+        interestConfig.excess_slope * (currentUtilization - optimalUtilization);
     }
 
     // Supply APR = Borrow APR * utilization * (1 - protocol_spread)
-    const supplyApr = borrowApr * currentUtilization * (1 - pool.protocolConfig.margin_pool_config.protocol_spread);
+    const supplyApr =
+      borrowApr *
+      currentUtilization *
+      (1 - pool.protocolConfig.margin_pool_config.protocol_spread);
 
     return {
       ...pool,
@@ -96,10 +105,10 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
                 maximumFractionDigits: 2,
               })}
             </div>
-            <div className="text-sm text-white/60">Total Supply (with interest)</div>
-            <div className="text-xs text-cyan-300">
-              {pool.asset}
+            <div className="text-sm text-white/60">
+              Total Supply (with interest)
             </div>
+            <div className="text-xs text-cyan-300">{pool.asset}</div>
           </div>
         </div>
 
@@ -116,9 +125,7 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
               })}
             </div>
             <div className="text-sm text-white/60">Total Borrowed</div>
-            <div className="text-xs text-amber-300">
-              {pool.asset}
-            </div>
+            <div className="text-xs text-amber-300">{pool.asset}</div>
           </div>
         </div>
 
@@ -126,7 +133,9 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
         <div className="card-surface p-5 rounded-2xl border border-white/10">
           <div className="flex items-center justify-between mb-2">
             <span className="text-2xl">🏦</span>
-            {isLoadingVault && <div className="animate-pulse h-2 w-2 rounded-full bg-green-400"></div>}
+            {isLoadingVault && (
+              <div className="animate-pulse h-2 w-2 rounded-full bg-green-400"></div>
+            )}
           </div>
           <div className="space-y-1">
             <div className="text-2xl font-bold text-white">
@@ -139,10 +148,10 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
                 })
               )}
             </div>
-            <div className="text-sm text-white/60">Vault Balance (Available)</div>
-            <div className="text-xs text-green-300">
-              {pool.asset}
+            <div className="text-sm text-white/60">
+              Vault Balance (Available)
             </div>
+            <div className="text-xs text-green-300">{pool.asset}</div>
           </div>
         </div>
 
@@ -158,10 +167,23 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
             <div className="text-sm text-white/60">Utilization Rate</div>
             <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
-                style={{ width: `${Math.min(analytics.utilizationPercent, 100)}%` }}
+                className={`h-full transition-all duration-500 ${
+                  analytics.utilizationPercent > 90
+                    ? "bg-red-500 animate-pulse"
+                    : analytics.utilizationPercent > 75
+                    ? "bg-amber-500"
+                    : "bg-gradient-to-r from-cyan-500 to-blue-500"
+                }`}
+                style={{
+                  width: `${Math.min(analytics.utilizationPercent, 100)}%`,
+                }}
               ></div>
             </div>
+            {analytics.utilizationPercent > 90 && (
+              <div className="mt-2 text-xs text-red-300 flex items-center gap-1">
+                ⚠️ High utilization! Withdrawals may be limited.
+              </div>
+            )}
           </div>
         </div>
 
@@ -175,9 +197,7 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
               {analytics.borrowApr.toFixed(3)}%
             </div>
             <div className="text-sm text-white/60">Borrow APR</div>
-            <div className="text-xs text-white/40">
-              What borrowers pay
-            </div>
+            <div className="text-xs text-white/40">What borrowers pay</div>
           </div>
         </div>
 
@@ -191,21 +211,23 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
               {pool.ui.aprSupplyPct.toFixed(3)}%
             </div>
             <div className="text-sm text-white/60">Supply APR</div>
-            <div className="text-xs text-white/40">
-              What suppliers earn
-            </div>
+            <div className="text-xs text-white/40">What suppliers earn</div>
           </div>
         </div>
       </div>
 
       {/* Pool Configuration */}
       <div className="card-surface p-6 rounded-2xl border border-white/10">
-        <h3 className="text-lg font-bold text-cyan-200 mb-4">Pool Configuration</h3>
+        <h3 className="text-lg font-bold text-cyan-200 mb-4">
+          Pool Configuration
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Supply Configuration */}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-white/80 uppercase tracking-wide">Supply Limits</h4>
-            
+            <h4 className="text-sm font-semibold text-white/80 uppercase tracking-wide">
+              Supply Limits
+            </h4>
+
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-white/60 text-sm">Supply Cap</span>
@@ -213,7 +235,7 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
                   {pool.protocolConfig.margin_pool_config.supply_cap.toLocaleString()}
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <span className="text-white/60 text-sm">Current Supply</span>
                 <span className="text-cyan-300 font-semibold">
@@ -223,14 +245,19 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
                   })}
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <span className="text-white/60 text-sm">Supply % of Cap</span>
                 <span className="text-white font-semibold">
-                  {((pool.state.supply / pool.protocolConfig.margin_pool_config.supply_cap) * 100).toFixed(2)}%
+                  {(
+                    (pool.state.supply /
+                      pool.protocolConfig.margin_pool_config.supply_cap) *
+                    100
+                  ).toFixed(2)}
+                  %
                 </span>
               </div>
-              
+
               <div className="h-2 bg-white/10 rounded-full overflow-hidden mt-2">
                 <div
                   className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500"
@@ -244,8 +271,10 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
 
           {/* Borrow Configuration */}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-white/80 uppercase tracking-wide">Borrow Limits</h4>
-            
+            <h4 className="text-sm font-semibold text-white/80 uppercase tracking-wide">
+              Borrow Limits
+            </h4>
+
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-white/60 text-sm">Min Borrow</span>
@@ -253,69 +282,31 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
                   {pool.protocolConfig.margin_pool_config.min_borrow.toLocaleString()}
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <span className="text-white/60 text-sm">Max Utilization</span>
                 <span className="text-white font-semibold">
-                  {(pool.protocolConfig.margin_pool_config.max_utilization_rate * 100).toFixed(2)}%
+                  {(
+                    pool.protocolConfig.margin_pool_config
+                      .max_utilization_rate * 100
+                  ).toFixed(2)}
+                  %
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <span className="text-white/60 text-sm">Protocol Spread</span>
                 <span className="text-white font-semibold">
-                  {(pool.protocolConfig.margin_pool_config.protocol_spread * 100).toFixed(2)}%
+                  {(
+                    pool.protocolConfig.margin_pool_config.protocol_spread * 100
+                  ).toFixed(2)}
+                  %
                 </span>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Interest Rate Model Parameters */}
-      <div className="card-surface p-6 rounded-2xl border border-white/10">
-        <h3 className="text-lg font-bold text-cyan-200 mb-4">Interest Rate Model</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <div className="text-white/60 text-xs mb-1">Base Rate</div>
-            <div className="text-white font-semibold">
-              {(pool.protocolConfig.interest_config.base_rate * 100).toFixed(3)}%
-            </div>
-          </div>
-          
-          <div>
-            <div className="text-white/60 text-xs mb-1">Base Slope</div>
-            <div className="text-white font-semibold">
-              {(pool.protocolConfig.interest_config.base_slope * 100).toFixed(3)}%
-            </div>
-          </div>
-          
-          <div>
-            <div className="text-white/60 text-xs mb-1">Optimal Utilization</div>
-            <div className="text-white font-semibold">
-              {(pool.protocolConfig.interest_config.optimal_utilization * 100).toFixed(2)}%
-            </div>
-          </div>
-          
-          <div>
-            <div className="text-white/60 text-xs mb-1">Excess Slope</div>
-            <div className="text-white font-semibold">
-              {(pool.protocolConfig.interest_config.excess_slope * 100).toFixed(3)}%
-            </div>
-          </div>
-        </div>
-        
-        <div className="mt-4 p-4 bg-white/5 rounded-xl text-xs text-white/70">
-          <p className="mb-2"><strong>Model:</strong></p>
-          <p className="font-mono">
-            Below Optimal: <span className="text-cyan-300">rate = base + base_slope × u</span>
-          </p>
-          <p className="font-mono">
-            Above Optimal: <span className="text-amber-300">rate = base + base_slope × opt_u + excess_slope × (u - opt_u)</span>
-          </p>
         </div>
       </div>
     </div>
   );
 }
-

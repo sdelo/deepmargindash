@@ -5,6 +5,7 @@ import { MIN_DEPOSIT_AMOUNT } from "../../../constants";
 
 type Props = {
   asset: "DBUSDC" | "SUI";
+  apy?: number; // Added APY for earnings projection
   onDeposit?: (amount: number) => void;
   onWithdrawAll?: () => void;
   onWithdraw?: (amount: number) => void;
@@ -18,6 +19,7 @@ type Props = {
 
 export const DepositWithdrawPanel: FC<Props> = ({
   asset,
+  apy = 0,
   onDeposit,
   onWithdrawAll,
   onWithdraw,
@@ -31,6 +33,7 @@ export const DepositWithdrawPanel: FC<Props> = ({
   const [tab, setTab] = React.useState<"deposit" | "withdraw">("deposit");
   const account = useCurrentAccount();
   const [connectOpen, setConnectOpen] = React.useState(false);
+  const [inputAmount, setInputAmount] = React.useState<string>("");
 
   // Parse balances for validation (rounded down to nearest 0.01)
   const assetBalanceNum = React.useMemo(() => {
@@ -49,18 +52,26 @@ export const DepositWithdrawPanel: FC<Props> = ({
     return assetBalanceNum.toFixed(2);
   }, [assetBalanceNum]);
 
+  // Calculate estimated earnings
+  const earnings = React.useMemo(() => {
+    const amount = parseFloat(inputAmount) || 0;
+    const daily = (amount * (apy / 100)) / 365;
+    const yearly = amount * (apy / 100);
+    return { daily, yearly };
+  }, [inputAmount, apy]);
+
   return (
-    <div className="w-full card-surface card-ring glow-amber glow-cyan animate-pulse-glow p-8 flex flex-col relative min-h-[600px]">
-      <div className="mb-6">
-        <h2 className="text-3xl font-extrabold tracking-wide text-amber-300 mb-2 flex items-center gap-3">
-          <span className="w-4 h-4 rounded-full bg-amber-400 animate-pulse shadow-[0_0_20px_4px_rgba(251,191,36,0.6)]"></span>
-          Leviathan Margin Pool
+    <div className="w-full card-surface card-ring glow-amber glow-cyan animate-pulse-glow p-6 flex flex-col relative min-h-[500px]">
+      <div className="mb-4">
+        <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 mb-1 flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse shadow-[0_0_20px_4px_rgba(251,191,36,0.6)]"></span>
+          {asset} Margin Pool
         </h2>
-        <p className="text-sm text-cyan-100/70">
-          Deposit or withdraw from the {asset} margin pool
+        <p className="text-xs text-cyan-100/70">
+          Deposit {asset} to earn yield or withdraw your funds.
         </p>
       </div>
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-6"></div>
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-4"></div>
 
       <div className="flex items-center gap-3 justify-center mb-6">
         <button
@@ -87,10 +98,6 @@ export const DepositWithdrawPanel: FC<Props> = ({
 
       {/* Deposit */}
       <div className={`flex-1 ${tab === "deposit" ? "block" : "hidden"}`}>
-        <h3 className="text-xl font-semibold text-cyan-200 mb-4 flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_12px_2px_rgba(251,191,36,0.6)]"></span>
-          Deposit
-        </h3>
         <div className="space-y-5">
           <div className="flex items-center gap-2">
             <input
@@ -100,9 +107,33 @@ export const DepositWithdrawPanel: FC<Props> = ({
               step="0.000001"
               placeholder={`Enter ${asset} amount`}
               className="input-surface flex-1 text-lg px-5 py-4"
+              value={inputAmount}
+              onChange={(e) => setInputAmount(e.target.value)}
               id="deposit-amount"
             />
           </div>
+          
+          {/* Earnings Projection */}
+          {inputAmount && !isNaN(parseFloat(inputAmount)) && parseFloat(inputAmount) > 0 && (
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <h4 className="text-xs text-indigo-200/80 uppercase tracking-wider mb-2">Estimated Earnings</h4>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-sm text-cyan-100/70">Daily</div>
+                  <div className="text-lg font-bold text-emerald-300">
+                    +{earnings.daily.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} {asset}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-cyan-100/70">Yearly (APY {apy.toFixed(2)}%)</div>
+                  <div className="text-lg font-bold text-emerald-300">
+                    +{earnings.yearly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {asset}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between text-sm text-indigo-200/80">
             <span>Quick %</span>
             <div className="flex gap-3">
@@ -111,16 +142,11 @@ export const DepositWithdrawPanel: FC<Props> = ({
                   key={p}
                   className="pill px-5 py-2.5 text-base hover:scale-105 transition-transform"
                   onClick={() => {
-                    const el = document.getElementById(
-                      "deposit-amount"
-                    ) as HTMLInputElement | null;
-                    if (!el) return;
                     if (balance) {
-                      const bal = assetBalanceNum; // Use the already parsed and rounded balance
+                      const bal = assetBalanceNum;
                       const amount = (bal * p) / 100;
-                      // Round down to nearest 0.01 using Math.floor
                       const roundedAmount = Math.floor(amount * 100) / 100;
-                      el.value = roundedAmount.toFixed(2);
+                      setInputAmount(roundedAmount.toFixed(2));
                     }
                   }}
                 >
@@ -153,11 +179,7 @@ export const DepositWithdrawPanel: FC<Props> = ({
               disabled={txStatus === "pending" || suiBalanceNum < 0.01}
               onClick={() => {
                 if (txStatus === "pending") return;
-                const el = document.getElementById(
-                  "deposit-amount"
-                ) as HTMLInputElement | null;
-                if (!el) return;
-                let v = Number(el.value || 0);
+                let v = Number(inputAmount || 0);
                 if (!Number.isFinite(v) || v <= 0) return;
                 if (v < 0) v = 0;
                 onDeposit?.(v);

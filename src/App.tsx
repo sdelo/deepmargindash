@@ -2,7 +2,7 @@ import "./App.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import { LandingPage } from "./pages/LandingPage";
-import { PoolsPage } from "./pages/PoolsPageNew";
+import { PoolsPage } from "./pages/PoolsPage";
 
 const router = createBrowserRouter([
   {

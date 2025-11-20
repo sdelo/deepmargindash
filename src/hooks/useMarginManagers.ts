@@ -56,7 +56,7 @@ export function useMarginManagers(): MarginManagerAnalytics {
       // Process each manager event
       for (const event of managerEvents) {
         // Skip events with missing critical data
-        if (!event.margin_manager_id || !event.deepbook_pool_id || !event.sender || !event.checkpoint_timestamp_ms) {
+        if (!event.margin_manager_id || !event.sender || !event.checkpoint_timestamp_ms) {
           console.warn('Skipping margin manager event with missing data:', event);
           continue;
         }
@@ -64,9 +64,9 @@ export function useMarginManagers(): MarginManagerAnalytics {
         const detail: MarginManagerDetails = {
           id: event.margin_manager_id,
           owner: event.sender,
-          deepbookPoolId: event.deepbook_pool_id,
-          balanceManagerId: '', // Not available in creation event
-          marginPoolId: event.base_margin_pool_id || event.quote_margin_pool_id,
+          deepbookPoolId: event.deepbook_pool_id || 'unknown',
+          balanceManagerId: event.balance_manager_id || '', // Now available in API response
+          marginPoolId: event.base_margin_pool_id || event.quote_margin_pool_id || null,
           borrowedBaseShares: '0',
           borrowedQuoteShares: '0',
           creationTimestamp: event.checkpoint_timestamp_ms,
@@ -75,9 +75,11 @@ export function useMarginManagers(): MarginManagerAnalytics {
 
         managerDetailsMap.set(event.margin_manager_id, detail);
 
-        // Count managers per pool
-        const poolId = event.deepbook_pool_id;
-        managersPerPool[poolId] = (managersPerPool[poolId] || 0) + 1;
+        // Count managers per pool (only if pool ID exists)
+        if (event.deepbook_pool_id) {
+          const poolId = event.deepbook_pool_id;
+          managersPerPool[poolId] = (managersPerPool[poolId] || 0) + 1;
+        }
 
         // Add to recent if within 24 hours
         if (event.checkpoint_timestamp_ms >= oneDayAgo) {

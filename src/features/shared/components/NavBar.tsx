@@ -23,7 +23,7 @@ export default function NavBar() {
 
   return (
     <nav className="w-full sticky top-0 z-50 backdrop-blur bg-black/20 border-b border-white/10">
-      <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between text-white">
+      <div className="max-w-[1920px] mx-auto px-4 lg:px-12 xl:px-20 2xl:px-32 py-3 flex items-center justify-between text-white">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2 font-extrabold tracking-wide text-cyan-200 hover:opacity-80 transition-opacity">
             <img src={DivingHelmetIcon} alt="Diving Helmet" className="w-8 h-8" />

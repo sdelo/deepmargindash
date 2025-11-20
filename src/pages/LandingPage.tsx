@@ -12,6 +12,7 @@ import {
   CogIcon,
 } from "@heroicons/react/24/outline";
 import { LandingNavBar } from "../components/LandingNavBar";
+import { GlobalMetricsPanel } from "../features/lending/components/GlobalMetricsPanel";
 import { LandingPoolCard } from "../components/LandingPoolCard";
 import { OceanIcon } from "../components/OceanIcon";
 import { AnimatedSection } from "../components/AnimatedSection";
@@ -103,6 +104,13 @@ export function LandingPage() {
               </AnimatedSection>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Protocol Overview Section */}
+      <section className="py-4 px-4">
+        <div className="max-w-7xl mx-auto">
+           <GlobalMetricsPanel />
         </div>
       </section>
 

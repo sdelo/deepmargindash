@@ -62,11 +62,17 @@ export function AdministrativePanel({ poolId }: { poolId?: string }) {
   // Calculate summary metrics
   const summary = React.useMemo(() => {
     const totalMaintainerFees = maintainerFees.reduce(
-      (sum, event) => sum + parseFloat(event.amount),
+      (sum, event) => {
+        const amount = parseFloat(event.maintainer_fees || '0');
+        return sum + (isNaN(amount) ? 0 : amount);
+      },
       0
     );
     const totalProtocolFees = protocolFees.reduce(
-      (sum, event) => sum + parseFloat(event.amount),
+      (sum, event) => {
+        const amount = parseFloat(event.protocol_fees || '0');
+        return sum + (isNaN(amount) ? 0 : amount);
+      },
       0
     );
 
@@ -105,7 +111,7 @@ export function AdministrativePanel({ poolId }: { poolId?: string }) {
             ) : (
               summary.totalMaintainerFees.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
+                maximumFractionDigits: 6,
               })
             )}
           </div>
@@ -120,7 +126,7 @@ export function AdministrativePanel({ poolId }: { poolId?: string }) {
             ) : (
               summary.totalProtocolFees.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
+                maximumFractionDigits: 6,
               })
             )}
           </div>
@@ -206,10 +212,18 @@ export function AdministrativePanel({ poolId }: { poolId?: string }) {
                         {event.type}
                       </span>
                       <span className="text-sm text-white font-semibold">
-                        {(parseFloat(event.amount) / 1e9).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        {(() => {
+                          const amount = parseFloat(
+                            event.type === 'Maintainer' 
+                              ? (event as any).maintainer_fees || '0'
+                              : (event as any).protocol_fees || '0'
+                          );
+                          const displayAmount = isNaN(amount) ? 0 : amount / 1e9;
+                          return displayAmount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 6,
+                          });
+                        })()}
                       </span>
                     </div>
                     <span className="text-xs text-white/60">
@@ -257,25 +271,37 @@ export function AdministrativePanel({ poolId }: { poolId?: string }) {
                     <div>
                       <div className="text-white/60 mb-1">Base Rate</div>
                       <div className="text-white font-semibold">
-                        {(parseFloat(event.interest_config.base_rate) / 1e9 * 100).toFixed(3)}%
+                        {(() => {
+                          const value = parseFloat(event.interest_config.base_rate || '0');
+                          return isNaN(value) ? '0.000%' : `${(value / 1e9 * 100).toFixed(3)}%`;
+                        })()}
                       </div>
                     </div>
                     <div>
                       <div className="text-white/60 mb-1">Base Slope</div>
                       <div className="text-white font-semibold">
-                        {(parseFloat(event.interest_config.base_slope) / 1e9 * 100).toFixed(3)}%
+                        {(() => {
+                          const value = parseFloat(event.interest_config.base_slope || '0');
+                          return isNaN(value) ? '0.000%' : `${(value / 1e9 * 100).toFixed(3)}%`;
+                        })()}
                       </div>
                     </div>
                     <div>
                       <div className="text-white/60 mb-1">Optimal Util</div>
                       <div className="text-white font-semibold">
-                        {(parseFloat(event.interest_config.optimal_utilization) / 1e9 * 100).toFixed(2)}%
+                        {(() => {
+                          const value = parseFloat(event.interest_config.optimal_utilization || '0');
+                          return isNaN(value) ? '0.00%' : `${(value / 1e9 * 100).toFixed(2)}%`;
+                        })()}
                       </div>
                     </div>
                     <div>
                       <div className="text-white/60 mb-1">Excess Slope</div>
                       <div className="text-white font-semibold">
-                        {(parseFloat(event.interest_config.excess_slope) / 1e9 * 100).toFixed(3)}%
+                        {(() => {
+                          const value = parseFloat(event.interest_config.excess_slope || '0');
+                          return isNaN(value) ? '0.000%' : `${(value / 1e9 * 100).toFixed(3)}%`;
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -321,25 +347,37 @@ export function AdministrativePanel({ poolId }: { poolId?: string }) {
                     <div>
                       <div className="text-white/60 mb-1">Supply Cap</div>
                       <div className="text-white font-semibold">
-                        {(parseFloat(event.margin_pool_config.supply_cap) / 1e9).toLocaleString()}
+                        {(() => {
+                          const value = parseFloat(event.margin_pool_config.supply_cap || '0');
+                          return isNaN(value) ? '0' : (value / 1e9).toLocaleString();
+                        })()}
                       </div>
                     </div>
                     <div>
                       <div className="text-white/60 mb-1">Max Util Rate</div>
                       <div className="text-white font-semibold">
-                        {(parseFloat(event.margin_pool_config.max_utilization_rate) / 1e9 * 100).toFixed(2)}%
+                        {(() => {
+                          const value = parseFloat(event.margin_pool_config.max_utilization_rate || '0');
+                          return isNaN(value) ? '0.00%' : `${(value / 1e9 * 100).toFixed(2)}%`;
+                        })()}
                       </div>
                     </div>
                     <div>
                       <div className="text-white/60 mb-1">Protocol Spread</div>
                       <div className="text-white font-semibold">
-                        {(parseFloat(event.margin_pool_config.protocol_spread) / 1e9 * 100).toFixed(2)}%
+                        {(() => {
+                          const value = parseFloat(event.margin_pool_config.protocol_spread || '0');
+                          return isNaN(value) ? '0.00%' : `${(value / 1e9 * 100).toFixed(2)}%`;
+                        })()}
                       </div>
                     </div>
                     <div>
                       <div className="text-white/60 mb-1">Min Borrow</div>
                       <div className="text-white font-semibold">
-                        {(parseFloat(event.margin_pool_config.min_borrow) / 1e9).toLocaleString()}
+                        {(() => {
+                          const value = parseFloat(event.margin_pool_config.min_borrow || '0');
+                          return isNaN(value) ? '0' : (value / 1e9).toLocaleString();
+                        })()}
                       </div>
                     </div>
                   </div>
