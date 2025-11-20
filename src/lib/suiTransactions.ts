@@ -1,5 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions";
 import type { PaginatedCoins, SuiClient } from "@mysten/sui/client";
+import { normalizeStructTag } from "@mysten/sui/utils";
 
 import { supply, withdraw } from "../contracts/deepbook_margin/margin_pool";
 import { ONE_BILLION, GAS_AMOUNT_MIST } from "../constants";
@@ -59,8 +60,10 @@ export async function buildDepositTransaction({
 
   let coinForDeposit;
 
-  // For SUI deposits, pick a specific SUI coin (not the gas coin)
-  if (coinType === "0x2::sui::SUI") {
+  const isSui = normalizeStructTag(coinType) === normalizeStructTag("0x2::sui::SUI");
+
+  // For SUI deposits, use the gas coin
+  if (isSui) {
     const suiCoins = await suiClient.getCoins({
       owner,
       coinType: "0x2::sui::SUI",
@@ -77,11 +80,8 @@ export async function buildDepositTransaction({
       throw new Error(`Insufficient SUI balance. Need ${Number(totalNeeded) / ONE_BILLION} SUI but have ${Number(totalSuiBalance) / ONE_BILLION} SUI.`);
     }
     
-    // Choose a coin big enough for the deposit, or use the first available
-    const depositCoin = suiCoins.data.find(c => BigInt(c.balance) >= amount) ?? suiCoins.data[0];
-    
-    const source = tx.object(depositCoin.coinObjectId);
-    [coinForDeposit] = tx.splitCoins(source, [amount]);
+    // Use gas coin for deposit
+    [coinForDeposit] = tx.splitCoins(tx.gas, [amount]);
   } else {
     // For non-SUI deposits, split from the specific coin
     const source = tx.object(coins.data[0].coinObjectId);
@@ -106,23 +106,32 @@ export async function buildDepositTransaction({
   tx.setGasBudget(500_000_000n);
 
   // Explicitly set gas payment for SUI deposits
-  if (coinType === "0x2::sui::SUI") {
+  if (isSui) {
     const suiCoins = await suiClient.getCoins({
       owner,
       coinType: "0x2::sui::SUI",
       limit: 200,
     });
     
-    // Find a different coin for gas payment (not the one used for deposit)
-    const depositCoin = suiCoins.data.find(c => BigInt(c.balance) >= amount) ?? suiCoins.data[0];
-    const gasCoin = suiCoins.data.find(c => c.coinObjectId !== depositCoin.coinObjectId) ?? suiCoins.data[0];
+    // Find a coin that covers deposit amount + gas budget
+    const totalNeeded = amount + 500_000_000n;
+    const gasCoin = suiCoins.data.find(c => BigInt(c.balance) >= totalNeeded);
     
-    // Set explicit gas payment
-    tx.setGasPayment([{
-      objectId: gasCoin.coinObjectId,
-      version: gasCoin.version,
-      digest: gasCoin.digest,
-    }]);
+    if (gasCoin) {
+      tx.setGasPayment([{
+        objectId: gasCoin.coinObjectId,
+        version: gasCoin.version,
+        digest: gasCoin.digest,
+      }]);
+    } else {
+      // If no single coin is enough, use all coins
+      const paymentCoins = suiCoins.data.map(c => ({
+        objectId: c.coinObjectId,
+        version: c.version,
+        digest: c.digest,
+      }));
+      tx.setGasPayment(paymentCoins);
+    }
   } else {
     // For non-SUI deposits, get SUI coins for gas
     const suiCoins = await suiClient.getCoins({

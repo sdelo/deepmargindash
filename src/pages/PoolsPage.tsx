@@ -209,6 +209,14 @@ export function PoolsPage() {
         });
         setTxStatus("success");
         console.log("Deposit successful:", result.digest);
+
+        // Refresh data
+        await Promise.all([
+          suiPoolData.refetch(),
+          dbusdcPoolData.refetch(),
+          coinBalance.refetch(),
+          suiBalance.refetch(),
+        ]);
       } catch (error) {
         setTxStatus("error");
         setTxError(
@@ -263,6 +271,14 @@ export function PoolsPage() {
         });
         setTxStatus("success");
         console.log("Withdraw successful:", result.digest);
+
+        // Refresh data
+        await Promise.all([
+          suiPoolData.refetch(),
+          dbusdcPoolData.refetch(),
+          coinBalance.refetch(),
+          suiBalance.refetch(),
+        ]);
       } catch (error) {
         setTxStatus("error");
         setTxError(
@@ -303,6 +319,14 @@ export function PoolsPage() {
       });
       setTxStatus("success");
       console.log("Withdraw all successful:", result.digest);
+
+      // Refresh data
+      await Promise.all([
+        suiPoolData.refetch(),
+        dbusdcPoolData.refetch(),
+        coinBalance.refetch(),
+        suiBalance.refetch(),
+      ]);
     } catch (error) {
       setTxStatus("error");
       setTxError(error instanceof Error ? error.message : "Transaction failed");
