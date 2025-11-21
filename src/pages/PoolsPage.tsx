@@ -550,7 +550,7 @@ export function PoolsPage() {
                     >
                       <div className="flex items-center justify-center gap-2">
                         <YieldIcon
-                          size={20}
+                          size={35}
                           className={
                             overviewTab === "yield"
                               ? "opacity-100"
@@ -575,7 +575,7 @@ export function PoolsPage() {
                     >
                       <div className="flex items-center justify-center gap-2">
                         <LiquidityIcon
-                          size={20}
+                          size={35}
                           className={
                             overviewTab === "liquidity"
                               ? "opacity-100"
@@ -635,7 +635,7 @@ export function PoolsPage() {
                     >
                       <div className="flex items-center justify-center gap-2">
                         <WhaleIcon
-                          size={20}
+                          size={35}
                           className={
                             overviewTab === "whales"
                               ? "opacity-100"
