@@ -6,7 +6,7 @@ import {
   useSuiClientContext,
 } from "@mysten/dapp-kit";
 import PoolCarousel from "../features/lending/components/PoolCarousel";
-import DepositWithdrawPanel from "../features/lending/components/DepositWithdrawPanel";
+import DepositWithdrawPanel, { type DepositWithdrawPanelHandle } from "../features/lending/components/DepositWithdrawPanel";
 import PersonalPositions from "../features/lending/components/PersonalPositions";
 import YieldCurve from "../features/lending/components/YieldCurve";
 import SlidePanel from "../features/shared/components/SlidePanel";
@@ -19,6 +19,7 @@ import { AdministrativePanel } from "../features/lending/components/Administrati
 import { LiquidityHealthCheck } from "../features/lending/components/LiquidityHealthCheck";
 import { LiquidationWall } from "../features/lending/components/LiquidationWall";
 import { WhaleWatch } from "../features/lending/components/WhaleWatch";
+import { AdminHistorySlidePanel } from "../features/lending/components/AdminHistorySlidePanel";
 import {
   SectionNav,
   type DashboardSection,
@@ -42,6 +43,9 @@ export function PoolsPage() {
   const account = useCurrentAccount();
   const suiClient = useSuiClient();
   const { network } = useSuiClientContext();
+
+  // Ref for deposit panel
+  const depositPanelRef = React.useRef<DepositWithdrawPanelHandle>(null);
 
   // State for section navigation
   const [selectedSection, setSelectedSection] =
@@ -96,6 +100,8 @@ export function PoolsPage() {
   }, [pools, selectedPoolId]);
 
   const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [adminHistoryOpen, setAdminHistoryOpen] = React.useState(false);
+  const [adminHistoryPoolId, setAdminHistoryPoolId] = React.useState<string | null>(null);
   const [txStatus, setTxStatus] = React.useState<
     "idle" | "pending" | "success" | "error"
   >("idle");
@@ -452,8 +458,16 @@ export function PoolsPage() {
                     pools={pools}
                     selectedPoolId={selectedPoolId}
                     onSelectPool={setSelectedPoolId}
-                    onDepositClick={(id) => setSelectedPoolId(id)}
-                    onAdminAuditClick={(id) => setSelectedPoolId(id)}
+                    onDepositClick={(id) => {
+                      setSelectedPoolId(id);
+                      setTimeout(() => {
+                        depositPanelRef.current?.focusDepositInput();
+                      }, 100);
+                    }}
+                    onAdminAuditClick={(id) => {
+                      setAdminHistoryPoolId(id);
+                      setAdminHistoryOpen(true);
+                    }}
                     isLoading={isLoading}
                   />
                 </div>
@@ -468,6 +482,7 @@ export function PoolsPage() {
                     {/* Deposit/Withdraw Panel */}
                     <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
                       <DepositWithdrawPanel
+                        ref={depositPanelRef}
                         asset={selectedPool.asset}
                         apy={selectedPool.ui.aprSupplyPct}
                         minBorrow={Number(
@@ -580,9 +595,6 @@ export function PoolsPage() {
                         <h3 className="text-xl font-bold text-cyan-200">
                           Pool Analytics
                         </h3>
-                        <span className="text-xs text-indigo-300/60">
-                          Real-time data
-                        </span>
                       </div>
                       <EnhancedPoolAnalytics pool={selectedPool} />
                     </div>
@@ -693,6 +705,21 @@ export function PoolsPage() {
         width={"50vw"}
       >
         <DepositHistory address={account?.address} />
+      </SlidePanel>
+
+      <SlidePanel
+        open={adminHistoryOpen}
+        onClose={() => {
+          setAdminHistoryOpen(false);
+          setAdminHistoryPoolId(null);
+        }}
+        title="Admin Configuration History"
+        width={"60vw"}
+      >
+        <AdminHistorySlidePanel
+          poolId={adminHistoryPoolId || undefined}
+          poolName={pools.find(p => p.id === adminHistoryPoolId)?.asset}
+        />
       </SlidePanel>
     </div>
   );

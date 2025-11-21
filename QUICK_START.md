@@ -13,16 +13,19 @@ Your DeepBook Margin dashboard now has comprehensive analytics organized into **
 ## How to Test
 
 ### 1. Start the Development Server
+
 ```bash
 bun dev
 ```
 
 ### 2. Navigate to Dashboard
+
 Go to `http://localhost:5173/pools` (or click "Launch App" from landing page)
 
 ### 3. Explore Each Tab
 
 #### Overview Tab
+
 - **Top Section:** See protocol-wide metrics (TVL, Total Borrowed, Active Managers, etc.)
 - **Pool Cards:** Select SUI or DBUSDC pool
 - **Deposit/Withdraw:** Existing functionality preserved
@@ -30,19 +33,22 @@ Go to `http://localhost:5173/pools` (or click "Launch App" from landing page)
 - **Pool Analytics:** Expanded to show vault balance, utilization, APRs
 - **Yield Curve:** Interest rate visualization
 
-#### Lending Tab  
+#### Lending Tab
+
 - View top 20 suppliers by net supply
 - See supply/withdraw activity feed
 - Adjust time range (1W, 1M, 3M, YTD, ALL)
 - Track new suppliers in last 24 hours
 
 #### Borrowing Tab
+
 - See total margin managers
 - View distribution across DeepBook pools
 - Track recently created managers (last 24h)
 - Visual bar charts for pool distribution
 
 #### Liquidations Tab
+
 - View liquidation history table
 - See total liquidations, volume, rewards
 - **Red Alert:** Shows if any bad debt incurred
@@ -50,6 +56,7 @@ Go to `http://localhost:5173/pools` (or click "Launch App" from landing page)
 - Sort by most recent
 
 #### Admin Tab
+
 - View fee withdrawal history (Maintainer + Protocol)
 - See interest rate updates with before/after values
 - Track pool configuration changes
@@ -57,6 +64,7 @@ Go to `http://localhost:5173/pools` (or click "Launch App" from landing page)
 - Filter by time range
 
 ### 4. Test Wallet Connection
+
 - **Connect wallet** to see your positions in Overview
 - Deposit/withdraw still works as before
 - View your transaction history in the slide panel
@@ -64,17 +72,21 @@ Go to `http://localhost:5173/pools` (or click "Launch App" from landing page)
 ## Key Features
 
 ### Navigation
+
 - **Desktop:** Beautiful tab bar at the top with icons
 - **Mobile:** Dropdown selector
 - **Fast switching:** No page reloads, instant tab switching
 
 ### Data Sources
+
 - **Real-time:** Pool state fetched from blockchain every 15 seconds
 - **Historical:** Events fetched from API with time range filters
 - **Accurate:** Uses proper decimal conversion (9 for SUI, 6 for DBUSDC)
 
 ### Time Range Filters
+
 Available on Lending, Liquidations, and Admin tabs:
+
 - **1W** - Last 7 days
 - **1M** - Last 30 days
 - **3M** - Last 90 days
@@ -92,12 +104,14 @@ Available on Lending, Liquidations, and Admin tabs:
 ## API Configuration
 
 The dashboard expects an events API running at:
+
 - **Default:** `http://localhost:9008`
-- **Override:** Set `VITE_API_URL` environment variable
+- **Override:** Set `API_URL` environment variable
 
 Example:
+
 ```bash
-VITE_API_URL=https://events-api.deepbook.tech bun dev
+API_URL=https://events-api.deepbook.tech bun dev
 ```
 
 ## Architecture
@@ -138,22 +152,27 @@ VITE_API_URL=https://events-api.deepbook.tech bun dev
 ## Troubleshooting
 
 ### "No data showing"
+
 - Check if API is running at `http://localhost:9008`
 - Check browser console for errors
 - Try switching to testnet if on localnet
 
 ### "Events not loading"
+
 - Verify API endpoint in `src/config/api.ts`
 - Check network connectivity
 - Look for CORS issues in console
 
 ### "Pool data not loading"
+
 - Check wallet is connected to correct network
 - Verify pool IDs in `src/config/contracts.ts`
 - Check RPC endpoint is responsive
 
 ### "Linting errors"
+
 All files have been checked and should have no linting errors. If you see any:
+
 ```bash
 bun run lint
 ```
@@ -169,9 +188,9 @@ bun run lint
 ## Questions?
 
 Check these files for reference:
+
 - `IMPLEMENTATION_SUMMARY.md` - Detailed technical documentation
 - `FEATURES.md` - Original features documentation
 - `EVENTS_DATESET.md` - Event types and structures
 
 Enjoy your enhanced dashboard! 🚀
-

@@ -17,14 +17,15 @@ import { LandingPoolCard } from "../components/LandingPoolCard";
 import { OceanIcon } from "../components/OceanIcon";
 import { AnimatedSection } from "../components/AnimatedSection";
 import { usePoolData } from "../hooks/usePoolData";
-import { CONTRACTS } from "../config/contracts";
+import { useNetworkContracts } from "../hooks/useNetworkContracts";
 import { syntheticPools } from "../data/synthetic/pools";
 import "../styles/landing.css";
 
 export function LandingPage() {
+  const contracts = useNetworkContracts();
   // Fetch live pool data
-  const suiPoolData = usePoolData(CONTRACTS.testnet.SUI_MARGIN_POOL_ID);
-  const dbusdcPoolData = usePoolData(CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID);
+  const suiPoolData = usePoolData(contracts.SUI_MARGIN_POOL_ID);
+  const dbusdcPoolData = usePoolData(contracts.DBUSDC_MARGIN_POOL_ID);
 
   // Create pools array with live data, fallback to synthetic if loading/error
   const pools = React.useMemo(() => {

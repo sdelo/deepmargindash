@@ -84,7 +84,7 @@ export function timeRangeToParams(range: TimeRange): { start_time: number; end_t
 export function getDefaultTimeRange(): { start_time: number; end_time: number } {
   const now = Date.now();
   const end_time = Math.floor(now / 1000); // Current time in seconds
-  const start_time = Math.floor((now - 365 * 24 * 60 * 60 * 1000) / 1000); // 1 year ago in seconds
+  const start_time = 1 // begining of history
   return { start_time, end_time };
 }
 

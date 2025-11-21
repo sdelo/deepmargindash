@@ -34,12 +34,6 @@ export default function NavBar() {
               <Link to="/pools" className="hover:text-white transition">
                 Pools
               </Link>
-              <a href="#analytics" className="hover:text-white transition">
-                Analytics
-              </a>
-              <a href="#admin" className="hover:text-white transition">
-                Admin
-              </a>
             </div>
           )}
         </div>

@@ -2,13 +2,13 @@
  * API Configuration
  * 
  * Supports environment-based API URL configuration for different environments.
- * Set VITE_API_URL environment variable to override the default.
+ * Set API_URL environment variable to override the default.
  */
 
 function getApiBaseUrlFromEnv(): string {
   // Check for environment variable first
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  if (typeof process !== 'undefined' && process.env && process.env.API_URL) {
+    return process.env.API_URL;
   }
 
   // Default based on current hostname
@@ -20,7 +20,7 @@ function getApiBaseUrlFromEnv(): string {
   }
 
   // Production/staging - use same hostname with port 8080
-  // This can be overridden with VITE_API_URL
+  // This can be overridden with API_URL
   return `http://${hostname}:9008`;
 }
 

@@ -17,23 +17,44 @@ type Props = {
   txError?: string | null;
 };
 
-export const DepositWithdrawPanel: FC<Props> = ({
-  asset,
-  apy = 0,
-  onDeposit,
-  onWithdrawAll,
-  onWithdraw,
-  minBorrow = 0,
-  supplyCap = 0,
-  balance,
-  suiBalance,
-  txStatus = "idle",
-  txError,
-}) => {
+export interface DepositWithdrawPanelHandle {
+  focusDepositInput: () => void;
+}
+
+const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<DepositWithdrawPanelHandle, Props> = (
+  {
+    asset,
+    apy = 0,
+    onDeposit,
+    onWithdrawAll,
+    onWithdraw,
+    minBorrow = 0,
+    supplyCap = 0,
+    balance,
+    suiBalance,
+    txStatus = "idle",
+    txError,
+  },
+  ref
+) => {
   const [tab, setTab] = React.useState<"deposit" | "withdraw">("deposit");
   const account = useCurrentAccount();
   const [connectOpen, setConnectOpen] = React.useState(false);
   const [inputAmount, setInputAmount] = React.useState<string>("");
+  const [isFlashing, setIsFlashing] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Expose focus method to parent component
+  React.useImperativeHandle(ref, () => ({
+    focusDepositInput: () => {
+      setTab("deposit");
+      setTimeout(() => {
+        inputRef.current?.focus();
+        setIsFlashing(true);
+        setTimeout(() => setIsFlashing(false), 600);
+      }, 100);
+    },
+  }));
 
   // Parse balances for validation (rounded down to nearest 0.01)
   const assetBalanceNum = React.useMemo(() => {
@@ -101,12 +122,13 @@ export const DepositWithdrawPanel: FC<Props> = ({
         <div className="space-y-5">
           <div className="flex items-center gap-2">
             <input
+              ref={inputRef}
               type="number"
               min={MIN_DEPOSIT_AMOUNT}
               max={assetBalanceNum}
               step="0.000001"
               placeholder={`Enter ${asset} amount`}
-              className="input-surface flex-1 text-lg px-5 py-4"
+              className={`input-surface flex-1 text-lg px-5 py-4 transition-all ${isFlashing ? 'ring-4 ring-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.6)]' : ''}`}
               value={inputAmount}
               onChange={(e) => setInputAmount(e.target.value)}
               id="deposit-amount"
@@ -315,5 +337,7 @@ export const DepositWithdrawPanel: FC<Props> = ({
     </div>
   );
 };
+
+export const DepositWithdrawPanel = React.forwardRef(DepositWithdrawPanelComponent);
 
 export default DepositWithdrawPanel;

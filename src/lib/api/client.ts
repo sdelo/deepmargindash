@@ -36,6 +36,13 @@ export class ApiClient {
   }
 
   /**
+   * Update the base URL
+   */
+  setBaseUrl(url: string) {
+    this.baseUrl = url;
+  }
+
+  /**
    * Make a request to the API
    */
   async request<T>(

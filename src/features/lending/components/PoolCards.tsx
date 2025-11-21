@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import type { PoolOverview } from "../types";
 import { Tooltip } from "../../../components/Tooltip";
+import { useAppNetwork } from "../../../../../context/AppNetworkContext";
 
 function formatNumber(n: number | bigint) {
   return Intl.NumberFormat('en-US').format(Number(n));
@@ -23,6 +24,8 @@ export const PoolCards: FC<Props> = ({
   onAdminAuditClick,
   isLoading = false,
 }) => {
+  const { explorerUrl } = useAppNetwork();
+
   const ICONS: Record<string, string> = {
     SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
     DBUSDC:
@@ -166,19 +169,33 @@ export const PoolCards: FC<Props> = ({
             </div>
 
             {/* Actions */}
-            <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAdminAuditClick?.(pool.id);
-                }}
-                className="text-xs text-indigo-300 hover:text-white transition-colors flex items-center gap-1"
-              >
-                <span>View Contract</span>
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </button>
+            <div className="mt-6 pt-6 border-t border-white/5">
+              <div className="flex items-center justify-between mb-3">
+                <a
+                  href={`${explorerUrl}/object/${pool.contracts?.marginPoolId || pool.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className="text-xs text-indigo-300 hover:text-white transition-colors flex items-center gap-1"
+                >
+                  <span>View Contract</span>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAdminAuditClick?.(pool.id);
+                  }}
+                  className="text-xs text-amber-300 hover:text-amber-100 transition-colors flex items-center gap-1"
+                >
+                  <span>⚙️ Admin History</span>
+                </button>
+              </div>
               
               <button
                 onClick={(e) => {
@@ -186,7 +203,7 @@ export const PoolCards: FC<Props> = ({
                   onDepositClick?.(pool.id);
                 }}
                 className={`
-                  px-4 py-2 rounded-lg text-sm font-bold transition-all
+                  w-full px-4 py-2 rounded-lg text-sm font-bold transition-all
                   ${isSelected 
                     ? "bg-cyan-400 text-slate-900 hover:bg-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.4)]" 
                     : "bg-white/10 text-white hover:bg-white/20"

@@ -15,6 +15,8 @@ import {
   DEEPBOOK_MARGIN_PACKAGE_IDS,
   DEEPBOOK_MARGIN_PACKAGE_NAME,
 } from "./config/contracts";
+import { DEFAULT_NETWORK } from "./config/networks";
+import { AppNetworkProvider } from "./context/AppNetworkContext";
 
 function Root() {
   useEffect(() => {
@@ -26,7 +28,6 @@ function Root() {
 }
 
 const { networkConfig } = createNetworkConfig({
-  localnet: { url: getFullnodeUrl("localnet") },
   testnet: {
     url: getFullnodeUrl("testnet"),
     mvr: {
@@ -45,13 +46,18 @@ const queryClient = new QueryClient();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
-        <WalletProvider
-          autoConnect
-          storageKey="deepdashboard:lastConnectedAccount"
-        >
-          <Root />
-        </WalletProvider>
+      <SuiClientProvider
+        networks={networkConfig}
+        defaultNetwork={DEFAULT_NETWORK}
+      >
+        <AppNetworkProvider>
+          <WalletProvider
+            autoConnect
+            storageKey="deepdashboard:lastConnectedAccount"
+          >
+            <Root />
+          </WalletProvider>
+        </AppNetworkProvider>
       </SuiClientProvider>
     </QueryClientProvider>
   </StrictMode>
