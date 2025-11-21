@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import { useAdminHistory, type AdminEvent } from "../hooks/useAdminHistory";
-import { useAppNetwork } from "../../../../../context/AppNetworkContext";
+import { useAppNetwork } from "../../../context/AppNetworkContext";
 
 interface Props {
   poolId?: string;

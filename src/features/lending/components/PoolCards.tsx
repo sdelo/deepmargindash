@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import type { PoolOverview } from "../types";
 import { Tooltip } from "../../../components/Tooltip";
-import { useAppNetwork } from "../../../../../context/AppNetworkContext";
+import { useAppNetwork } from "../../../context/AppNetworkContext";
 
 function formatNumber(n: number | bigint) {
   return Intl.NumberFormat('en-US').format(Number(n));

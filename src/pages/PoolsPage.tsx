@@ -6,7 +6,9 @@ import {
   useSuiClientContext,
 } from "@mysten/dapp-kit";
 import PoolCarousel from "../features/lending/components/PoolCarousel";
-import DepositWithdrawPanel, { type DepositWithdrawPanelHandle } from "../features/lending/components/DepositWithdrawPanel";
+import DepositWithdrawPanel, {
+  type DepositWithdrawPanelHandle,
+} from "../features/lending/components/DepositWithdrawPanel";
 import PersonalPositions from "../features/lending/components/PersonalPositions";
 import YieldCurve from "../features/lending/components/YieldCurve";
 import SlidePanel from "../features/shared/components/SlidePanel";
@@ -24,6 +26,7 @@ import {
   SectionNav,
   type DashboardSection,
 } from "../features/shared/components/SectionNav";
+import { YieldIcon, LiquidityIcon, WhaleIcon } from "../components/ThemedIcons";
 import { useCoinBalance } from "../hooks/useCoinBalance";
 import { usePoolData } from "../hooks/usePoolData";
 import { CONTRACTS } from "../config/contracts";
@@ -51,11 +54,11 @@ export function PoolsPage() {
   const [selectedSection, setSelectedSection] =
     React.useState<DashboardSection>("overview");
 
-  const [isHelpVisible, setIsHelpVisible] = React.useState(true);
+  const [isHelpVisible, setIsHelpVisible] = React.useState(false);
 
   const [overviewTab, setOverviewTab] = React.useState<
-    "analytics" | "yield" | "liquidity" | "liquidations" | "whales"
-  >("analytics");
+    "yield" | "liquidity" | "liquidations" | "whales"
+  >("yield");
 
   // Fetch real pool data
   const suiPoolData = usePoolData(
@@ -101,7 +104,9 @@ export function PoolsPage() {
 
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [adminHistoryOpen, setAdminHistoryOpen] = React.useState(false);
-  const [adminHistoryPoolId, setAdminHistoryPoolId] = React.useState<string | null>(null);
+  const [adminHistoryPoolId, setAdminHistoryPoolId] = React.useState<
+    string | null
+  >(null);
   const [txStatus, setTxStatus] = React.useState<
     "idle" | "pending" | "success" | "error"
   >("idle");
@@ -449,8 +454,8 @@ export function PoolsPage() {
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
               {/* Left Column: Pool Selection + Core Actions */}
               <div className="xl:col-span-7 space-y-6">
-                {/* Pool Selection Carousel */}
-                <div>
+                {/* Pool Selection Carousel with margins and centering */}
+                <div className="max-w-3xl mx-auto">
                   <h2 className="text-xl font-bold text-cyan-200 mb-4">
                     Pool Selection
                   </h2>
@@ -534,72 +539,121 @@ export function PoolsPage() {
               {/* Right Column: Data Panels (Tabbed View) */}
               <div className="xl:col-span-5 space-y-6">
                 <div className="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/10 overflow-x-auto">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setOverviewTab("analytics")}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                        overviewTab === "analytics"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
-                          : "text-gray-400 hover:text-white hover:bg-white/5"
-                      }`}
-                    >
-                      📊 Analytics
-                    </button>
+                  <div className="flex gap-2 w-full">
                     <button
                       onClick={() => setOverviewTab("yield")}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                         overviewTab === "yield"
                           ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      📈 Yield
+                      <div className="flex items-center justify-center gap-2">
+                        <YieldIcon
+                          size={20}
+                          className={
+                            overviewTab === "yield"
+                              ? "opacity-100"
+                              : "opacity-60"
+                          }
+                        />
+                        <div className="flex flex-col items-start">
+                          <span>Yield</span>
+                          <span className="text-[10px] text-white/50">
+                            Interest Rate
+                          </span>
+                        </div>
+                      </div>
                     </button>
                     <button
                       onClick={() => setOverviewTab("liquidity")}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                         overviewTab === "liquidity"
                           ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      🏦 Liquidity
+                      <div className="flex items-center justify-center gap-2">
+                        <LiquidityIcon
+                          size={20}
+                          className={
+                            overviewTab === "liquidity"
+                              ? "opacity-100"
+                              : "opacity-60"
+                          }
+                        />
+                        <div className="flex flex-col items-start">
+                          <span>Liquidity</span>
+                          <span className="text-[10px] text-white/50">
+                            Health Check
+                          </span>
+                        </div>
+                      </div>
                     </button>
                     <button
                       onClick={() => setOverviewTab("liquidations")}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                         overviewTab === "liquidations"
                           ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      📉 Liquidations
+                      <div className="flex items-center justify-center gap-2">
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className={
+                            overviewTab === "liquidations"
+                              ? "opacity-100"
+                              : "opacity-60"
+                          }
+                        >
+                          <path
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            fill="#38bdf8"
+                          />
+                        </svg>
+                        <div className="flex flex-col items-start">
+                          <span>Liquidations</span>
+                          <span className="text-[10px] text-white/50">
+                            Activity
+                          </span>
+                        </div>
+                      </div>
                     </button>
                     <button
                       onClick={() => setOverviewTab("whales")}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                         overviewTab === "whales"
                           ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      🐋 Whales
+                      <div className="flex items-center justify-center gap-2">
+                        <WhaleIcon
+                          size={20}
+                          className={
+                            overviewTab === "whales"
+                              ? "opacity-100"
+                              : "opacity-60"
+                          }
+                        />
+                        <div className="flex flex-col items-start">
+                          <span>Whales</span>
+                          <span className="text-[10px] text-white/50">
+                            Top Positions
+                          </span>
+                        </div>
+                      </div>
                     </button>
                   </div>
                 </div>
 
                 <div className="min-h-[500px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  {overviewTab === "analytics" && (
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-bold text-cyan-200">
-                          Pool Analytics
-                        </h3>
-                      </div>
-                      <EnhancedPoolAnalytics pool={selectedPool} />
-                    </div>
-                  )}
-
                   {overviewTab === "yield" && (
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
@@ -718,7 +772,7 @@ export function PoolsPage() {
       >
         <AdminHistorySlidePanel
           poolId={adminHistoryPoolId || undefined}
-          poolName={pools.find(p => p.id === adminHistoryPoolId)?.asset}
+          poolName={pools.find((p) => p.id === adminHistoryPoolId)?.asset}
         />
       </SlidePanel>
     </div>

@@ -2,7 +2,9 @@ import type { FC } from "react";
 import React from "react";
 import type { PoolOverview } from "../types";
 import { Tooltip } from "../../../components/Tooltip";
-import { useAppNetwork } from "../../../../../context/AppNetworkContext";
+import { useAppNetwork } from "../../../context/AppNetworkContext";
+import { useSuiClient } from "@mysten/dapp-kit";
+import { MarginPool } from "../../../contracts/deepbook_margin/margin_pool";
 
 function formatNumber(n: number | bigint) {
   return Intl.NumberFormat("en-US").format(Number(n));
@@ -26,6 +28,8 @@ export const PoolCarousel: FC<Props> = ({
   isLoading = false,
 }) => {
   const { explorerUrl } = useAppNetwork();
+  const suiClient = useSuiClient();
+  const [vaultBalances, setVaultBalances] = React.useState<Record<string, number>>({});
 
   const ICONS: Record<string, string> = {
     SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
@@ -53,6 +57,40 @@ export const PoolCarousel: FC<Props> = ({
       barColor: "bg-emerald-500",
     };
   };
+
+  // Fetch vault balances for all pools
+  React.useEffect(() => {
+    async function fetchVaultBalance(pool: PoolOverview) {
+      try {
+        const response = await suiClient.getObject({
+          id: pool.contracts.marginPoolId,
+          options: {
+            showBcs: true,
+          },
+        });
+
+        if (
+          response.data &&
+          response.data.bcs &&
+          response.data.bcs.dataType === "moveObject"
+        ) {
+          const marginPool = MarginPool.fromBase64(response.data.bcs.bcsBytes);
+          const vaultValue =
+            Number(marginPool.vault.value) / 10 ** pool.contracts.coinDecimals;
+          setVaultBalances((prev) => ({ ...prev, [pool.id]: vaultValue }));
+        }
+      } catch (error) {
+        console.error("Error fetching vault balance:", error);
+      }
+    }
+
+    pools.forEach((pool) => fetchVaultBalance(pool));
+    // Refresh every 15 seconds
+    const interval = setInterval(() => {
+      pools.forEach((pool) => fetchVaultBalance(pool));
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [pools, suiClient]);
 
   // Find current index
   const currentIndex = React.useMemo(() => {
@@ -129,6 +167,24 @@ export const PoolCarousel: FC<Props> = ({
       ? (currentPool.state.borrow / currentPool.state.supply) * 100
       : 0;
   const risk = getRiskLevel(utilizationPct);
+  const vaultBalance = vaultBalances[currentPool.id] ?? (currentPool.state.supply - currentPool.state.borrow);
+  const supplyCap = Number(currentPool.protocolConfig.margin_pool_config.supply_cap);
+  const supplyCapPct = (currentPool.state.supply / supplyCap) * 100;
+
+  // Calculate borrow APR
+  const interestConfig = currentPool.protocolConfig.interest_config;
+  const optimalUtilization = interestConfig.optimal_utilization;
+  const currentUtilization = utilizationPct / 100;
+  let borrowApr: number;
+  if (currentUtilization <= optimalUtilization) {
+    borrowApr = interestConfig.base_rate + interestConfig.base_slope * currentUtilization;
+  } else {
+    borrowApr =
+      interestConfig.base_rate +
+      interestConfig.base_slope * optimalUtilization +
+      interestConfig.excess_slope * (currentUtilization - optimalUtilization);
+  }
+  const borrowAprPct = borrowApr * 100;
 
   return (
     <div className="relative">
@@ -279,12 +335,12 @@ export const PoolCarousel: FC<Props> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-3 gap-3 pt-2">
               <div>
                 <div className="text-xs text-indigo-200/60 mb-1">
                   Total Supplied
                 </div>
-                <div className="text-white font-semibold tabular-nums">
+                <div className="text-white font-semibold tabular-nums text-sm">
                   {formatNumber(currentPool.state.supply)}{" "}
                   <span className="text-xs text-white/50">
                     {currentPool.asset}
@@ -295,11 +351,42 @@ export const PoolCarousel: FC<Props> = ({
                 <div className="text-xs text-indigo-200/60 mb-1">
                   Total Borrowed
                 </div>
-                <div className="text-white font-semibold tabular-nums">
+                <div className="text-white font-semibold tabular-nums text-sm">
                   {formatNumber(currentPool.state.borrow)}{" "}
                   <span className="text-xs text-white/50">
                     {currentPool.asset}
                   </span>
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-indigo-200/60 mb-1">
+                  Available
+                </div>
+                <div className="text-green-300 font-semibold tabular-nums text-sm">
+                  {formatNumber(vaultBalance)}{" "}
+                  <span className="text-xs text-white/50">
+                    {currentPool.asset}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional metrics from Analytics */}
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+              <div>
+                <div className="text-xs text-indigo-200/60 mb-1">
+                  Borrow APR
+                </div>
+                <div className="text-amber-300 font-semibold">
+                  {borrowAprPct.toFixed(3)}%
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-indigo-200/60 mb-1">
+                  Supply Cap Usage
+                </div>
+                <div className="text-white font-semibold">
+                  {supplyCapPct.toFixed(1)}%
                 </div>
               </div>
             </div>

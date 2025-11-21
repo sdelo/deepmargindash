@@ -5,9 +5,19 @@ export interface NetworkConfig {
   explorerUrl: string;
 }
 
-// Read from environment variables with fallbacks
-const TESTNET_SERVER_URL = process.env.TESTNET_SERVER_URL || "https://deepbook-indexer.testnet.mystenlabs.com";
-const MAINNET_SERVER_URL = process.env.MAINNET_SERVER_URL || "https://deepbook-indexer.mainnet.mystenlabs.com";
+// For development with bun --hot --serve, we'll use defaults that can be overridden
+// by creating a .env file. However, since bun's dev server doesn't inject env vars
+// into the browser bundle, we hardcode sensible defaults here.
+// 
+// To use localhost for development, simply edit this file directly.
+const IS_LOCAL_DEV = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const TESTNET_SERVER_URL = IS_LOCAL_DEV 
+  ? "http://localhost:9008"  // Default to localhost in dev
+  : "https://deepbook-indexer.testnet.mystenlabs.com";
+
+const MAINNET_SERVER_URL = "https://deepbook-indexer.mainnet.mystenlabs.com";
 
 export const NETWORK_CONFIGS: Record<AppNetwork, NetworkConfig> = {
   testnet: {

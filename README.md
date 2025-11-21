@@ -20,13 +20,27 @@ A comprehensive dashboard for monitoring and interacting with DeepBook Margin le
    bun install
    ```
 
-2. Start the development server:
+2. Configure server endpoints (optional):
+
+   **Option A - Automatic (Recommended for local dev):**
+   
+   When running on `localhost`, the app automatically uses `http://localhost:9008` for the Testnet indexer.
+   
+   **Option B - Manual override:**
+   
+   Edit `src/config/networks.ts` directly to change the server URLs:
+   ```typescript
+   const TESTNET_SERVER_URL = "http://localhost:9008";  // Your custom URL
+   const MAINNET_SERVER_URL = "https://your-indexer.com";
+   ```
+
+3. Start the development server:
 
    ```bash
    bun dev
    ```
 
-3. Open your browser and navigate to `http://localhost:5173`
+4. Open your browser and navigate to `http://localhost:5173`
 
 ## Project Structure
 
