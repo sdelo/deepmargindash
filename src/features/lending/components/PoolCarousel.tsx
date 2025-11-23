@@ -390,11 +390,31 @@ export const PoolCarousel: FC<Props> = ({
                 </div>
               </div>
             </div>
+
+            {/* Pool Configuration Metrics */}
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+              <div>
+                <div className="text-xs text-indigo-200/60 mb-1">
+                  Referral Spread
+                </div>
+                <div className="text-white font-semibold">
+                  {(currentPool.protocolConfig.margin_pool_config.protocol_spread * 100).toFixed(2)}%
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-indigo-200/60 mb-1">
+                  Max Utilization Rate
+                </div>
+                <div className="text-white font-semibold">
+                  {(currentPool.protocolConfig.margin_pool_config.max_utilization_rate * 100).toFixed(2)}%
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}
           <div className="mt-6 pt-6 border-t border-white/5">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <a
                 href={`${explorerUrl}/object/${currentPool.contracts?.marginPoolId || currentPool.id}`}
                 target="_blank"
@@ -419,6 +439,33 @@ export const PoolCarousel: FC<Props> = ({
                   />
                 </svg>
               </a>
+
+              {currentPool.maintainerCapId && (
+                <a
+                  href={`${explorerUrl}/object/${currentPool.maintainerCapId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className="text-xs text-purple-300 hover:text-purple-100 transition-colors flex items-center gap-1"
+                >
+                  <span>Maintainer Cap</span>
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </a>
+              )}
 
               <button
                 onClick={(e) => {

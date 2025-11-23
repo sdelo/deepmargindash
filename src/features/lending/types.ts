@@ -36,6 +36,7 @@ export type PoolOverview = {
     coinType: string;
     coinDecimals: number;
     coinDepositSourceId?: string;
+    maintainerCapId?: string;
   };
   ui: {
     aprSupplyPct: number;
@@ -43,6 +44,7 @@ export type PoolOverview = {
     ageDays: number;
     deepbookPoolId: string;
   };
+  maintainerCapId?: string;
 };
 
 export type UserPosition = {

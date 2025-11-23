@@ -2,6 +2,7 @@ import { SuiClient } from '@mysten/sui/client';
 import { MarginPool } from '../contracts/deepbook_margin/margin_pool';
 import { transformMarginPoolData } from '../utils/poolDataTransform';
 import type { PoolOverview } from '../features/lending/types';
+import { fetchMarginPoolCreated } from '../features/lending/api/events';
 
 /**
  * Fetches a MarginPool object from the Sui blockchain and transforms it into PoolOverview format
@@ -37,7 +38,23 @@ export async function fetchMarginPool(
     
     // Transform the data using shared utility function
     const assetType = response.data.type || '';
-    return transformMarginPoolData(marginPool, poolId, assetType);
+    const poolOverview = transformMarginPoolData(marginPool, poolId, assetType);
+    
+    // Fetch maintainer cap ID from MarginPoolCreated events
+    try {
+      const createdEvents = await fetchMarginPoolCreated({
+        margin_pool_id: poolId,
+        limit: 1,
+      });
+      if (createdEvents.length > 0 && createdEvents[0].maintainer_cap_id) {
+        poolOverview.maintainerCapId = createdEvents[0].maintainer_cap_id;
+      }
+    } catch (error) {
+      console.warn(`Could not fetch maintainer cap ID for pool ${poolId}:`, error);
+      // Continue without maintainer cap ID - it's optional
+    }
+    
+    return poolOverview;
   } catch (error) {
     console.error(`Error fetching MarginPool ${poolId}:`, error);
     return null;
