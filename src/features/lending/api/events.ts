@@ -98,6 +98,48 @@ export interface DeepbookPoolUpdatedEventResponse extends ApiEventResponse<{
   enabled: boolean;
 }> {}
 
+// Deepbook Pool Registered Event Response
+export interface DeepbookPoolRegisteredEventResponse extends ApiEventResponse<{
+  pool_id: string;
+  config_json: {
+    enabled: boolean;
+    risk_ratios: {
+      min_borrow_risk_ratio: number;
+      liquidation_risk_ratio: number;
+      min_withdraw_risk_ratio: number;
+      target_liquidation_risk_ratio: number;
+    };
+    extra_fields: {
+      contents: unknown[];
+    };
+    base_margin_pool_id: string;
+    quote_margin_pool_id: string;
+    pool_liquidation_reward: number;
+    user_liquidation_reward: number;
+  };
+}> {}
+
+// Deepbook Pool Config Updated Event Response
+export interface DeepbookPoolConfigUpdatedEventResponse extends ApiEventResponse<{
+  pool_id: string;
+  config_json: {
+    enabled: boolean;
+    risk_ratios: {
+      min_borrow_risk_ratio: number;
+      liquidation_risk_ratio: number;
+      min_withdraw_risk_ratio: number;
+      target_liquidation_risk_ratio: number;
+    };
+    extra_fields: {
+      contents: unknown[];
+    };
+    base_margin_pool_id: string;
+    quote_margin_pool_id: string;
+    pool_liquidation_reward: number;
+    user_liquidation_reward: number;
+  };
+}> {}
+
 // Maintainer Fees Withdrawn Event Response
 export interface MaintainerFeesWithdrawnEventResponse extends ApiEventResponse<{
   margin_pool_id: string;
@@ -314,5 +356,43 @@ export async function fetchMarginManagerStates(
   params?: QueryParams
 ): Promise<MarginManagerStatesResponse> {
   return apiClient.get<MarginManagerStatesResponse>(`/margin_manager_states${buildQuery(params)}`);
+}
+
+/**
+ * Fetch deepbook pool registered events
+ */
+export async function fetchDeepbookPoolRegistered(
+  params?: QueryParams
+): Promise<DeepbookPoolRegisteredEventResponse[]> {
+  return apiClient.get<DeepbookPoolRegisteredEventResponse[]>(`/deepbook_pool_registered${buildQuery(params)}`);
+}
+
+/**
+ * Fetch deepbook pool config updated events
+ */
+export async function fetchDeepbookPoolConfigUpdated(
+  params?: QueryParams
+): Promise<DeepbookPoolConfigUpdatedEventResponse[]> {
+  return apiClient.get<DeepbookPoolConfigUpdatedEventResponse[]>(`/deepbook_pool_config_updated${buildQuery(params)}`);
+}
+
+/**
+ * Get the latest config for a deepbook pool by merging registered and config updated events
+ */
+export async function fetchLatestDeepbookPoolConfig(
+  poolId: string
+): Promise<DeepbookPoolRegisteredEventResponse | DeepbookPoolConfigUpdatedEventResponse | null> {
+  const [registeredEvents, configUpdatedEvents] = await Promise.all([
+    fetchDeepbookPoolRegistered({ pool_id: poolId }),
+    fetchDeepbookPoolConfigUpdated({ pool_id: poolId }),
+  ]);
+
+  // Combine and sort by timestamp
+  const allEvents = [
+    ...registeredEvents.map(e => ({ ...e, source: 'registered' as const })),
+    ...configUpdatedEvents.map(e => ({ ...e, source: 'updated' as const })),
+  ].sort((a, b) => b.timestamp - a.timestamp);
+
+  return allEvents[0] || null;
 }
 

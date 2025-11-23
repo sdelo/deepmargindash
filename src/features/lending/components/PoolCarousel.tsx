@@ -5,6 +5,7 @@ import { Tooltip } from "../../../components/Tooltip";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { MarginPool } from "../../../contracts/deepbook_margin/deepbook_margin/margin_pool";
+import DeepBookPoolCard from "./DeepBookPoolCard";
 
 function formatNumber(n: number | bigint) {
   return Intl.NumberFormat("en-US").format(Number(n));
@@ -16,6 +17,7 @@ type Props = {
   selectedPoolId?: string | null;
   onSelectPool?: (poolId: string) => void;
   onAdminAuditClick?: (poolId: string) => void;
+  onDeepbookPoolHistoryClick?: (poolId: string) => void;
   isLoading?: boolean;
 };
 
@@ -25,11 +27,13 @@ export const PoolCarousel: FC<Props> = ({
   selectedPoolId,
   onSelectPool,
   onAdminAuditClick,
+  onDeepbookPoolHistoryClick,
   isLoading = false,
 }) => {
   const { explorerUrl } = useAppNetwork();
   const suiClient = useSuiClient();
   const [vaultBalances, setVaultBalances] = React.useState<Record<string, number>>({});
+  const [allowedDeepbookPools, setAllowedDeepbookPools] = React.useState<Record<string, string[]>>({});
 
   const ICONS: Record<string, string> = {
     SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
@@ -78,6 +82,12 @@ export const PoolCarousel: FC<Props> = ({
           const vaultValue =
             Number(marginPool.vault.value) / 10 ** pool.contracts.coinDecimals;
           setVaultBalances((prev) => ({ ...prev, [pool.id]: vaultValue }));
+          
+          // Extract allowed deepbook pools
+          const deepbookPools = marginPool.allowed_deepbook_pools.contents.map(addr => 
+            typeof addr === 'string' ? addr : `0x${addr}`
+          );
+          setAllowedDeepbookPools((prev) => ({ ...prev, [pool.id]: deepbookPools }));
         }
       } catch (error) {
         console.error("Error fetching vault balance:", error);
@@ -170,6 +180,7 @@ export const PoolCarousel: FC<Props> = ({
   const vaultBalance = vaultBalances[currentPool.id] ?? (currentPool.state.supply - currentPool.state.borrow);
   const supplyCap = Number(currentPool.protocolConfig.margin_pool_config.supply_cap);
   const supplyCapPct = (currentPool.state.supply / supplyCap) * 100;
+  const deepbookPoolIds = allowedDeepbookPools[currentPool.id] || [];
 
   // Calculate borrow APR
   const interestConfig = currentPool.protocolConfig.interest_config;
@@ -268,10 +279,13 @@ export const PoolCarousel: FC<Props> = ({
           </button>
         )}
 
-        {/* Pool Card */}
-        <div
-          className="relative rounded-3xl p-6 border transition-all duration-300 bg-white/10 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]"
-        >
+        {/* Cards Grid: 2/3 Margin Pool + 1/3 DeepBook Pool */}
+        <div className="grid grid-cols-3 gap-4">
+          {/* Margin Pool Card - Takes 2/3 of the space */}
+          <div className="col-span-2">
+            <div
+              className="relative rounded-3xl p-6 border transition-all duration-300 bg-white/10 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)] h-full"
+            >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -487,6 +501,16 @@ export const PoolCarousel: FC<Props> = ({
             >
               Deposit Now
             </button>
+          </div>
+            </div>
+          </div>
+
+          {/* DeepBook Pool Card - Takes 1/3 of the space */}
+          <div className="col-span-1">
+            <DeepBookPoolCard
+              poolIds={deepbookPoolIds}
+              onHistoryClick={onDeepbookPoolHistoryClick}
+            />
           </div>
         </div>
       </div>

@@ -39,6 +39,7 @@ export interface QueryParams {
   supplier?: string; // For asset_supplied/asset_withdrawn
   deepbook_pool_id?: string; // For margin_manager_states
   max_risk_ratio?: number; // For margin_manager_states
+  pool_id?: string; // For deepbook pool queries
 }
 
 /**

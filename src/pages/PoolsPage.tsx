@@ -23,6 +23,7 @@ import { LiquidationWall } from "../features/lending/components/LiquidationWall"
 import { WhaleWatch } from "../features/lending/components/WhaleWatch";
 import { AdminHistorySlidePanel } from "../features/lending/components/AdminHistorySlidePanel";
 import { InterestRateHistoryPanel } from "../features/lending/components/InterestRateHistoryPanel";
+import { DeepbookPoolHistoryPanel } from "../features/lending/components/DeepbookPoolHistoryPanel";
 import {
   SectionNav,
   type DashboardSection,
@@ -106,6 +107,10 @@ export function PoolsPage() {
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [adminHistoryOpen, setAdminHistoryOpen] = React.useState(false);
   const [adminHistoryPoolId, setAdminHistoryPoolId] = React.useState<
+    string | null
+  >(null);
+  const [deepbookPoolHistoryOpen, setDeepbookPoolHistoryOpen] = React.useState(false);
+  const [deepbookPoolHistoryPoolId, setDeepbookPoolHistoryPoolId] = React.useState<
     string | null
   >(null);
   const [interestRateHistoryOpen, setInterestRateHistoryOpen] =
@@ -478,6 +483,10 @@ export function PoolsPage() {
                       setAdminHistoryPoolId(id);
                       setAdminHistoryOpen(true);
                     }}
+                    onDeepbookPoolHistoryClick={(id) => {
+                      setDeepbookPoolHistoryPoolId(id);
+                      setDeepbookPoolHistoryOpen(true);
+                    }}
                     isLoading={isLoading}
                   />
                 </div>
@@ -811,6 +820,24 @@ export function PoolsPage() {
           onClose={() => {
             setInterestRateHistoryOpen(false);
             setInterestRateHistoryPoolId(null);
+          }}
+        />
+      </SlidePanel>
+
+      <SlidePanel
+        open={deepbookPoolHistoryOpen}
+        onClose={() => {
+          setDeepbookPoolHistoryOpen(false);
+          setDeepbookPoolHistoryPoolId(null);
+        }}
+        title=""
+        width={"60vw"}
+      >
+        <DeepbookPoolHistoryPanel
+          poolId={deepbookPoolHistoryPoolId || undefined}
+          onClose={() => {
+            setDeepbookPoolHistoryOpen(false);
+            setDeepbookPoolHistoryPoolId(null);
           }}
         />
       </SlidePanel>
