@@ -132,16 +132,55 @@ export function defaultReferral(options: DefaultReferralOptions = {}) {
         function: 'default_referral',
     });
 }
-export interface MaxReferralSpreadOptions {
+export interface MaxProtocolSpreadOptions {
     package?: string;
     arguments?: [
     ];
 }
-export function maxReferralSpread(options: MaxReferralSpreadOptions = {}) {
+export function maxProtocolSpread(options: MaxProtocolSpreadOptions = {}) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_constants',
-        function: 'max_referral_spread',
+        function: 'max_protocol_spread',
+    });
+}
+export interface MinLiquidationRepayOptions {
+    package?: string;
+    arguments?: [
+    ];
+}
+export function minLiquidationRepay(options: MinLiquidationRepayOptions = {}) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_constants',
+        function: 'min_liquidation_repay',
+    });
+}
+export interface MaxConfBpsOptions {
+    package?: string;
+    arguments?: [
+    ];
+}
+export function maxConfBps(options: MaxConfBpsOptions = {}) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_constants',
+        function: 'max_conf_bps',
+    });
+}
+export interface MaxEwmaDifferenceBpsOptions {
+    package?: string;
+    arguments?: [
+    ];
+}
+export function maxEwmaDifferenceBps(options: MaxEwmaDifferenceBpsOptions = {}) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_constants',
+        function: 'max_ewma_difference_bps',
     });
 }

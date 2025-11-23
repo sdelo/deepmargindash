@@ -418,6 +418,43 @@ export function withdrawSettledAmounts(options: WithdrawSettledAmountsOptions) {
         typeArguments: options.typeArguments
     });
 }
+export interface WithdrawSettledAmountsPermissionlessArguments {
+    registry: RawTransactionArgument<string>;
+    marginManager: RawTransactionArgument<string>;
+    pool: RawTransactionArgument<string>;
+}
+export interface WithdrawSettledAmountsPermissionlessOptions {
+    package?: string;
+    arguments: WithdrawSettledAmountsPermissionlessArguments | [
+        registry: RawTransactionArgument<string>,
+        marginManager: RawTransactionArgument<string>,
+        pool: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+/**
+ * Withdraw settled amounts to balance_manager permissionlessly. Anyone can call
+ * this function to settle balances for a margin manager.
+ */
+export function withdrawSettledAmountsPermissionless(options: WithdrawSettledAmountsPermissionlessOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
+    ] satisfies string[];
+    const parameterNames = ["registry", "marginManager", "pool"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'pool_proxy',
+        function: 'withdraw_settled_amounts_permissionless',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
 export interface StakeArguments {
     registry: RawTransactionArgument<string>;
     marginManager: RawTransactionArgument<string>;

@@ -8,7 +8,7 @@ import * as object from './deps/sui/object.js';
 import * as balance from './deps/sui/balance.js';
 import * as margin_state from './margin_state.js';
 import * as protocol_config from './protocol_config.js';
-import * as referral_fees from './referral_fees.js';
+import * as protocol_fees from './protocol_fees.js';
 import * as position_manager from './position_manager.js';
 import * as vec_set from './deps/sui/vec_set.js';
 import * as vec_map from './deps/sui/vec_map.js';
@@ -19,16 +19,30 @@ export const MarginPool = new MoveStruct({ name: `${$moduleName}::MarginPool`, f
         vault: balance.Balance,
         state: margin_state.State,
         config: protocol_config.ProtocolConfig,
-        referral_fees: referral_fees.ReferralFees,
+        protocol_fees: protocol_fees.ProtocolFees,
         positions: position_manager.PositionManager,
         allowed_deepbook_pools: vec_set.VecSet(bcs.Address),
         extra_fields: vec_map.VecMap(bcs.string(), bcs.u64())
+    } });
+export const SupplierCap = new MoveStruct({ name: `${$moduleName}::SupplierCap`, fields: {
+        id: object.UID
     } });
 export const MarginPoolCreated = new MoveStruct({ name: `${$moduleName}::MarginPoolCreated`, fields: {
         margin_pool_id: bcs.Address,
         maintainer_cap_id: bcs.Address,
         asset_type: type_name.TypeName,
         config: protocol_config.ProtocolConfig,
+        timestamp: bcs.u64()
+    } });
+export const MaintainerFeesWithdrawn = new MoveStruct({ name: `${$moduleName}::MaintainerFeesWithdrawn`, fields: {
+        margin_pool_id: bcs.Address,
+        margin_pool_cap_id: bcs.Address,
+        maintainer_fees: bcs.u64(),
+        timestamp: bcs.u64()
+    } });
+export const ProtocolFeesWithdrawn = new MoveStruct({ name: `${$moduleName}::ProtocolFeesWithdrawn`, fields: {
+        margin_pool_id: bcs.Address,
+        protocol_fees: bcs.u64(),
         timestamp: bcs.u64()
     } });
 export const DeepbookPoolUpdated = new MoveStruct({ name: `${$moduleName}::DeepbookPoolUpdated`, fields: {
@@ -53,7 +67,7 @@ export const MarginPoolConfigUpdated = new MoveStruct({ name: `${$moduleName}::M
 export const AssetSupplied = new MoveStruct({ name: `${$moduleName}::AssetSupplied`, fields: {
         margin_pool_id: bcs.Address,
         asset_type: type_name.TypeName,
-        supplier: bcs.Address,
+        supplier_cap_id: bcs.Address,
         supply_amount: bcs.u64(),
         supply_shares: bcs.u64(),
         timestamp: bcs.u64()
@@ -61,9 +75,19 @@ export const AssetSupplied = new MoveStruct({ name: `${$moduleName}::AssetSuppli
 export const AssetWithdrawn = new MoveStruct({ name: `${$moduleName}::AssetWithdrawn`, fields: {
         margin_pool_id: bcs.Address,
         asset_type: type_name.TypeName,
-        supplier: bcs.Address,
+        supplier_cap_id: bcs.Address,
         withdraw_amount: bcs.u64(),
         withdraw_shares: bcs.u64(),
+        timestamp: bcs.u64()
+    } });
+export const SupplierCapMinted = new MoveStruct({ name: `${$moduleName}::SupplierCapMinted`, fields: {
+        supplier_cap_id: bcs.Address,
+        timestamp: bcs.u64()
+    } });
+export const SupplyReferralMinted = new MoveStruct({ name: `${$moduleName}::SupplyReferralMinted`, fields: {
+        margin_pool_id: bcs.Address,
+        supply_referral_id: bcs.Address,
+        owner: bcs.Address,
         timestamp: bcs.u64()
     } });
 export interface CreateMarginPoolArguments {
@@ -255,9 +279,37 @@ export function updateMarginPoolConfig(options: UpdateMarginPoolConfigOptions) {
         typeArguments: options.typeArguments
     });
 }
+export interface MintSupplierCapArguments {
+    registry: RawTransactionArgument<string>;
+}
+export interface MintSupplierCapOptions {
+    package?: string;
+    arguments: MintSupplierCapArguments | [
+        registry: RawTransactionArgument<string>
+    ];
+}
+/**
+ * Mint a new SupplierCap, which is used to supply and withdraw from margin pools.
+ * One SupplierCap can be used to supply and withdraw from multiple margin pools.
+ */
+export function mintSupplierCap(options: MintSupplierCapOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["registry"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'mint_supplier_cap',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
 export interface SupplyArguments {
     self: RawTransactionArgument<string>;
     registry: RawTransactionArgument<string>;
+    supplierCap: RawTransactionArgument<string>;
     coin: RawTransactionArgument<string>;
     referral: RawTransactionArgument<string | null>;
 }
@@ -266,6 +318,7 @@ export interface SupplyOptions {
     arguments: SupplyArguments | [
         self: RawTransactionArgument<string>,
         registry: RawTransactionArgument<string>,
+        supplierCap: RawTransactionArgument<string>,
         coin: RawTransactionArgument<string>,
         referral: RawTransactionArgument<string | null>
     ];
@@ -273,17 +326,22 @@ export interface SupplyOptions {
         string
     ];
 }
-/** Supply to the margin pool. Returns the new user supply amount. */
+/**
+ * Supply to the margin pool using a SupplierCap. Returns the new supply shares.
+ * The `referral` parameter should be the ID of a SupplyReferral object if referral
+ * tracking is desired.
+ */
 export function supply(options: SupplyOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
         `${packageAddress}::margin_registry::MarginRegistry`,
+        `${packageAddress}::margin_pool::SupplierCap`,
         `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${options.typeArguments[0]}>`,
-        '0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<address>',
+        '0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<0x0000000000000000000000000000000000000000000000000000000000000002::object::ID>',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self", "registry", "coin", "referral"];
+    const parameterNames = ["self", "registry", "supplierCap", "coin", "referral"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_pool',
@@ -295,6 +353,7 @@ export function supply(options: SupplyOptions) {
 export interface WithdrawArguments {
     self: RawTransactionArgument<string>;
     registry: RawTransactionArgument<string>;
+    supplierCap: RawTransactionArgument<string>;
     amount: RawTransactionArgument<number | bigint | null>;
 }
 export interface WithdrawOptions {
@@ -302,22 +361,24 @@ export interface WithdrawOptions {
     arguments: WithdrawArguments | [
         self: RawTransactionArgument<string>,
         registry: RawTransactionArgument<string>,
+        supplierCap: RawTransactionArgument<string>,
         amount: RawTransactionArgument<number | bigint | null>
     ];
     typeArguments: [
         string
     ];
 }
-/** Withdraw from the margin pool. Returns the withdrawn coin. */
+/** Withdraw from the margin pool using a SupplierCap. Returns the withdrawn coin. */
 export function withdraw(options: WithdrawOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
         `${packageAddress}::margin_registry::MarginRegistry`,
+        `${packageAddress}::margin_pool::SupplierCap`,
         '0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<u64>',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self", "registry", "amount"];
+    const parameterNames = ["self", "registry", "supplierCap", "amount"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_pool',
@@ -328,11 +389,13 @@ export function withdraw(options: WithdrawOptions) {
 }
 export interface MintSupplyReferralArguments {
     self: RawTransactionArgument<string>;
+    registry: RawTransactionArgument<string>;
 }
 export interface MintSupplyReferralOptions {
     package?: string;
     arguments: MintSupplyReferralArguments | [
-        self: RawTransactionArgument<string>
+        self: RawTransactionArgument<string>,
+        registry: RawTransactionArgument<string>
     ];
     typeArguments: [
         string
@@ -342,9 +405,11 @@ export interface MintSupplyReferralOptions {
 export function mintSupplyReferral(options: MintSupplyReferralOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
-        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self"];
+    const parameterNames = ["self", "registry"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_pool',
@@ -355,12 +420,14 @@ export function mintSupplyReferral(options: MintSupplyReferralOptions) {
 }
 export interface WithdrawReferralFeesArguments {
     self: RawTransactionArgument<string>;
+    registry: RawTransactionArgument<string>;
     referral: RawTransactionArgument<string>;
 }
 export interface WithdrawReferralFeesOptions {
     package?: string;
     arguments: WithdrawReferralFeesArguments | [
         self: RawTransactionArgument<string>,
+        registry: RawTransactionArgument<string>,
         referral: RawTransactionArgument<string>
     ];
     typeArguments: [
@@ -372,13 +439,148 @@ export function withdrawReferralFees(options: WithdrawReferralFeesOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
-        `${packageAddress}::referral_fees::SupplyReferral`
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        `${packageAddress}::protocol_fees::SupplyReferral`
     ] satisfies string[];
-    const parameterNames = ["self", "referral"];
+    const parameterNames = ["self", "registry", "referral"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_pool',
         function: 'withdraw_referral_fees',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface AdminWithdrawDefaultReferralFeesArguments {
+    self: RawTransactionArgument<string>;
+    registry: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
+}
+export interface AdminWithdrawDefaultReferralFeesOptions {
+    package?: string;
+    arguments: AdminWithdrawDefaultReferralFeesArguments | [
+        self: RawTransactionArgument<string>,
+        registry: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/**
+ * Withdraw the default referral fees (admin only). The default referral at 0x0
+ * doesn't have a SupplyReferral object,
+ */
+export function adminWithdrawDefaultReferralFees(options: AdminWithdrawDefaultReferralFeesOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        `${packageAddress}::margin_registry::MarginAdminCap`
+    ] satisfies string[];
+    const parameterNames = ["self", "registry", "AdminCap"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'admin_withdraw_default_referral_fees',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface WithdrawMaintainerFeesArguments {
+    self: RawTransactionArgument<string>;
+    registry: RawTransactionArgument<string>;
+    marginPoolCap: RawTransactionArgument<string>;
+}
+export interface WithdrawMaintainerFeesOptions {
+    package?: string;
+    arguments: WithdrawMaintainerFeesArguments | [
+        self: RawTransactionArgument<string>,
+        registry: RawTransactionArgument<string>,
+        marginPoolCap: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/**
+ * Withdraw the maintainer fees. The `margin_pool_cap` parameter is used to ensure
+ * the correct margin pool is being withdrawn from.
+ */
+export function withdrawMaintainerFees(options: WithdrawMaintainerFeesOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        `${packageAddress}::margin_registry::MarginPoolCap`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self", "registry", "marginPoolCap"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'withdraw_maintainer_fees',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface WithdrawProtocolFeesArguments {
+    self: RawTransactionArgument<string>;
+    registry: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
+}
+export interface WithdrawProtocolFeesOptions {
+    package?: string;
+    arguments: WithdrawProtocolFeesArguments | [
+        self: RawTransactionArgument<string>,
+        registry: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Withdraw the protocol fees. */
+export function withdrawProtocolFees(options: WithdrawProtocolFeesOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        `${packageAddress}::margin_registry::MarginAdminCap`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self", "registry", "AdminCap"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'withdraw_protocol_fees',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface IdArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface IdOptions {
+    package?: string;
+    arguments: IdArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Return the ID of the margin pool. */
+export function id(options: IdOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'id',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
@@ -397,6 +599,10 @@ export interface DeepbookPoolAllowedOptions {
         string
     ];
 }
+/**
+ * Return whether a margin manager for a given deepbook pool is allowed to borrow
+ * from the margin pool.
+ */
 export function deepbookPoolAllowed(options: DeepbookPoolAllowedOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -424,6 +630,7 @@ export interface TotalSupplyOptions {
         string
     ];
 }
+/** Return the current total supply of the margin pool. */
 export function totalSupply(options: TotalSupplyOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -434,6 +641,34 @@ export function totalSupply(options: TotalSupplyOptions) {
         package: packageAddress,
         module: 'margin_pool',
         function: 'total_supply',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface TotalSupplyWithInterestArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface TotalSupplyWithInterestOptions {
+    package?: string;
+    arguments: TotalSupplyWithInterestArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Return the current total supply of the margin pool including accrued interest. */
+export function totalSupplyWithInterest(options: TotalSupplyWithInterestOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'total_supply_with_interest',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
@@ -450,6 +685,7 @@ export interface SupplySharesOptions {
         string
     ];
 }
+/** Return the current total supply shares of the margin pool. */
 export function supplyShares(options: SupplySharesOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -460,6 +696,33 @@ export function supplyShares(options: SupplySharesOptions) {
         package: packageAddress,
         module: 'margin_pool',
         function: 'supply_shares',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface SupplyRatioArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface SupplyRatioOptions {
+    package?: string;
+    arguments: SupplyRatioArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Return the current supply ratio of the margin pool. */
+export function supplyRatio(options: SupplyRatioOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'supply_ratio',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
@@ -476,6 +739,7 @@ export interface TotalBorrowOptions {
         string
     ];
 }
+/** Return the current total borrow of the margin pool. */
 export function totalBorrow(options: TotalBorrowOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -502,6 +766,7 @@ export interface BorrowSharesOptions {
         string
     ];
 }
+/** Return the current total borrow shares of the margin pool. */
 export function borrowShares(options: BorrowSharesOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -512,6 +777,33 @@ export function borrowShares(options: BorrowSharesOptions) {
         package: packageAddress,
         module: 'margin_pool',
         function: 'borrow_shares',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface BorrowRatioArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface BorrowRatioOptions {
+    package?: string;
+    arguments: BorrowRatioArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Return the current borrow ratio of the margin pool. */
+export function borrowRatio(options: BorrowRatioOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'borrow_ratio',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
@@ -528,6 +820,7 @@ export interface LastUpdateTimestampOptions {
         string
     ];
 }
+/** Return the last update timestamp of the margin pool. */
 export function lastUpdateTimestamp(options: LastUpdateTimestampOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -554,6 +847,7 @@ export interface SupplyCapOptions {
         string
     ];
 }
+/** Return the supply cap of the margin pool. */
 export function supplyCap(options: SupplyCapOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -564,6 +858,33 @@ export function supplyCap(options: SupplyCapOptions) {
         package: packageAddress,
         module: 'margin_pool',
         function: 'supply_cap',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface ProtocolFeesArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface ProtocolFeesOptions {
+    package?: string;
+    arguments: ProtocolFeesArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Return the current protocol fees of the margin pool. */
+export function protocolFees(options: ProtocolFeesOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'protocol_fees',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
@@ -580,6 +901,7 @@ export interface MaxUtilizationRateOptions {
         string
     ];
 }
+/** Return the current max utilization rate of the margin pool. */
 export function maxUtilizationRate(options: MaxUtilizationRateOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -594,19 +916,20 @@ export function maxUtilizationRate(options: MaxUtilizationRateOptions) {
         typeArguments: options.typeArguments
     });
 }
-export interface ReferralSpreadArguments {
+export interface ProtocolSpreadArguments {
     self: RawTransactionArgument<string>;
 }
-export interface ReferralSpreadOptions {
+export interface ProtocolSpreadOptions {
     package?: string;
-    arguments: ReferralSpreadArguments | [
+    arguments: ProtocolSpreadArguments | [
         self: RawTransactionArgument<string>
     ];
     typeArguments: [
         string
     ];
 }
-export function referralSpread(options: ReferralSpreadOptions) {
+/** Return the current protocol spread of the margin pool. */
+export function protocolSpread(options: ProtocolSpreadOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
@@ -615,7 +938,7 @@ export function referralSpread(options: ReferralSpreadOptions) {
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_pool',
-        function: 'referral_spread',
+        function: 'protocol_spread',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
@@ -632,6 +955,7 @@ export interface MinBorrowOptions {
         string
     ];
 }
+/** Return the current min borrow of the margin pool. */
 export function minBorrow(options: MinBorrowOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -658,6 +982,10 @@ export interface InterestRateOptions {
         string
     ];
 }
+/**
+ * Return the current interest rate of the margin pool. Represented in 9 decimal
+ * places.
+ */
 export function interestRate(options: InterestRateOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -668,6 +996,120 @@ export function interestRate(options: InterestRateOptions) {
         package: packageAddress,
         module: 'margin_pool',
         function: 'interest_rate',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface TrueInterestRateArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface TrueInterestRateOptions {
+    package?: string;
+    arguments: TrueInterestRateArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+export function trueInterestRate(options: TrueInterestRateOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'true_interest_rate',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface UserSupplySharesArguments {
+    self: RawTransactionArgument<string>;
+    supplierCapId: RawTransactionArgument<string>;
+}
+export interface UserSupplySharesOptions {
+    package?: string;
+    arguments: UserSupplySharesArguments | [
+        self: RawTransactionArgument<string>,
+        supplierCapId: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Return the current user supply shares of the margin pool. */
+export function userSupplyShares(options: UserSupplySharesOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "supplierCapId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'user_supply_shares',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface VaultBalanceArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface VaultBalanceOptions {
+    package?: string;
+    arguments: VaultBalanceArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Return the current vault balance of the margin pool. */
+export function vaultBalance(options: VaultBalanceOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'vault_balance',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface UserSupplyAmountArguments {
+    self: RawTransactionArgument<string>;
+    supplierCapId: RawTransactionArgument<string>;
+}
+export interface UserSupplyAmountOptions {
+    package?: string;
+    arguments: UserSupplyAmountArguments | [
+        self: RawTransactionArgument<string>,
+        supplierCapId: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Return the current user supply amount of the margin pool. */
+export function userSupplyAmount(options: UserSupplyAmountOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID',
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self", "supplierCapId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'user_supply_amount',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });

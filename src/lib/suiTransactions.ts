@@ -2,7 +2,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import type { PaginatedCoins, SuiClient } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 
-import { supply, withdraw } from "../contracts/deepbook_margin/margin_pool";
+import { supply, withdraw } from "../contracts/deepbook_margin/deepbook_margin/margin_pool";
 import { ONE_BILLION, GAS_AMOUNT_MIST } from "../constants";
 
 

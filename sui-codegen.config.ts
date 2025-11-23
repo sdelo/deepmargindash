@@ -2,7 +2,7 @@ import type { SuiCodegenConfig } from '@mysten/codegen';
 
 const config: SuiCodegenConfig = {
 	output: '/home/ubuntu/projects/leva/deepdashboard/src/contracts/deepbook_margin',
-	generateSummaries: false,
+	generateSummaries: true,
 	prune: true,
 	packages: [
 		{

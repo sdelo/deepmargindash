@@ -1,7 +1,7 @@
 import React from "react";
 import type { PoolOverview } from "../types";
 import { useSuiClient } from "@mysten/dapp-kit";
-import { MarginPool } from "../../../contracts/deepbook_margin/margin_pool";
+import { MarginPool } from "../../../contracts/deepbook_margin/deepbook_margin/margin_pool";
 
 interface EnhancedPoolAnalytics extends PoolOverview {
   vaultBalance: number;

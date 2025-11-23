@@ -1,4 +1,4 @@
-import { MarginPool } from '../contracts/deepbook_margin/margin_pool';
+import { MarginPool } from '../contracts/deepbook_margin/deepbook_margin/margin_pool';
 import { calculatePoolRates } from './interestRates';
 import { CONTRACTS } from '../config/contracts';
 import type { PoolOverview } from '../features/lending/types';
@@ -53,7 +53,7 @@ export function transformMarginPoolData(
       min_borrow: convertFromSmallestUnits(marginPool.config.margin_pool_config.min_borrow, decimals),
       // Config values are always in 9-decimal format regardless of underlying token decimals
       max_utilization_rate: nineDecimalToPercent(marginPool.config.margin_pool_config.max_utilization_rate),
-      protocol_spread: nineDecimalToPercent(marginPool.config.margin_pool_config.referral_spread),
+      protocol_spread: nineDecimalToPercent(marginPool.config.margin_pool_config.protocol_spread),
     },
     interest_config: {
       // Interest rates are in 9-decimal format

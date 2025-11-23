@@ -7,7 +7,11 @@ import { type Transaction } from '@mysten/sui/transactions';
 import * as object from './deps/sui/object.js';
 import * as balance_manager from './deps/deepbook/balance_manager.js';
 import * as vec_map from './deps/sui/vec_map.js';
+import * as type_name from './deps/std/type_name.js';
 const $moduleName = '@local-pkg/deepbook-margin::margin_manager';
+export const MarginApp = new MoveStruct({ name: `${$moduleName}::MarginApp`, fields: {
+        dummy_field: bcs.bool()
+    } });
 export const MarginManager = new MoveStruct({ name: `${$moduleName}::MarginManager`, fields: {
         id: object.UID,
         owner: bcs.Address,
@@ -24,6 +28,13 @@ export const MarginManager = new MoveStruct({ name: `${$moduleName}::MarginManag
 export const ManagerInitializer = new MoveStruct({ name: `${$moduleName}::ManagerInitializer`, fields: {
         margin_manager_id: bcs.Address
     } });
+export const MarginManagerCreatedEvent = new MoveStruct({ name: `${$moduleName}::MarginManagerCreatedEvent`, fields: {
+        margin_manager_id: bcs.Address,
+        balance_manager_id: bcs.Address,
+        deepbook_pool_id: bcs.Address,
+        owner: bcs.Address,
+        timestamp: bcs.u64()
+    } });
 export const MarginManagerEvent = new MoveStruct({ name: `${$moduleName}::MarginManagerEvent`, fields: {
         margin_manager_id: bcs.Address,
         balance_manager_id: bcs.Address,
@@ -34,8 +45,7 @@ export const LoanBorrowedEvent = new MoveStruct({ name: `${$moduleName}::LoanBor
         margin_manager_id: bcs.Address,
         margin_pool_id: bcs.Address,
         loan_amount: bcs.u64(),
-        total_borrow: bcs.u64(),
-        total_shares: bcs.u64(),
+        loan_shares: bcs.u64(),
         timestamp: bcs.u64()
     } });
 export const LoanRepaidEvent = new MoveStruct({ name: `${$moduleName}::LoanRepaidEvent`, fields: {
@@ -52,17 +62,50 @@ export const LiquidationEvent = new MoveStruct({ name: `${$moduleName}::Liquidat
         pool_reward: bcs.u64(),
         pool_default: bcs.u64(),
         risk_ratio: bcs.u64(),
+        remaining_base_asset: bcs.u64(),
+        remaining_quote_asset: bcs.u64(),
+        remaining_base_debt: bcs.u64(),
+        remaining_quote_debt: bcs.u64(),
+        base_pyth_price: bcs.u64(),
+        base_pyth_decimals: bcs.u8(),
+        quote_pyth_price: bcs.u64(),
+        quote_pyth_decimals: bcs.u8(),
+        timestamp: bcs.u64()
+    } });
+export const DepositCollateralEvent = new MoveStruct({ name: `${$moduleName}::DepositCollateralEvent`, fields: {
+        margin_manager_id: bcs.Address,
+        amount: bcs.u64(),
+        asset: type_name.TypeName,
+        pyth_price: bcs.u64(),
+        pyth_decimals: bcs.u8(),
+        timestamp: bcs.u64()
+    } });
+export const WithdrawCollateralEvent = new MoveStruct({ name: `${$moduleName}::WithdrawCollateralEvent`, fields: {
+        margin_manager_id: bcs.Address,
+        amount: bcs.u64(),
+        asset: type_name.TypeName,
+        withdraw_base_asset: bcs.bool(),
+        remaining_base_asset: bcs.u64(),
+        remaining_quote_asset: bcs.u64(),
+        remaining_base_debt: bcs.u64(),
+        remaining_quote_debt: bcs.u64(),
+        base_pyth_price: bcs.u64(),
+        base_pyth_decimals: bcs.u8(),
+        quote_pyth_price: bcs.u64(),
+        quote_pyth_decimals: bcs.u8(),
         timestamp: bcs.u64()
     } });
 export interface NewArguments {
     pool: RawTransactionArgument<string>;
-    registry: RawTransactionArgument<string>;
+    deepbookRegistry: RawTransactionArgument<string>;
+    marginRegistry: RawTransactionArgument<string>;
 }
 export interface NewOptions {
     package?: string;
     arguments: NewArguments | [
         pool: RawTransactionArgument<string>,
-        registry: RawTransactionArgument<string>
+        deepbookRegistry: RawTransactionArgument<string>,
+        marginRegistry: RawTransactionArgument<string>
     ];
     typeArguments: [
         string,
@@ -74,10 +117,11 @@ export function _new(options: NewOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        `${packageAddress}::registry::Registry`,
         `${packageAddress}::margin_registry::MarginRegistry`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["pool", "registry"];
+    const parameterNames = ["pool", "deepbookRegistry", "marginRegistry"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_manager',
@@ -88,13 +132,15 @@ export function _new(options: NewOptions) {
 }
 export interface NewWithInitializerArguments {
     pool: RawTransactionArgument<string>;
-    registry: RawTransactionArgument<string>;
+    deepbookRegistry: RawTransactionArgument<string>;
+    marginRegistry: RawTransactionArgument<string>;
 }
 export interface NewWithInitializerOptions {
     package?: string;
     arguments: NewWithInitializerArguments | [
         pool: RawTransactionArgument<string>,
-        registry: RawTransactionArgument<string>
+        deepbookRegistry: RawTransactionArgument<string>,
+        marginRegistry: RawTransactionArgument<string>
     ];
     typeArguments: [
         string,
@@ -109,10 +155,11 @@ export function newWithInitializer(options: NewWithInitializerOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        `${packageAddress}::registry::Registry`,
         `${packageAddress}::margin_registry::MarginRegistry`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["pool", "registry"];
+    const parameterNames = ["pool", "deepbookRegistry", "marginRegistry"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_manager',
@@ -214,6 +261,8 @@ export function unsetReferral(options: UnsetReferralOptions) {
 export interface DepositArguments {
     self: RawTransactionArgument<string>;
     registry: RawTransactionArgument<string>;
+    baseOracle: RawTransactionArgument<string>;
+    quoteOracle: RawTransactionArgument<string>;
     coin: RawTransactionArgument<string>;
 }
 export interface DepositOptions {
@@ -221,6 +270,8 @@ export interface DepositOptions {
     arguments: DepositArguments | [
         self: RawTransactionArgument<string>,
         registry: RawTransactionArgument<string>,
+        baseOracle: RawTransactionArgument<string>,
+        quoteOracle: RawTransactionArgument<string>,
         coin: RawTransactionArgument<string>
     ];
     typeArguments: [
@@ -238,9 +289,12 @@ export function deposit(options: DepositOptions) {
     const argumentsTypes = [
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `${packageAddress}::margin_registry::MarginRegistry`,
-        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${options.typeArguments[2]}>`
+        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${options.typeArguments[2]}>`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self", "registry", "coin"];
+    const parameterNames = ["self", "registry", "baseOracle", "quoteOracle", "coin"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_manager',
@@ -600,6 +654,87 @@ export function balanceManager(options: BalanceManagerOptions) {
         typeArguments: options.typeArguments
     });
 }
+export interface BaseBalanceArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface BaseBalanceOptions {
+    package?: string;
+    arguments: BaseBalanceArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+export function baseBalance(options: BaseBalanceOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'base_balance',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface QuoteBalanceArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface QuoteBalanceOptions {
+    package?: string;
+    arguments: QuoteBalanceArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+export function quoteBalance(options: QuoteBalanceOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'quote_balance',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface DeepBalanceArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface DeepBalanceOptions {
+    package?: string;
+    arguments: DeepBalanceArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+export function deepBalance(options: DeepBalanceOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'deep_balance',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
 export interface CalculateAssetsArguments {
     self: RawTransactionArgument<string>;
     pool: RawTransactionArgument<string>;
@@ -659,6 +794,85 @@ export function calculateDebts(options: CalculateDebtsOptions) {
         package: packageAddress,
         module: 'margin_manager',
         function: 'calculate_debts',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface ManagerStateArguments {
+    self: RawTransactionArgument<string>;
+    registry: RawTransactionArgument<string>;
+    baseOracle: RawTransactionArgument<string>;
+    quoteOracle: RawTransactionArgument<string>;
+    pool: RawTransactionArgument<string>;
+    baseMarginPool: RawTransactionArgument<string>;
+    quoteMarginPool: RawTransactionArgument<string>;
+}
+export interface ManagerStateOptions {
+    package?: string;
+    arguments: ManagerStateArguments | [
+        self: RawTransactionArgument<string>,
+        registry: RawTransactionArgument<string>,
+        baseOracle: RawTransactionArgument<string>,
+        quoteOracle: RawTransactionArgument<string>,
+        pool: RawTransactionArgument<string>,
+        baseMarginPool: RawTransactionArgument<string>,
+        quoteMarginPool: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+/**
+ * Returns comprehensive state information for a margin manager. Returns
+ * (manager_id, deepbook_pool_id, risk_ratio, base_asset, quote_asset, base_debt,
+ * quote_debt, base_pyth_price, base_pyth_decimals, quote_pyth_price,
+ * quote_pyth_decimals)
+ */
+export function managerState(options: ManagerStateOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[1]}>`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self", "registry", "baseOracle", "quoteOracle", "pool", "baseMarginPool", "quoteMarginPool"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'manager_state',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface IdArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface IdOptions {
+    package?: string;
+    arguments: IdArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+export function id(options: IdOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'id',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });

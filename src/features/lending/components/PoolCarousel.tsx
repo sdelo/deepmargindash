@@ -4,7 +4,7 @@ import type { PoolOverview } from "../types";
 import { Tooltip } from "../../../components/Tooltip";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 import { useSuiClient } from "@mysten/dapp-kit";
-import { MarginPool } from "../../../contracts/deepbook_margin/margin_pool";
+import { MarginPool } from "../../../contracts/deepbook_margin/deepbook_margin/margin_pool";
 
 function formatNumber(n: number | bigint) {
   return Intl.NumberFormat("en-US").format(Number(n));

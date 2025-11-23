@@ -5,9 +5,9 @@
 
 /**
  * Margin state manages the total supply and borrow of the margin pool. Whenever
- * supply and borrow increases or decreases, the interest and referral fees are
+ * supply and borrow increases or decreases, the interest and protocol fees are
  * updated. Shares represent the constant amount and are used to calculate amounts
- * after interest and referral fees are applied.
+ * after interest and protocol fees are applied.
  */
 
 import { MoveStruct } from '../utils/index.js';

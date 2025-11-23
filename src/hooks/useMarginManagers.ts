@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { fetchMarginManagerCreated, fetchLoanBorrowed, fetchLoanRepaid, fetchLiquidations, type MarginManagersInfoResponse } from '../features/lending/api/events';
-import { MarginManager } from '../contracts/deepbook_margin/margin_manager';
+import { MarginManager } from '../contracts/deepbook_margin/deepbook_margin/margin_manager';
 
 export interface MarginManagerDetails {
   id: string;

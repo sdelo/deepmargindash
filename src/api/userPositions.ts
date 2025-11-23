@@ -1,5 +1,5 @@
 import { SuiClient } from '@mysten/sui/client';
-import { MarginPool } from '../contracts/deepbook_margin/margin_pool';
+import { MarginPool } from '../contracts/deepbook_margin/deepbook_margin/margin_pool';
 import { CONTRACTS } from '../config/contracts';
 import type { UserPosition, PoolAssetSymbol } from '../features/lending/types';
 

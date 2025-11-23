@@ -14,7 +14,9 @@ const $moduleName = '@local-pkg/deepbook-margin::oracle';
 export const CoinTypeData = new MoveStruct({ name: `${$moduleName}::CoinTypeData`, fields: {
         decimals: bcs.u8(),
         price_feed_id: bcs.vector(bcs.u8()),
-        type_name: type_name.TypeName
+        type_name: type_name.TypeName,
+        max_conf_bps: bcs.u64(),
+        max_ewma_difference_bps: bcs.u64()
     } });
 export const PythConfig = new MoveStruct({ name: `${$moduleName}::PythConfig`, fields: {
         currencies: vec_map.VecMap(type_name.TypeName, CoinTypeData),
@@ -29,12 +31,16 @@ export const ConversionConfig = new MoveStruct({ name: `${$moduleName}::Conversi
 export interface NewCoinTypeDataArguments {
     coinMetadata: RawTransactionArgument<string>;
     priceFeedId: RawTransactionArgument<number[]>;
+    maxConfBps: RawTransactionArgument<number | bigint>;
+    maxEwmaDifferenceBps: RawTransactionArgument<number | bigint>;
 }
 export interface NewCoinTypeDataOptions {
     package?: string;
     arguments: NewCoinTypeDataArguments | [
         coinMetadata: RawTransactionArgument<string>,
-        priceFeedId: RawTransactionArgument<number[]>
+        priceFeedId: RawTransactionArgument<number[]>,
+        maxConfBps: RawTransactionArgument<number | bigint>,
+        maxEwmaDifferenceBps: RawTransactionArgument<number | bigint>
     ];
     typeArguments: [
         string
@@ -48,9 +54,11 @@ export function newCoinTypeData(options: NewCoinTypeDataOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `0x0000000000000000000000000000000000000000000000000000000000000002::coin::CoinMetadata<${options.typeArguments[0]}>`,
-        'vector<u8>'
+        'vector<u8>',
+        'u64',
+        'u64'
     ] satisfies string[];
-    const parameterNames = ["coinMetadata", "priceFeedId"];
+    const parameterNames = ["coinMetadata", "priceFeedId", "maxConfBps", "maxEwmaDifferenceBps"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'oracle',

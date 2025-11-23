@@ -9,7 +9,7 @@ const $moduleName = '@local-pkg/deepbook-margin::protocol_config';
 export const MarginPoolConfig = new MoveStruct({ name: `${$moduleName}::MarginPoolConfig`, fields: {
         supply_cap: bcs.u64(),
         max_utilization_rate: bcs.u64(),
-        referral_spread: bcs.u64(),
+        protocol_spread: bcs.u64(),
         min_borrow: bcs.u64()
     } });
 export const InterestConfig = new MoveStruct({ name: `${$moduleName}::InterestConfig`, fields: {
@@ -51,7 +51,7 @@ export function newProtocolConfig(options: NewProtocolConfigOptions) {
 export interface NewMarginPoolConfigArguments {
     supplyCap: RawTransactionArgument<number | bigint>;
     maxUtilizationRate: RawTransactionArgument<number | bigint>;
-    referralSpread: RawTransactionArgument<number | bigint>;
+    protocolSpread: RawTransactionArgument<number | bigint>;
     minBorrow: RawTransactionArgument<number | bigint>;
 }
 export interface NewMarginPoolConfigOptions {
@@ -59,7 +59,7 @@ export interface NewMarginPoolConfigOptions {
     arguments: NewMarginPoolConfigArguments | [
         supplyCap: RawTransactionArgument<number | bigint>,
         maxUtilizationRate: RawTransactionArgument<number | bigint>,
-        referralSpread: RawTransactionArgument<number | bigint>,
+        protocolSpread: RawTransactionArgument<number | bigint>,
         minBorrow: RawTransactionArgument<number | bigint>
     ];
 }
@@ -71,7 +71,7 @@ export function newMarginPoolConfig(options: NewMarginPoolConfigOptions) {
         'u64',
         'u64'
     ] satisfies string[];
-    const parameterNames = ["supplyCap", "maxUtilizationRate", "referralSpread", "minBorrow"];
+    const parameterNames = ["supplyCap", "maxUtilizationRate", "protocolSpread", "minBorrow"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'protocol_config',

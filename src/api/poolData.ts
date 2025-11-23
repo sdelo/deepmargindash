@@ -1,5 +1,5 @@
 import { SuiClient } from '@mysten/sui/client';
-import { MarginPool } from '../contracts/deepbook_margin/margin_pool';
+import { MarginPool } from '../contracts/deepbook_margin/deepbook_margin/margin_pool';
 import { transformMarginPoolData } from '../utils/poolDataTransform';
 import type { PoolOverview } from '../features/lending/types';
 import { fetchMarginPoolCreated } from '../features/lending/api/events';

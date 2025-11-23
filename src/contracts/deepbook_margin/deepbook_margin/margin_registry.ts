@@ -27,7 +27,8 @@ export const MarginRegistryInner = new MoveStruct({ name: `${$moduleName}::Margi
         pool_registry: table.Table,
         margin_pools: table.Table,
         margin_managers: table.Table,
-        allowed_maintainers: vec_set.VecSet(bcs.Address)
+        allowed_maintainers: vec_set.VecSet(bcs.Address),
+        allowed_pause_caps: vec_set.VecSet(bcs.Address)
     } });
 export const RiskRatios = new MoveStruct({ name: `${$moduleName}::RiskRatios`, fields: {
         min_withdraw_risk_ratio: bcs.u64(),
@@ -50,6 +51,9 @@ export const ConfigKey = new MoveStruct({ name: `${$moduleName}::ConfigKey`, fie
 export const MarginAdminCap = new MoveStruct({ name: `${$moduleName}::MarginAdminCap`, fields: {
         id: object.UID
     } });
+export const MarginPauseCap = new MoveStruct({ name: `${$moduleName}::MarginPauseCap`, fields: {
+        id: object.UID
+    } });
 export const MaintainerCap = new MoveStruct({ name: `${$moduleName}::MaintainerCap`, fields: {
         id: object.UID
     } });
@@ -62,8 +66,14 @@ export const MaintainerCapUpdated = new MoveStruct({ name: `${$moduleName}::Main
         allowed: bcs.bool(),
         timestamp: bcs.u64()
     } });
+export const PauseCapUpdated = new MoveStruct({ name: `${$moduleName}::PauseCapUpdated`, fields: {
+        pause_cap_id: bcs.Address,
+        allowed: bcs.bool(),
+        timestamp: bcs.u64()
+    } });
 export const DeepbookPoolRegistered = new MoveStruct({ name: `${$moduleName}::DeepbookPoolRegistered`, fields: {
         pool_id: bcs.Address,
+        config: PoolConfig,
         timestamp: bcs.u64()
     } });
 export const DeepbookPoolUpdated = new MoveStruct({ name: `${$moduleName}::DeepbookPoolUpdated`, fields: {
@@ -78,16 +88,19 @@ export const DeepbookPoolConfigUpdated = new MoveStruct({ name: `${$moduleName}:
     } });
 export interface MintMaintainerCapArguments {
     self: RawTransactionArgument<string>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
 }
 export interface MintMaintainerCapOptions {
     package?: string;
     arguments: MintMaintainerCapArguments | [
         self: RawTransactionArgument<string>,
-        Cap: RawTransactionArgument<string>
+        AdminCap: RawTransactionArgument<string>
     ];
 }
-/** Mint a `MaintainerCap`, only admin can mint a `MaintainerCap`. */
+/**
+ * Mint a `MaintainerCap`, only admin can mint a `MaintainerCap`. This function
+ * does not have version restrictions
+ */
 export function mintMaintainerCap(options: MintMaintainerCapOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -95,7 +108,7 @@ export function mintMaintainerCap(options: MintMaintainerCapOptions) {
         `${packageAddress}::margin_registry::MarginAdminCap`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self", "Cap"];
+    const parameterNames = ["self", "AdminCap"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
@@ -105,18 +118,21 @@ export function mintMaintainerCap(options: MintMaintainerCapOptions) {
 }
 export interface RevokeMaintainerCapArguments {
     self: RawTransactionArgument<string>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
     maintainerCapId: RawTransactionArgument<string>;
 }
 export interface RevokeMaintainerCapOptions {
     package?: string;
     arguments: RevokeMaintainerCapArguments | [
         self: RawTransactionArgument<string>,
-        Cap: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>,
         maintainerCapId: RawTransactionArgument<string>
     ];
 }
-/** Revoke a `MaintainerCap`. Only the admin can revoke a `MaintainerCap`. */
+/**
+ * Revoke a `MaintainerCap`. Only the admin can revoke a `MaintainerCap`. This
+ * function does not have version restrictions
+ */
 export function revokeMaintainerCap(options: RevokeMaintainerCapOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
@@ -125,7 +141,7 @@ export function revokeMaintainerCap(options: RevokeMaintainerCapOptions) {
         '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self", "Cap", "maintainerCapId"];
+    const parameterNames = ["self", "AdminCap", "maintainerCapId"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
@@ -135,7 +151,7 @@ export function revokeMaintainerCap(options: RevokeMaintainerCapOptions) {
 }
 export interface RegisterDeepbookPoolArguments {
     self: RawTransactionArgument<string>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
     pool: RawTransactionArgument<string>;
     poolConfig: RawTransactionArgument<string>;
 }
@@ -143,7 +159,7 @@ export interface RegisterDeepbookPoolOptions {
     package?: string;
     arguments: RegisterDeepbookPoolArguments | [
         self: RawTransactionArgument<string>,
-        Cap: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>,
         pool: RawTransactionArgument<string>,
         poolConfig: RawTransactionArgument<string>
     ];
@@ -162,7 +178,7 @@ export function registerDeepbookPool(options: RegisterDeepbookPoolOptions) {
         `${packageAddress}::margin_registry::PoolConfig`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self", "Cap", "pool", "poolConfig"];
+    const parameterNames = ["self", "AdminCap", "pool", "poolConfig"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
@@ -173,14 +189,14 @@ export function registerDeepbookPool(options: RegisterDeepbookPoolOptions) {
 }
 export interface EnableDeepbookPoolArguments {
     self: RawTransactionArgument<string>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
     pool: RawTransactionArgument<string>;
 }
 export interface EnableDeepbookPoolOptions {
     package?: string;
     arguments: EnableDeepbookPoolArguments | [
         self: RawTransactionArgument<string>,
-        Cap: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>,
         pool: RawTransactionArgument<string>
     ];
     typeArguments: [
@@ -197,7 +213,7 @@ export function enableDeepbookPool(options: EnableDeepbookPoolOptions) {
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self", "Cap", "pool"];
+    const parameterNames = ["self", "AdminCap", "pool"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
@@ -208,14 +224,14 @@ export function enableDeepbookPool(options: EnableDeepbookPoolOptions) {
 }
 export interface DisableDeepbookPoolArguments {
     self: RawTransactionArgument<string>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
     pool: RawTransactionArgument<string>;
 }
 export interface DisableDeepbookPoolOptions {
     package?: string;
     arguments: DisableDeepbookPoolArguments | [
         self: RawTransactionArgument<string>,
-        Cap: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>,
         pool: RawTransactionArgument<string>
     ];
     typeArguments: [
@@ -235,7 +251,7 @@ export function disableDeepbookPool(options: DisableDeepbookPoolOptions) {
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self", "Cap", "pool"];
+    const parameterNames = ["self", "AdminCap", "pool"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
@@ -246,7 +262,7 @@ export function disableDeepbookPool(options: DisableDeepbookPoolOptions) {
 }
 export interface UpdateRiskParamsArguments {
     self: RawTransactionArgument<string>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
     pool: RawTransactionArgument<string>;
     poolConfig: RawTransactionArgument<string>;
 }
@@ -254,7 +270,7 @@ export interface UpdateRiskParamsOptions {
     package?: string;
     arguments: UpdateRiskParamsArguments | [
         self: RawTransactionArgument<string>,
-        Cap: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>,
         pool: RawTransactionArgument<string>,
         poolConfig: RawTransactionArgument<string>
     ];
@@ -273,7 +289,7 @@ export function updateRiskParams(options: UpdateRiskParamsOptions) {
         `${packageAddress}::margin_registry::PoolConfig`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["self", "Cap", "pool", "poolConfig"];
+    const parameterNames = ["self", "AdminCap", "pool", "poolConfig"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
@@ -284,14 +300,14 @@ export function updateRiskParams(options: UpdateRiskParamsOptions) {
 }
 export interface AddConfigArguments<Config extends BcsType<any>> {
     self: RawTransactionArgument<string>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
     config: RawTransactionArgument<Config>;
 }
 export interface AddConfigOptions<Config extends BcsType<any>> {
     package?: string;
     arguments: AddConfigArguments<Config> | [
         self: RawTransactionArgument<string>,
-        Cap: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>,
         config: RawTransactionArgument<Config>
     ];
     typeArguments: [
@@ -306,7 +322,7 @@ export function addConfig<Config extends BcsType<any>>(options: AddConfigOptions
         `${packageAddress}::margin_registry::MarginAdminCap`,
         `${options.typeArguments[0]}`
     ] satisfies string[];
-    const parameterNames = ["self", "Cap", "config"];
+    const parameterNames = ["self", "AdminCap", "config"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
@@ -317,13 +333,13 @@ export function addConfig<Config extends BcsType<any>>(options: AddConfigOptions
 }
 export interface RemoveConfigArguments {
     self: RawTransactionArgument<string>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
 }
 export interface RemoveConfigOptions {
     package?: string;
     arguments: RemoveConfigArguments | [
         self: RawTransactionArgument<string>,
-        Cap: RawTransactionArgument<string>
+        AdminCap: RawTransactionArgument<string>
     ];
     typeArguments: [
         string
@@ -336,7 +352,7 @@ export function removeConfig(options: RemoveConfigOptions) {
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_registry::MarginAdminCap`
     ] satisfies string[];
-    const parameterNames = ["self", "Cap"];
+    const parameterNames = ["self", "AdminCap"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
@@ -348,14 +364,14 @@ export function removeConfig(options: RemoveConfigOptions) {
 export interface EnableVersionArguments {
     self: RawTransactionArgument<string>;
     version: RawTransactionArgument<number | bigint>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
 }
 export interface EnableVersionOptions {
     package?: string;
     arguments: EnableVersionArguments | [
         self: RawTransactionArgument<string>,
         version: RawTransactionArgument<number | bigint>,
-        Cap: RawTransactionArgument<string>
+        AdminCap: RawTransactionArgument<string>
     ];
 }
 /**
@@ -369,7 +385,7 @@ export function enableVersion(options: EnableVersionOptions) {
         'u64',
         `${packageAddress}::margin_registry::MarginAdminCap`
     ] satisfies string[];
-    const parameterNames = ["self", "version", "Cap"];
+    const parameterNames = ["self", "version", "AdminCap"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
@@ -380,14 +396,14 @@ export function enableVersion(options: EnableVersionOptions) {
 export interface DisableVersionArguments {
     self: RawTransactionArgument<string>;
     version: RawTransactionArgument<number | bigint>;
-    Cap: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
 }
 export interface DisableVersionOptions {
     package?: string;
     arguments: DisableVersionArguments | [
         self: RawTransactionArgument<string>,
         version: RawTransactionArgument<number | bigint>,
-        Cap: RawTransactionArgument<string>
+        AdminCap: RawTransactionArgument<string>
     ];
 }
 /**
@@ -401,11 +417,106 @@ export function disableVersion(options: DisableVersionOptions) {
         'u64',
         `${packageAddress}::margin_registry::MarginAdminCap`
     ] satisfies string[];
-    const parameterNames = ["self", "version", "Cap"];
+    const parameterNames = ["self", "version", "AdminCap"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_registry',
         function: 'disable_version',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface DisableVersionPauseCapArguments {
+    self: RawTransactionArgument<string>;
+    version: RawTransactionArgument<number | bigint>;
+    pauseCap: RawTransactionArgument<string>;
+}
+export interface DisableVersionPauseCapOptions {
+    package?: string;
+    arguments: DisableVersionPauseCapArguments | [
+        self: RawTransactionArgument<string>,
+        version: RawTransactionArgument<number | bigint>,
+        pauseCap: RawTransactionArgument<string>
+    ];
+}
+/**
+ * Disables a package version Pause Cap must be valid and can disable the version
+ * This function does not have version restrictions
+ */
+export function disableVersionPauseCap(options: DisableVersionPauseCapOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        'u64',
+        `${packageAddress}::margin_registry::MarginPauseCap`
+    ] satisfies string[];
+    const parameterNames = ["self", "version", "pauseCap"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'disable_version_pause_cap',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface MintPauseCapArguments {
+    self: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
+}
+export interface MintPauseCapOptions {
+    package?: string;
+    arguments: MintPauseCapArguments | [
+        self: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>
+    ];
+}
+/**
+ * Mint a pause cap Only Admin can mint a pause cap This function does not have
+ * version restrictions
+ */
+export function mintPauseCap(options: MintPauseCapOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        `${packageAddress}::margin_registry::MarginAdminCap`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self", "AdminCap"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'mint_pause_cap',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface RevokePauseCapArguments {
+    self: RawTransactionArgument<string>;
+    AdminCap: RawTransactionArgument<string>;
+    pauseCapId: RawTransactionArgument<string>;
+}
+export interface RevokePauseCapOptions {
+    package?: string;
+    arguments: RevokePauseCapArguments | [
+        self: RawTransactionArgument<string>,
+        AdminCap: RawTransactionArgument<string>,
+        pauseCapId: RawTransactionArgument<string>
+    ];
+}
+/**
+ * Revoke a pause cap Only Admin can revoke a pause cap This function does not have
+ * version restrictions
+ */
+export function revokePauseCap(options: RevokePauseCapOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        `${packageAddress}::margin_registry::MarginAdminCap`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock',
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "AdminCap", "pauseCapId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'revoke_pause_cap',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
     });
 }
@@ -796,6 +907,50 @@ export function poolLiquidationReward(options: PoolLiquidationRewardOptions) {
         package: packageAddress,
         module: 'margin_registry',
         function: 'pool_liquidation_reward',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface AllowedMaintainersArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface AllowedMaintainersOptions {
+    package?: string;
+    arguments: AllowedMaintainersArguments | [
+        self: RawTransactionArgument<string>
+    ];
+}
+export function allowedMaintainers(options: AllowedMaintainersOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'allowed_maintainers',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface AllowedPauseCapsArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface AllowedPauseCapsOptions {
+    package?: string;
+    arguments: AllowedPauseCapsArguments | [
+        self: RawTransactionArgument<string>
+    ];
+}
+export function allowedPauseCaps(options: AllowedPauseCapsOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'allowed_pause_caps',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
     });
 }
