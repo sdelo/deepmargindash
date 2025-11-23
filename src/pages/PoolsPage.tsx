@@ -22,6 +22,7 @@ import { LiquidityHealthCheck } from "../features/lending/components/LiquidityHe
 import { LiquidationWall } from "../features/lending/components/LiquidationWall";
 import { WhaleWatch } from "../features/lending/components/WhaleWatch";
 import { AdminHistorySlidePanel } from "../features/lending/components/AdminHistorySlidePanel";
+import { InterestRateHistoryPanel } from "../features/lending/components/InterestRateHistoryPanel";
 import {
   SectionNav,
   type DashboardSection,
@@ -107,6 +108,10 @@ export function PoolsPage() {
   const [adminHistoryPoolId, setAdminHistoryPoolId] = React.useState<
     string | null
   >(null);
+  const [interestRateHistoryOpen, setInterestRateHistoryOpen] =
+    React.useState(false);
+  const [interestRateHistoryPoolId, setInterestRateHistoryPoolId] =
+    React.useState<string | null>(null);
   const [txStatus, setTxStatus] = React.useState<
     "idle" | "pending" | "success" | "error"
   >("idle");
@@ -664,7 +669,15 @@ export function PoolsPage() {
                           Yield vs Utilization
                         </span>
                       </div>
-                      <YieldCurve pool={selectedPool} />
+                      <YieldCurve
+                        pool={selectedPool}
+                        onShowHistory={() => {
+                          setInterestRateHistoryPoolId(
+                            selectedPool.contracts?.marginPoolId || null
+                          );
+                          setInterestRateHistoryOpen(true);
+                        }}
+                      />
                     </div>
                   )}
 
@@ -773,6 +786,32 @@ export function PoolsPage() {
         <AdminHistorySlidePanel
           poolId={adminHistoryPoolId || undefined}
           poolName={pools.find((p) => p.id === adminHistoryPoolId)?.asset}
+        />
+      </SlidePanel>
+
+      <SlidePanel
+        open={interestRateHistoryOpen}
+        onClose={() => {
+          setInterestRateHistoryOpen(false);
+          setInterestRateHistoryPoolId(null);
+        }}
+        title=""
+        width={"60vw"}
+      >
+        <InterestRateHistoryPanel
+          poolId={interestRateHistoryPoolId || undefined}
+          poolName={
+            pools.find(
+              (p) => p.contracts?.marginPoolId === interestRateHistoryPoolId
+            )?.asset
+          }
+          currentPool={pools.find(
+            (p) => p.contracts?.marginPoolId === interestRateHistoryPoolId
+          )}
+          onClose={() => {
+            setInterestRateHistoryOpen(false);
+            setInterestRateHistoryPoolId(null);
+          }}
         />
       </SlidePanel>
     </div>

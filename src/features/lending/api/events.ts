@@ -55,11 +55,18 @@ export interface AssetWithdrawnEventResponse extends ApiEventResponse<{
 export interface InterestParamsUpdatedEventResponse extends ApiEventResponse<{
   margin_pool_id: string;
   pool_cap_id: string;
-  interest_config: {
-    base_rate: string;
-    base_slope: string;
-    optimal_utilization: string;
-    excess_slope: string;
+  config_json: {
+    base_rate: string | number;
+    base_slope: string | number;
+    optimal_utilization: string | number;
+    excess_slope: string | number;
+  };
+  // Alias for backwards compatibility
+  interest_config?: {
+    base_rate: string | number;
+    base_slope: string | number;
+    optimal_utilization: string | number;
+    excess_slope: string | number;
   };
 }> {}
 
@@ -151,6 +158,7 @@ function buildQuery(params?: QueryParams): string {
   const mergedParams: QueryParams = {
     start_time: defaultTimeRange.start_time,
     end_time: defaultTimeRange.end_time,
+    limit: 1000,
     ...params, // User-provided params override defaults
   };
   

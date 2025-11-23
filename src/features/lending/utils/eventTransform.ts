@@ -259,14 +259,19 @@ export function transformInterestRateHistory(
   events: InterestParamsUpdatedEventResponse[]
 ): InterestRatePoint[] {
   return events
-    .map((event) => ({
-      timestamp: event.checkpoint_timestamp_ms,
-      time: new Date(event.checkpoint_timestamp_ms).toISOString(),
-      base_rate: nineDecimalToPercent(event.interest_config.base_rate),
-      base_slope: nineDecimalToPercent(event.interest_config.base_slope),
-      optimal_utilization: nineDecimalToPercent(event.interest_config.optimal_utilization),
-      excess_slope: nineDecimalToPercent(event.interest_config.excess_slope),
-    }))
+    .filter((event) => event.config_json || event.interest_config) // Check both fields
+    .map((event) => {
+      // Use config_json as primary field, fall back to interest_config for backwards compatibility
+      const config = event.config_json || event.interest_config!;
+      return {
+        timestamp: event.checkpoint_timestamp_ms,
+        time: new Date(event.checkpoint_timestamp_ms).toISOString(),
+        base_rate: nineDecimalToPercent(config.base_rate),
+        base_slope: nineDecimalToPercent(config.base_slope),
+        optimal_utilization: nineDecimalToPercent(config.optimal_utilization),
+        excess_slope: nineDecimalToPercent(config.excess_slope),
+      };
+    })
     .sort((a, b) => a.timestamp - b.timestamp);
 }
 

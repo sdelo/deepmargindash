@@ -11,12 +11,16 @@ import {
   ReferenceLine,
   ReferenceDot,
 } from "recharts";
+import { ClockIcon } from "@heroicons/react/24/outline";
 import type { PoolOverview } from "../types";
 import { utilizationPct } from "../../../data/synthetic/pools";
 
-type Props = { pool: PoolOverview };
+type Props = { 
+  pool: PoolOverview;
+  onShowHistory?: () => void;
+};
 
-export const YieldCurve: FC<Props> = ({ pool }) => {
+export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
   // Basic error handling for malformed data
   const componentId = Math.random().toString(36).substr(2, 9);
   console.log(`[${componentId}] YieldCurve rendering with pool:`, pool);
@@ -150,9 +154,20 @@ export const YieldCurve: FC<Props> = ({ pool }) => {
         <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
           Yield & Interest
         </h2>
-        <div className="text-xs text-cyan-100/80">
-          From <span className="text-amber-300">InterestConfig</span> &{" "}
-          <span className="text-amber-300">State</span>
+        <div className="flex items-center space-x-4">
+          {onShowHistory && (
+            <button
+              onClick={onShowHistory}
+              className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-400/30 hover:bg-amber-500/30 hover:border-amber-400/50 transition-all text-xs font-medium text-amber-300"
+            >
+              <ClockIcon className="w-4 h-4" />
+              <span>Rate History</span>
+            </button>
+          )}
+          <div className="text-xs text-cyan-100/80">
+            From <span className="text-amber-300">InterestConfig</span> &{" "}
+            <span className="text-amber-300">State</span>
+          </div>
         </div>
       </div>
       <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent my-4"></div>
