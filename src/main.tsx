@@ -38,7 +38,16 @@ const { networkConfig } = createNetworkConfig({
       },
     },
   },
-  mainnet: { url: getFullnodeUrl("mainnet") },
+  mainnet: {
+    url: getFullnodeUrl("mainnet"),
+    mvr: {
+      overrides: {
+        packages: {
+          [DEEPBOOK_MARGIN_PACKAGE_NAME]: DEEPBOOK_MARGIN_PACKAGE_IDS.mainnet,
+        },
+      },
+    },
+  },
 });
 
 const queryClient = new QueryClient();

@@ -12,7 +12,10 @@ interface Props {
   onHistoryClick?: (poolId: string) => void;
 }
 
-type PoolConfig = DeepbookPoolRegisteredEventResponse | DeepbookPoolConfigUpdatedEventResponse | null;
+type PoolConfig =
+  | DeepbookPoolRegisteredEventResponse
+  | DeepbookPoolConfigUpdatedEventResponse
+  | null;
 
 function formatAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -26,7 +29,9 @@ function formatRiskRatio(value: number): string {
 export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
   const { explorerUrl } = useAppNetwork();
   const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [poolConfigs, setPoolConfigs] = React.useState<Record<string, PoolConfig>>({});
+  const [poolConfigs, setPoolConfigs] = React.useState<
+    Record<string, PoolConfig>
+  >({});
   const [isLoading, setIsLoading] = React.useState(true);
 
   // Fetch all pool configs
@@ -34,7 +39,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
     async function fetchConfigs() {
       setIsLoading(true);
       const configs: Record<string, PoolConfig> = {};
-      
+
       await Promise.all(
         poolIds.map(async (poolId) => {
           try {
@@ -46,7 +51,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
           }
         })
       );
-      
+
       setPoolConfigs(configs);
       setIsLoading(false);
     }
@@ -82,7 +87,9 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
     return (
       <div className="relative rounded-3xl p-6 border bg-white/5 border-white/10 h-full flex items-center justify-center">
         <div className="text-center">
-          <p className="text-sm text-indigo-200/60">No DeepBook pools configured</p>
+          <p className="text-sm text-indigo-200/60">
+            No DeepBook pools configured
+          </p>
         </div>
       </div>
     );
@@ -91,18 +98,23 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
   const currentPoolId = poolIds[currentIndex];
   const currentConfig = poolConfigs[currentPoolId];
 
-  if (!currentConfig) {
+  if (!currentConfig || !currentConfig.config_json) {
     return (
       <div className="relative rounded-3xl p-6 border bg-white/5 border-white/10 h-full flex items-center justify-center">
         <div className="text-center">
-          <p className="text-sm text-red-400">Error loading pool configuration</p>
+          <p className="text-sm text-red-400">
+            Error loading pool configuration
+          </p>
+          <p className="text-xs text-indigo-200/60 mt-2">
+            Pool ID: {formatAddress(currentPoolId)}
+          </p>
         </div>
       </div>
     );
   }
 
   const config = currentConfig.config_json;
-  const enabled = config.enabled;
+  const enabled = config?.enabled ?? false;
 
   return (
     <div className="relative rounded-3xl p-6 border bg-white/5 border-purple-400/30 h-full flex flex-col">
@@ -117,11 +129,13 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
             {poolIds.length} pool{poolIds.length !== 1 ? "s" : ""} configured
           </p>
         </div>
-        <div className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-          enabled
-            ? "bg-green-500/20 text-green-300"
-            : "bg-red-500/20 text-red-300"
-        }`}>
+        <div
+          className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+            enabled
+              ? "bg-green-500/20 text-green-300"
+              : "bg-red-500/20 text-red-300"
+          }`}
+        >
           {enabled ? "Enabled" : "Disabled"}
         </div>
       </div>
@@ -148,13 +162,13 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
               />
             </svg>
           </button>
-          
+
           <div className="flex-1 text-center">
             <span className="text-xs text-indigo-200/80">
               {currentIndex + 1} / {poolIds.length}
             </span>
           </div>
-          
+
           <button
             onClick={handleNext}
             disabled={currentIndex === poolIds.length - 1}
@@ -205,34 +219,54 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
 
       {/* Risk Ratios */}
       <div className="space-y-3 flex-1">
-        <div className="text-xs text-indigo-200/60 font-semibold mb-2">Risk Ratios</div>
-        
+        <div className="text-xs text-indigo-200/60 font-semibold mb-2">
+          Risk Ratios
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-black/20 rounded-lg p-2">
-            <div className="text-[10px] text-indigo-200/60 mb-1">Min Borrow</div>
+            <div className="text-[10px] text-indigo-200/60 mb-1">
+              Min Borrow
+            </div>
             <div className="text-xs font-semibold text-white">
-              {formatRiskRatio(config.risk_ratios.min_borrow_risk_ratio)}
+              {config?.risk_ratios?.min_borrow_risk_ratio
+                ? formatRiskRatio(config.risk_ratios.min_borrow_risk_ratio)
+                : "N/A"}
             </div>
           </div>
-          
+
           <div className="bg-black/20 rounded-lg p-2">
-            <div className="text-[10px] text-indigo-200/60 mb-1">Liquidation</div>
+            <div className="text-[10px] text-indigo-200/60 mb-1">
+              Liquidation
+            </div>
             <div className="text-xs font-semibold text-amber-300">
-              {formatRiskRatio(config.risk_ratios.liquidation_risk_ratio)}
+              {config?.risk_ratios?.liquidation_risk_ratio
+                ? formatRiskRatio(config.risk_ratios.liquidation_risk_ratio)
+                : "N/A"}
             </div>
           </div>
-          
+
           <div className="bg-black/20 rounded-lg p-2">
-            <div className="text-[10px] text-indigo-200/60 mb-1">Min Withdraw</div>
+            <div className="text-[10px] text-indigo-200/60 mb-1">
+              Min Withdraw
+            </div>
             <div className="text-xs font-semibold text-white">
-              {formatRiskRatio(config.risk_ratios.min_withdraw_risk_ratio)}
+              {config?.risk_ratios?.min_withdraw_risk_ratio
+                ? formatRiskRatio(config.risk_ratios.min_withdraw_risk_ratio)
+                : "N/A"}
             </div>
           </div>
-          
+
           <div className="bg-black/20 rounded-lg p-2">
-            <div className="text-[10px] text-indigo-200/60 mb-1">Target Liq.</div>
+            <div className="text-[10px] text-indigo-200/60 mb-1">
+              Target Liq.
+            </div>
             <div className="text-xs font-semibold text-green-300">
-              {formatRiskRatio(config.risk_ratios.target_liquidation_risk_ratio)}
+              {config?.risk_ratios?.target_liquidation_risk_ratio
+                ? formatRiskRatio(
+                    config.risk_ratios.target_liquidation_risk_ratio
+                  )
+                : "N/A"}
             </div>
           </div>
         </div>
@@ -240,16 +274,24 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
         {/* Liquidation Rewards */}
         <div className="grid grid-cols-2 gap-3 pt-2">
           <div className="bg-black/20 rounded-lg p-2">
-            <div className="text-[10px] text-indigo-200/60 mb-1">Pool Reward</div>
+            <div className="text-[10px] text-indigo-200/60 mb-1">
+              Pool Reward
+            </div>
             <div className="text-xs font-semibold text-cyan-300">
-              {formatRiskRatio(config.pool_liquidation_reward)}
+              {config?.pool_liquidation_reward
+                ? formatRiskRatio(config.pool_liquidation_reward)
+                : "N/A"}
             </div>
           </div>
-          
+
           <div className="bg-black/20 rounded-lg p-2">
-            <div className="text-[10px] text-indigo-200/60 mb-1">User Reward</div>
+            <div className="text-[10px] text-indigo-200/60 mb-1">
+              User Reward
+            </div>
             <div className="text-xs font-semibold text-cyan-300">
-              {formatRiskRatio(config.user_liquidation_reward)}
+              {config?.user_liquidation_reward
+                ? formatRiskRatio(config.user_liquidation_reward)
+                : "N/A"}
             </div>
           </div>
         </div>
@@ -269,4 +311,3 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
 };
 
 export default DeepBookPoolCard;
-

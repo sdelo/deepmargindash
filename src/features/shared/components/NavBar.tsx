@@ -6,6 +6,7 @@ import {
 } from "@mysten/dapp-kit";
 import { Link, useLocation } from "react-router-dom";
 import { NetworkSwitcher } from "../../../components/NetworkSwitcher";
+import { IndexerSwitcher } from "../../../components/IndexerSwitcher";
 import DivingHelmetIcon from "../../../assets/diving-helment.svg";
 
 export default function NavBar() {
@@ -40,6 +41,7 @@ export default function NavBar() {
 
         <div className="flex items-center gap-3">
           <NetworkSwitcher />
+          <IndexerSwitcher />
           {currentAccount ? (
             <>
               <span className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono text-sm text-indigo-100">

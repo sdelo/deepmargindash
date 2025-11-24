@@ -12,8 +12,11 @@ interface Props {
   onClose: () => void;
 }
 
-type PoolConfigEvent = (DeepbookPoolRegisteredEventResponse | DeepbookPoolConfigUpdatedEventResponse) & {
-  eventType: 'registered' | 'updated';
+type PoolConfigEvent = (
+  | DeepbookPoolRegisteredEventResponse
+  | DeepbookPoolConfigUpdatedEventResponse
+) & {
+  eventType: "registered" | "updated";
 };
 
 function formatAddress(address: string): string {
@@ -24,8 +27,8 @@ function formatRiskRatio(value: number): string {
   return ((value / 1_000_000_000) * 100).toFixed(2) + "%";
 }
 
-function formatTimestamp(timestamp: number): string {
-  return new Date(timestamp * 1000).toLocaleString();
+function formatTimestamp(onchainTimestamp: number): string {
+  return new Date(onchainTimestamp * 1000).toLocaleString();
 }
 
 export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
@@ -50,9 +53,15 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
         ]);
 
         const allEvents: PoolConfigEvent[] = [
-          ...registeredEvents.map(e => ({ ...e, eventType: 'registered' as const })),
-          ...configUpdatedEvents.map(e => ({ ...e, eventType: 'updated' as const })),
-        ].sort((a, b) => b.timestamp - a.timestamp);
+          ...registeredEvents.map((e) => ({
+            ...e,
+            eventType: "registered" as const,
+          })),
+          ...configUpdatedEvents.map((e) => ({
+            ...e,
+            eventType: "updated" as const,
+          })),
+        ].sort((a, b) => b.onchain_timestamp - a.onchain_timestamp);
 
         setEvents(allEvents);
       } catch (err) {
@@ -68,9 +77,7 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
 
   if (!poolId) {
     return (
-      <div className="p-8 text-center text-indigo-200/60">
-        No pool selected
-      </div>
+      <div className="p-8 text-center text-indigo-200/60">No pool selected</div>
     );
   }
 
@@ -168,14 +175,20 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
           const config = event.config_json;
           const isLatest = index === 0;
 
+          // Skip events without proper config data
+          if (!config) {
+            return null;
+          }
+
           return (
             <div
-              key={`${event.eventType}-${event.timestamp}-${index}`}
+              key={`${event.eventType}-${event.onchain_timestamp}-${index}`}
               className={`
                 relative rounded-2xl p-5 border transition-all
-                ${isLatest
-                  ? "bg-purple-500/10 border-purple-400/50 shadow-lg"
-                  : "bg-white/5 border-white/10"
+                ${
+                  isLatest
+                    ? "bg-purple-500/10 border-purple-400/50 shadow-lg"
+                    : "bg-white/5 border-white/10"
                 }
               `}
             >
@@ -188,28 +201,34 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
               {/* Event Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    event.eventType === 'registered'
-                      ? "bg-green-500/20 text-green-300"
-                      : "bg-blue-500/20 text-blue-300"
-                  }`}>
-                    {event.eventType === 'registered' ? '🎉' : '⚙️'}
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      event.eventType === "registered"
+                        ? "bg-green-500/20 text-green-300"
+                        : "bg-blue-500/20 text-blue-300"
+                    }`}
+                  >
+                    {event.eventType === "registered" ? "🎉" : "⚙️"}
                   </div>
                   <div>
                     <div className="font-semibold text-white">
-                      {event.eventType === 'registered' ? 'Pool Registered' : 'Config Updated'}
+                      {event.eventType === "registered"
+                        ? "Pool Registered"
+                        : "Config Updated"}
                     </div>
                     <div className="text-xs text-indigo-200/60">
-                      {formatTimestamp(event.timestamp)}
+                      {formatTimestamp(event.onchain_timestamp)}
                     </div>
                   </div>
                 </div>
-                <div className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                  config.enabled
-                    ? "bg-green-500/20 text-green-300"
-                    : "bg-red-500/20 text-red-300"
-                }`}>
-                  {config.enabled ? "Enabled" : "Disabled"}
+                <div
+                  className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                    config?.enabled
+                      ? "bg-green-500/20 text-green-300"
+                      : "bg-red-500/20 text-red-300"
+                  }`}
+                >
+                  {config?.enabled ? "Enabled" : "Disabled"}
                 </div>
               </div>
 
@@ -260,7 +279,11 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                       Min Borrow Risk
                     </div>
                     <div className="text-sm font-semibold text-white">
-                      {formatRiskRatio(config.risk_ratios.min_borrow_risk_ratio)}
+                      {config?.risk_ratios?.min_borrow_risk_ratio
+                        ? formatRiskRatio(
+                            config.risk_ratios.min_borrow_risk_ratio
+                          )
+                        : "N/A"}
                     </div>
                   </div>
                   <div className="bg-black/20 rounded-lg p-3">
@@ -268,7 +291,11 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                       Liquidation Risk
                     </div>
                     <div className="text-sm font-semibold text-amber-300">
-                      {formatRiskRatio(config.risk_ratios.liquidation_risk_ratio)}
+                      {config?.risk_ratios?.liquidation_risk_ratio
+                        ? formatRiskRatio(
+                            config.risk_ratios.liquidation_risk_ratio
+                          )
+                        : "N/A"}
                     </div>
                   </div>
                   <div className="bg-black/20 rounded-lg p-3">
@@ -276,7 +303,11 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                       Min Withdraw Risk
                     </div>
                     <div className="text-sm font-semibold text-white">
-                      {formatRiskRatio(config.risk_ratios.min_withdraw_risk_ratio)}
+                      {config?.risk_ratios?.min_withdraw_risk_ratio
+                        ? formatRiskRatio(
+                            config.risk_ratios.min_withdraw_risk_ratio
+                          )
+                        : "N/A"}
                     </div>
                   </div>
                   <div className="bg-black/20 rounded-lg p-3">
@@ -284,7 +315,11 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                       Target Liquidation
                     </div>
                     <div className="text-sm font-semibold text-green-300">
-                      {formatRiskRatio(config.risk_ratios.target_liquidation_risk_ratio)}
+                      {config?.risk_ratios?.target_liquidation_risk_ratio
+                        ? formatRiskRatio(
+                            config.risk_ratios.target_liquidation_risk_ratio
+                          )
+                        : "N/A"}
                     </div>
                   </div>
                 </div>
@@ -297,7 +332,9 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                     Pool Liquidation Reward
                   </div>
                   <div className="text-sm font-semibold text-cyan-300">
-                    {formatRiskRatio(config.pool_liquidation_reward)}
+                    {config?.pool_liquidation_reward
+                      ? formatRiskRatio(config.pool_liquidation_reward)
+                      : "N/A"}
                   </div>
                 </div>
                 <div className="bg-black/20 rounded-lg p-3">
@@ -305,67 +342,71 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                     User Liquidation Reward
                   </div>
                   <div className="text-sm font-semibold text-cyan-300">
-                    {formatRiskRatio(config.user_liquidation_reward)}
+                    {config?.user_liquidation_reward
+                      ? formatRiskRatio(config.user_liquidation_reward)
+                      : "N/A"}
                   </div>
                 </div>
               </div>
 
               {/* Margin Pool IDs */}
-              <div className="mt-4 pt-4 border-t border-white/5">
-                <div className="text-xs text-indigo-200/60 mb-2">
-                  Associated Margin Pools
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <div className="text-indigo-200/60 mb-1">Base</div>
-                    <a
-                      href={`https://suivision.xyz/object/${config.base_margin_pool_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-purple-300 hover:text-purple-100 transition-colors font-mono flex items-center gap-1"
-                    >
-                      {formatAddress(config.base_margin_pool_id)}
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                        />
-                      </svg>
-                    </a>
+              {config?.base_margin_pool_id && config?.quote_margin_pool_id && (
+                <div className="mt-4 pt-4 border-t border-white/5">
+                  <div className="text-xs text-indigo-200/60 mb-2">
+                    Associated Margin Pools
                   </div>
-                  <div>
-                    <div className="text-indigo-200/60 mb-1">Quote</div>
-                    <a
-                      href={`https://suivision.xyz/object/${config.quote_margin_pool_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-purple-300 hover:text-purple-100 transition-colors font-mono flex items-center gap-1"
-                    >
-                      {formatAddress(config.quote_margin_pool_id)}
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <div className="text-indigo-200/60 mb-1">Base</div>
+                      <a
+                        href={`https://suivision.xyz/object/${config.base_margin_pool_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-300 hover:text-purple-100 transition-colors font-mono flex items-center gap-1"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                        />
-                      </svg>
-                    </a>
+                        {formatAddress(config.base_margin_pool_id)}
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                    <div>
+                      <div className="text-indigo-200/60 mb-1">Quote</div>
+                      <a
+                        href={`https://suivision.xyz/object/${config.quote_margin_pool_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-300 hover:text-purple-100 transition-colors font-mono flex items-center gap-1"
+                      >
+                        {formatAddress(config.quote_margin_pool_id)}
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
@@ -375,4 +416,3 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
 };
 
 export default DeepbookPoolHistoryPanel;
-

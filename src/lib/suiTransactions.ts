@@ -2,7 +2,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import type { PaginatedCoins, SuiClient } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 
-import { supply, withdraw } from "../contracts/deepbook_margin/deepbook_margin/margin_pool";
+import { supply, withdraw, mintSupplierCap } from "../contracts/deepbook_margin/deepbook_margin/margin_pool";
 import { ONE_BILLION, GAS_AMOUNT_MIST } from "../constants";
 
 
@@ -33,6 +33,28 @@ type WithdrawAmountOptions = {
   owner: string;
   suiClient: SuiClient;
 };
+
+async function getPackageId(client: SuiClient, poolId: string): Promise<string> {
+  const pool = await client.getObject({
+    id: poolId,
+    options: { showType: true },
+  });
+  if (!pool.data?.type) throw new Error("Pool type not found");
+  return pool.data.type.split("::")[0];
+}
+
+async function getSupplierCapId(
+  client: SuiClient,
+  owner: string,
+  packageId: string
+): Promise<string | undefined> {
+  const capType = `${packageId}::margin_pool::SupplierCap`;
+  const caps = await client.getOwnedObjects({
+    owner,
+    filter: { StructType: capType },
+  });
+  return caps.data[0]?.data?.objectId;
+}
 
 export async function buildDepositTransaction({
   amount,
@@ -92,15 +114,35 @@ export async function buildDepositTransaction({
     ? tx.pure.option("address", referralId)
     : tx.pure.option("address", null);
 
+  // SupplierCap handling
+  const packageId = await getPackageId(suiClient, poolId);
+  const existingCap = await getSupplierCapId(suiClient, owner, packageId);
+  let capArg;
+
+  if (existingCap) {
+    capArg = existingCap;
+  } else {
+    [capArg] = mintSupplierCap({
+      package: packageId,
+      arguments: { registry: registryId }
+    })(tx);
+  }
+
   supply({
+    package: packageId,
     arguments: {
       self: poolId,
       registry: registryId,
+      supplierCap: capArg,
       coin: coinForDeposit,
       referral: referralArg,
     },
     typeArguments: [poolType],
   })(tx);
+
+  if (!existingCap) {
+    tx.transferObjects([capArg], owner);
+  }
 
   // Set gas budget to 0.5 SUI
   tx.setGasBudget(500_000_000n);
@@ -164,14 +206,34 @@ export async function buildWithdrawTransaction({
   const tx = new Transaction();
   tx.setSender(owner);
 
+  // SupplierCap handling
+  const packageId = await getPackageId(suiClient, poolId);
+  const existingCap = await getSupplierCapId(suiClient, owner, packageId);
+  let capArg;
+
+  if (existingCap) {
+    capArg = existingCap;
+  } else {
+    [capArg] = mintSupplierCap({
+      package: packageId,
+      arguments: { registry: registryId }
+    })(tx);
+  }
+
   const [withdrawnCoin] = withdraw({
+    package: packageId,
     arguments: {
       self: poolId,
       registry: registryId,
+      supplierCap: capArg,
       amount: tx.pure.option("u64", amount),
     },
     typeArguments: [poolType],
   })(tx);
+
+  if (!existingCap) {
+    tx.transferObjects([capArg], owner);
+  }
 
   // Transfer the withdrawn coin to the owner
   tx.transferObjects([withdrawnCoin], owner);
@@ -208,14 +270,34 @@ export async function buildWithdrawAllTransaction({
   const tx = new Transaction();
   tx.setSender(owner);
 
+  // SupplierCap handling
+  const packageId = await getPackageId(suiClient, poolId);
+  const existingCap = await getSupplierCapId(suiClient, owner, packageId);
+  let capArg;
+
+  if (existingCap) {
+    capArg = existingCap;
+  } else {
+    [capArg] = mintSupplierCap({
+      package: packageId,
+      arguments: { registry: registryId }
+    })(tx);
+  }
+
   const [withdrawnCoin] = withdraw({
+    package: packageId,
     arguments: {
       self: poolId,
       registry: registryId,
+      supplierCap: capArg,
       amount: tx.pure.option("u64", null),
     },
     typeArguments: [poolType],
   })(tx);
+
+  if (!existingCap) {
+    tx.transferObjects([capArg], owner);
+  }
 
   // Transfer the withdrawn coin to the owner
   tx.transferObjects([withdrawnCoin], owner);
@@ -241,4 +323,3 @@ export async function buildWithdrawAllTransaction({
 
   return tx;
 }
-

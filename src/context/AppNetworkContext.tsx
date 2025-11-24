@@ -1,11 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useSuiClientContext } from "@mysten/dapp-kit";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   NETWORK_CONFIGS,
   AppNetwork,
   DEFAULT_NETWORK,
+  TESTNET_INDEXERS,
 } from "../config/networks";
 import { apiClient } from "../lib/api/client";
+
+const INDEXER_STORAGE_KEY = "deepdashboard_selected_indexer";
 
 interface AppNetworkContextType {
   network: AppNetwork;
@@ -13,6 +17,8 @@ interface AppNetworkContextType {
   explorerUrl: string;
   useLocalServer: boolean;
   setUseLocalServer: (use: boolean) => void;
+  selectedIndexer: string;
+  setSelectedIndexer: (indexerUrl: string) => void;
 }
 
 const AppNetworkContext = createContext<AppNetworkContextType | null>(null);
@@ -23,6 +29,7 @@ export function AppNetworkProvider({
   children: React.ReactNode;
 }) {
   const { network: suiNetwork } = useSuiClientContext();
+  const queryClient = useQueryClient();
 
   // Safe cast or fallback
   const currentNetwork = (suiNetwork as AppNetwork) || DEFAULT_NETWORK;
@@ -30,11 +37,51 @@ export function AppNetworkProvider({
   // Configuration is now fully driven by environment variables and src/config/networks.ts
   const config =
     NETWORK_CONFIGS[currentNetwork] || NETWORK_CONFIGS[DEFAULT_NETWORK];
-  const { serverUrl, explorerUrl } = config;
+  const { explorerUrl } = config;
+
+  // Manage selected indexer with localStorage persistence
+  const [selectedIndexer, setSelectedIndexerState] = useState<string>(() => {
+    if (currentNetwork === "testnet") {
+      const stored = localStorage.getItem(INDEXER_STORAGE_KEY);
+      if (stored && TESTNET_INDEXERS.some((i) => i.url === stored)) {
+        return stored;
+      }
+      return config.serverUrl;
+    }
+    return config.serverUrl;
+  });
+
+  // Use selected indexer for testnet, default for mainnet
+  const serverUrl = currentNetwork === "testnet" ? selectedIndexer : config.serverUrl;
+
+  const setSelectedIndexer = (indexerUrl: string) => {
+    setSelectedIndexerState(indexerUrl);
+    localStorage.setItem(INDEXER_STORAGE_KEY, indexerUrl);
+    
+    // Invalidate all React Query cache to force refetch from new indexer
+    queryClient.invalidateQueries();
+  };
 
   useEffect(() => {
     apiClient.setBaseUrl(serverUrl);
   }, [serverUrl]);
+
+  // Update selected indexer when network changes
+  useEffect(() => {
+    if (currentNetwork === "testnet") {
+      const stored = localStorage.getItem(INDEXER_STORAGE_KEY);
+      if (stored && TESTNET_INDEXERS.some((i) => i.url === stored)) {
+        setSelectedIndexerState(stored);
+      } else {
+        setSelectedIndexerState(config.serverUrl);
+      }
+    } else {
+      setSelectedIndexerState(config.serverUrl);
+    }
+    
+    // Invalidate cache when network changes
+    queryClient.invalidateQueries();
+  }, [currentNetwork, config.serverUrl, queryClient]);
 
   return (
     <AppNetworkContext.Provider
@@ -46,6 +93,8 @@ export function AppNetworkProvider({
         useLocalServer: serverUrl.includes("localhost"),
         setUseLocalServer: () =>
           console.warn("Use TESTNET_SERVER_URL env var to toggle local server"),
+        selectedIndexer,
+        setSelectedIndexer,
       }}
     >
       {children}

@@ -6,6 +6,8 @@ import {
   useDisconnectWallet,
 } from "@mysten/dapp-kit";
 import DivingHelmetIcon from "../assets/diving-helment.svg";
+import { NetworkSwitcher } from "./NetworkSwitcher";
+import { IndexerSwitcher } from "./IndexerSwitcher";
 
 export function LandingNavBar() {
   const currentAccount = useCurrentAccount();
@@ -37,6 +39,8 @@ export function LandingNavBar() {
         </div>
 
         <div className="flex items-center gap-4">
+          <NetworkSwitcher />
+          <IndexerSwitcher />
           {currentAccount ? (
             <>
               <span className="px-3 py-1 rounded bg-white/10 border border-white/20 font-mono text-sm text-indigo-100">
