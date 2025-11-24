@@ -5,6 +5,7 @@ import {
 } from "../api/events";
 import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
+import { useAppNetwork } from "../../../context/AppNetworkContext";
 
 interface LiquidationWallProps {
   poolId?: string;
@@ -19,6 +20,7 @@ interface DailyLiquidationData {
 }
 
 export function LiquidationWall({ poolId }: LiquidationWallProps) {
+  const { serverUrl } = useAppNetwork();
   const [timeRange, setTimeRange] = React.useState<TimeRange>("1M");
   const [liquidations, setLiquidations] = React.useState<
     LiquidationEventResponse[]
@@ -26,11 +28,15 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
-  // Fetch liquidations
+  // Fetch liquidations - refetch when timeRange, poolId, or serverUrl changes
   React.useEffect(() => {
     async function fetchData() {
       try {
         setIsLoading(true);
+        setError(null);
+        // Clear old data immediately when server changes
+        setLiquidations([]);
+
         const params = {
           ...timeRangeToParams(timeRange),
           ...(poolId && { margin_pool_id: poolId }),
@@ -47,7 +53,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
       }
     }
     fetchData();
-  }, [timeRange, poolId]);
+  }, [timeRange, poolId, serverUrl]);
 
   // Aggregate by day
   const dailyData = React.useMemo(() => {
@@ -94,7 +100,8 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
       (sum, liq) => sum + parseFloat(liq.pool_default) / 1e9,
       0
     );
-    const avgLiquidationSize = totalLiquidations > 0 ? totalVolume / totalLiquidations : 0;
+    const avgLiquidationSize =
+      totalLiquidations > 0 ? totalVolume / totalLiquidations : 0;
 
     return {
       totalLiquidations,
@@ -179,7 +186,9 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
           }`}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">{stats.totalBadDebt > 0 ? "⚠️" : "✅"}</span>
+            <span className="text-2xl">
+              {stats.totalBadDebt > 0 ? "⚠️" : "✅"}
+            </span>
           </div>
           <div className="space-y-1">
             <div
@@ -347,9 +356,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
           <div className="flex gap-3">
             <span className="text-green-400 font-bold shrink-0">✓</span>
             <div>
-              <span className="font-semibold text-white">
-                Healthy System:
-              </span>{" "}
+              <span className="font-semibold text-white">Healthy System:</span>{" "}
               {stats.totalBadDebt === 0 ? (
                 <>
                   All liquidations have been executed successfully with full
@@ -403,4 +410,3 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
     </div>
   );
 }
-

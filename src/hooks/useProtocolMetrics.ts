@@ -3,6 +3,7 @@ import { useSuiClient } from '@mysten/dapp-kit';
 import { fetchAssetSupplied, fetchAssetWithdrawn, fetchLoanBorrowed, fetchLoanRepaid, fetchMarginManagerCreated, fetchLiquidations } from '../features/lending/api/events';
 import { CONTRACTS } from '../config/contracts';
 import { fetchMarginPool } from '../api/poolData';
+import { useAppNetwork } from '../context/AppNetworkContext';
 
 export interface ProtocolMetrics {
   totalValueLocked: number; // Total across all pools
@@ -19,6 +20,7 @@ export interface ProtocolMetrics {
  */
 export function useProtocolMetrics(): ProtocolMetrics {
   const suiClient = useSuiClient();
+  const { serverUrl } = useAppNetwork();
   const [metrics, setMetrics] = React.useState<ProtocolMetrics>({
     totalValueLocked: 0,
     totalBorrowed: 0,
@@ -67,10 +69,11 @@ export function useProtocolMetrics(): ProtocolMetrics {
         error: error as Error,
       }));
     }
-  }, [suiClient]);
+  }, [suiClient, serverUrl]);
 
-  // Initial fetch
+  // Reset loading state and refetch when server URL changes
   React.useEffect(() => {
+    setMetrics(prev => ({ ...prev, isLoading: true, error: null }));
     fetchMetrics();
   }, [fetchMetrics]);
 

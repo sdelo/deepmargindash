@@ -52,19 +52,26 @@ export function AppNetworkProvider({
   });
 
   // Use selected indexer for testnet, default for mainnet
-  const serverUrl = currentNetwork === "testnet" ? selectedIndexer : config.serverUrl;
+  const serverUrl =
+    currentNetwork === "testnet" ? selectedIndexer : config.serverUrl;
 
   const setSelectedIndexer = (indexerUrl: string) => {
     setSelectedIndexerState(indexerUrl);
     localStorage.setItem(INDEXER_STORAGE_KEY, indexerUrl);
-    
-    // Invalidate all React Query cache to force refetch from new indexer
-    queryClient.invalidateQueries();
+    // Update API client immediately for responsiveness
+    // The useEffect below will also update it and reset queries when serverUrl changes
+    apiClient.setBaseUrl(indexerUrl);
   };
 
+  // Update API client when serverUrl changes
   useEffect(() => {
     apiClient.setBaseUrl(serverUrl);
   }, [serverUrl]);
+
+  // Reset all queries when serverUrl changes (handles both manual toggle and network changes)
+  useEffect(() => {
+    queryClient.resetQueries();
+  }, [serverUrl, queryClient]);
 
   // Update selected indexer when network changes
   useEffect(() => {
@@ -78,10 +85,8 @@ export function AppNetworkProvider({
     } else {
       setSelectedIndexerState(config.serverUrl);
     }
-    
-    // Invalidate cache when network changes
-    queryClient.invalidateQueries();
-  }, [currentNetwork, config.serverUrl, queryClient]);
+    // Note: The serverUrl effect below will handle resetting queries
+  }, [currentNetwork, config.serverUrl]);
 
   return (
     <AppNetworkContext.Provider

@@ -11,6 +11,7 @@ import {
 } from "../api/events";
 import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
+import { useAppNetwork } from "../../../context/AppNetworkContext";
 
 interface WhaleWatchProps {
   poolId?: string;
@@ -28,6 +29,7 @@ interface ParticipantStats {
 }
 
 export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
+  const { serverUrl } = useAppNetwork();
   const [timeRange, setTimeRange] = React.useState<TimeRange>("ALL");
   const [suppliedEvents, setSuppliedEvents] = React.useState<
     AssetSuppliedEventResponse[]
@@ -44,7 +46,7 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
-  // Fetch all events
+  // Fetch all events - refetch when timeRange, poolId, or serverUrl changes
   React.useEffect(() => {
     async function fetchData() {
       try {
@@ -75,7 +77,7 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
       }
     }
     fetchData();
-  }, [timeRange, poolId]);
+  }, [timeRange, poolId, serverUrl]);
 
   // Calculate top suppliers
   const topSuppliers = React.useMemo(() => {
@@ -157,19 +159,11 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
 
   // Calculate concentration metrics
   const concentration = React.useMemo(() => {
-    const totalSupply = topSuppliers.reduce(
-      (sum, s) => sum + s.netAmount,
-      0
-    );
-    const totalBorrow = topBorrowers.reduce(
-      (sum, b) => sum + b.netAmount,
-      0
-    );
+    const totalSupply = topSuppliers.reduce((sum, s) => sum + s.netAmount, 0);
+    const totalBorrow = topBorrowers.reduce((sum, b) => sum + b.netAmount, 0);
 
-    const top1Supply =
-      topSuppliers.length > 0 ? topSuppliers[0].netAmount : 0;
-    const top1Borrow =
-      topBorrowers.length > 0 ? topBorrowers[0].netAmount : 0;
+    const top1Supply = topSuppliers.length > 0 ? topSuppliers[0].netAmount : 0;
+    const top1Borrow = topBorrowers.length > 0 ? topBorrowers[0].netAmount : 0;
 
     const supplyConcentration =
       totalSupply > 0 ? (top1Supply / totalSupply) * 100 : 0;
@@ -247,8 +241,8 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                 supplyRisk.color === "red"
                   ? "border-red-500/50 shadow-lg shadow-red-500/10"
                   : supplyRisk.color === "orange"
-                  ? "border-orange-500/30"
-                  : "border-white/10"
+                    ? "border-orange-500/30"
+                    : "border-white/10"
               }`}
             >
               <div className="flex items-center justify-between mb-4">
@@ -260,10 +254,10 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                     supplyRisk.color === "red"
                       ? "bg-red-500/20 text-red-300"
                       : supplyRisk.color === "orange"
-                      ? "bg-orange-500/20 text-orange-300"
-                      : supplyRisk.color === "yellow"
-                      ? "bg-yellow-500/20 text-yellow-300"
-                      : "bg-green-500/20 text-green-300"
+                        ? "bg-orange-500/20 text-orange-300"
+                        : supplyRisk.color === "yellow"
+                          ? "bg-yellow-500/20 text-yellow-300"
+                          : "bg-green-500/20 text-green-300"
                   }`}
                 >
                   {supplyRisk.label} Risk
@@ -286,8 +280,8 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                         supplyRisk.color === "red"
                           ? "bg-gradient-to-r from-red-600 to-red-400"
                           : supplyRisk.color === "orange"
-                          ? "bg-gradient-to-r from-orange-600 to-orange-400"
-                          : "bg-gradient-to-r from-cyan-500 to-blue-500"
+                            ? "bg-gradient-to-r from-orange-600 to-orange-400"
+                            : "bg-gradient-to-r from-cyan-500 to-blue-500"
                       }`}
                       style={{
                         width: `${Math.min(concentration.supplyConcentration, 100)}%`,
@@ -315,8 +309,8 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                 borrowRisk.color === "red"
                   ? "border-red-500/50 shadow-lg shadow-red-500/10"
                   : borrowRisk.color === "orange"
-                  ? "border-orange-500/30"
-                  : "border-white/10"
+                    ? "border-orange-500/30"
+                    : "border-white/10"
               }`}
             >
               <div className="flex items-center justify-between mb-4">
@@ -328,10 +322,10 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                     borrowRisk.color === "red"
                       ? "bg-red-500/20 text-red-300"
                       : borrowRisk.color === "orange"
-                      ? "bg-orange-500/20 text-orange-300"
-                      : borrowRisk.color === "yellow"
-                      ? "bg-yellow-500/20 text-yellow-300"
-                      : "bg-green-500/20 text-green-300"
+                        ? "bg-orange-500/20 text-orange-300"
+                        : borrowRisk.color === "yellow"
+                          ? "bg-yellow-500/20 text-yellow-300"
+                          : "bg-green-500/20 text-green-300"
                   }`}
                 >
                   {borrowRisk.label} Risk
@@ -354,8 +348,8 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                         borrowRisk.color === "red"
                           ? "bg-gradient-to-r from-red-600 to-red-400"
                           : borrowRisk.color === "orange"
-                          ? "bg-gradient-to-r from-orange-600 to-orange-400"
-                          : "bg-gradient-to-r from-amber-500 to-orange-500"
+                            ? "bg-gradient-to-r from-orange-600 to-orange-400"
+                            : "bg-gradient-to-r from-amber-500 to-orange-500"
                       }`}
                       style={{
                         width: `${Math.min(concentration.borrowConcentration, 100)}%`,
@@ -403,10 +397,10 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                           idx === 0
                             ? "bg-yellow-500/20 text-yellow-300"
                             : idx === 1
-                            ? "bg-gray-400/20 text-gray-300"
-                            : idx === 2
-                            ? "bg-orange-500/20 text-orange-300"
-                            : "bg-cyan-500/20 text-cyan-300"
+                              ? "bg-gray-400/20 text-gray-300"
+                              : idx === 2
+                                ? "bg-orange-500/20 text-orange-300"
+                                : "bg-cyan-500/20 text-cyan-300"
                         }`}
                       >
                         {idx + 1}
@@ -466,10 +460,10 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                           idx === 0
                             ? "bg-yellow-500/20 text-yellow-300"
                             : idx === 1
-                            ? "bg-gray-400/20 text-gray-300"
-                            : idx === 2
-                            ? "bg-orange-500/20 text-orange-300"
-                            : "bg-amber-500/20 text-amber-300"
+                              ? "bg-gray-400/20 text-gray-300"
+                              : idx === 2
+                                ? "bg-orange-500/20 text-orange-300"
+                                : "bg-amber-500/20 text-amber-300"
                         }`}
                       >
                         {idx + 1}
@@ -580,4 +574,3 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
     </div>
   );
 }
-

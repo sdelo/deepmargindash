@@ -2,6 +2,7 @@ import React from 'react';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { fetchMarginManagerCreated, fetchLoanBorrowed, fetchLoanRepaid, fetchLiquidations, type MarginManagersInfoResponse } from '../features/lending/api/events';
 import { MarginManager } from '../contracts/deepbook_margin/deepbook_margin/margin_manager';
+import { useAppNetwork } from '../context/AppNetworkContext';
 
 export interface MarginManagerDetails {
   id: string;
@@ -31,6 +32,7 @@ export interface MarginManagerAnalytics {
  */
 export function useMarginManagers(): MarginManagerAnalytics {
   const suiClient = useSuiClient();
+  const { serverUrl } = useAppNetwork();
   const [analytics, setAnalytics] = React.useState<MarginManagerAnalytics>({
     totalManagers: 0,
     managersPerPool: {},
@@ -107,9 +109,11 @@ export function useMarginManagers(): MarginManagerAnalytics {
         error: error as Error,
       }));
     }
-  }, [suiClient]);
+  }, [suiClient, serverUrl]);
 
+  // Reset loading state and refetch when server URL changes
   React.useEffect(() => {
+    setAnalytics(prev => ({ ...prev, isLoading: true, error: null }));
     fetchAnalytics();
   }, [fetchAnalytics]);
 

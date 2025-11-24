@@ -11,32 +11,20 @@ export interface IndexerOption {
 }
 
 // Available testnet indexers
+// The first one in this list will be used as the default
 export const TESTNET_INDEXERS: IndexerOption[] = [
-  // {
-  //   label: "Localhost",
-  //   url: "http://localhost:9008",
-  // },
   {
     label: "Dummy Data",
-    url: "http://3.135.85.195:9008",
+    url: "https://deepmargindash.duckdns.org",
   },
-  // {
-  //   label: "Mysten Labs",
-  //   url: "https://deepbook-indexer.testnet.mystenlabs.com",
-  // },
+  {
+    label: "Deepbook Indexer Testnet",
+    url: "https://deepbook-indexer.testnet.mystenlabs.com",
+  },
 ];
 
-// For development with bun --hot --serve, we'll use defaults that can be overridden
-// by creating a .env file. However, since bun's dev server doesn't inject env vars
-// into the browser bundle, we hardcode sensible defaults here.
-// 
-// To use localhost for development, simply edit this file directly.
-const IS_LOCAL_DEV = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-const DEFAULT_TESTNET_SERVER_URL = IS_LOCAL_DEV 
-  ? "http://localhost:9008"  // Default to localhost in dev
-  : "https://deepbook-indexer.testnet.mystenlabs.com";
+// Default to the first indexer in the list for consistency across all environments
+const DEFAULT_TESTNET_SERVER_URL = TESTNET_INDEXERS[0]?.url || "https://deepbook-indexer.testnet.mystenlabs.com";
 
 const MAINNET_SERVER_URL = "https://deepbook-indexer.mainnet.mystenlabs.com";
 

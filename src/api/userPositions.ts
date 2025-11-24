@@ -54,6 +54,29 @@ function extractSharesFromDynamicField(content: any): string | number | null {
 }
 
 /**
+ * Helper to get package ID from pool type
+ */
+function getPackageId(poolType: string): string {
+  return poolType.split("::")[0];
+}
+
+/**
+ * Helper to find a user's SupplierCap for a given package
+ */
+async function getSupplierCapId(
+  client: SuiClient,
+  owner: string,
+  packageId: string
+): Promise<string | undefined> {
+  const capType = `${packageId}::margin_pool::SupplierCap`;
+  const caps = await client.getOwnedObjects({
+    owner,
+    filter: { StructType: capType },
+  });
+  return caps.data[0]?.data?.objectId;
+}
+
+/**
  * Fetches a user's position from a specific margin pool
  */
 export async function fetchUserPositionFromPool(
@@ -73,7 +96,7 @@ export async function fetchUserPositionFromPool(
       },
     });
 
-    if (!poolResponse.data?.bcs || poolResponse.data.bcs.dataType !== 'moveObject') {
+    if (!poolResponse.data?.bcs || poolResponse.data.bcs.dataType !== 'moveObject' || !poolResponse.data.type) {
       return null;
     }
 
@@ -81,12 +104,21 @@ export async function fetchUserPositionFromPool(
     const marginPool = MarginPool.fromBase64(poolResponse.data.bcs.bcsBytes);
     const positionTableId = marginPool.positions.positions.id.id;
     
-    // Query the dynamic field for this user's position
+    // Find user's SupplierCap
+    const packageId = getPackageId(poolResponse.data.type);
+    const supplierCapId = await getSupplierCapId(suiClient, userAddress, packageId);
+    
+    if (!supplierCapId) {
+      // User has no supplier cap, so they can't have a position
+      return null;
+    }
+
+    // Query the dynamic field for this user's position using SupplierCap ID
     const positionField = await suiClient.getDynamicFieldObject({
       parentId: positionTableId,
       name: {
-        type: 'address',
-        value: userAddress,
+        type: '0x2::object::ID',
+        value: supplierCapId,
       },
     });
 
@@ -99,7 +131,7 @@ export async function fetchUserPositionFromPool(
     const shares = extractSharesFromDynamicField(positionField.data.content);
     
     if (!shares) {
-      console.warn(`Could not extract shares from position for ${userAddress} in ${asset} pool`);
+      console.warn(`Could not extract shares from position for ${userAddress} (cap: ${supplierCapId}) in ${asset} pool`);
       return null;
     }
     
@@ -119,6 +151,10 @@ export async function fetchUserPositionFromPool(
       balanceFormatted,
     };
   } catch (error) {
+    // Ignore errors if the position field doesn't exist (user has cap but no position)
+    if (JSON.stringify(error).includes("DynamicFieldNotFound")) {
+        return null;
+    }
     console.error(`Error fetching user position from ${asset} pool:`, error);
     return null;
   }

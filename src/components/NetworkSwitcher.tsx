@@ -14,7 +14,6 @@ export function NetworkSwitcher() {
       >
         <option value="testnet">Testnet</option>
         <option value="mainnet">Mainnet</option>
-        <option value="localnet">Localnet</option>
       </select>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   type DeepbookPoolRegisteredEventResponse,
   type DeepbookPoolConfigUpdatedEventResponse,
 } from "../api/events";
+import { useAppNetwork } from "../../../context/AppNetworkContext";
 
 interface Props {
   poolId?: string;
@@ -32,6 +33,7 @@ function formatTimestamp(onchainTimestamp: number): string {
 }
 
 export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
+  const { serverUrl } = useAppNetwork();
   const [events, setEvents] = React.useState<PoolConfigEvent[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -73,7 +75,7 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
     }
 
     fetchHistory();
-  }, [poolId]);
+  }, [poolId, serverUrl]);
 
   if (!poolId) {
     return (

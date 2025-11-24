@@ -382,17 +382,22 @@ export async function fetchDeepbookPoolConfigUpdated(
 export async function fetchLatestDeepbookPoolConfig(
   poolId: string
 ): Promise<DeepbookPoolRegisteredEventResponse | DeepbookPoolConfigUpdatedEventResponse | null> {
-  const [registeredEvents, configUpdatedEvents] = await Promise.all([
-    fetchDeepbookPoolRegistered({ pool_id: poolId }),
-    fetchDeepbookPoolConfigUpdated({ pool_id: poolId }),
-  ]);
+  try {
+    const [registeredEvents, configUpdatedEvents] = await Promise.all([
+      fetchDeepbookPoolRegistered({ pool_id: poolId }),
+      fetchDeepbookPoolConfigUpdated({ pool_id: poolId }),
+    ]);
 
-  // Combine and sort by timestamp
-  const allEvents = [
-    ...registeredEvents.map(e => ({ ...e, source: 'registered' as const })),
-    ...configUpdatedEvents.map(e => ({ ...e, source: 'updated' as const })),
-  ].sort((a, b) => b.timestamp - a.timestamp);
+    // Combine and sort by timestamp
+    const allEvents = [
+      ...registeredEvents.map(e => ({ ...e, source: 'registered' as const })),
+      ...configUpdatedEvents.map(e => ({ ...e, source: 'updated' as const })),
+    ].sort((a, b) => b.onchain_timestamp - a.onchain_timestamp);
 
-  return allEvents[0] || null;
+    return allEvents[0] || null;
+  } catch (err) {
+    console.error(`Error in fetchLatestDeepbookPoolConfig for ${poolId}:`, err);
+    throw err;
+  }
 }
 

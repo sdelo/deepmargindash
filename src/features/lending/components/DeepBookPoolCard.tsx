@@ -27,14 +27,14 @@ function formatRiskRatio(value: number): string {
 }
 
 export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
-  const { explorerUrl } = useAppNetwork();
+  const { explorerUrl, serverUrl } = useAppNetwork();
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [poolConfigs, setPoolConfigs] = React.useState<
     Record<string, PoolConfig>
   >({});
   const [isLoading, setIsLoading] = React.useState(true);
 
-  // Fetch all pool configs
+  // Fetch all pool configs - refetch when poolIds or serverUrl changes
   React.useEffect(() => {
     async function fetchConfigs() {
       setIsLoading(true);
@@ -61,7 +61,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
     } else {
       setIsLoading(false);
     }
-  }, [poolIds]);
+  }, [poolIds, serverUrl]);
 
   const handlePrevious = () => {
     setCurrentIndex((prev) => Math.max(0, prev - 1));
