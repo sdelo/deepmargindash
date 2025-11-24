@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { fetchMarginPool } from '../api/poolData';
-import { fetchUserPositionFromPool } from '../api/userPositions';
+import { fetchUserPositions } from '../api/userPositions';
 import type { PoolOverview, UserPosition } from '../features/lending/types';
 
 export type PoolDataResult = {
@@ -35,14 +35,11 @@ export function usePoolData(poolId: string, userAddress?: string): PoolDataResul
       
       // Fetch user position if user address is provided
       if (userAddress && poolResult) {
-        const position = await fetchUserPositionFromPool(
-          suiClient,
-          poolId,
-          userAddress,
-          poolResult.asset,
-          poolResult.contracts.coinDecimals
-        );
-        setUserPosition(position);
+        // Instead of fetchUserPositionFromPool, use fetchUserPositions
+        // and find the one matching this pool/asset
+        const positions = await fetchUserPositions(suiClient, userAddress);
+        const matchingPosition = positions.find(p => p.asset === poolResult.asset);
+        setUserPosition(matchingPosition || null);
       } else {
         setUserPosition(null);
       }

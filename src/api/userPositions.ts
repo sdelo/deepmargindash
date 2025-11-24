@@ -73,9 +73,13 @@ async function getAllSupplierCaps(
     owner,
     filter: { StructType: capType },
   });
+  
+  // Log raw response for debugging
+  console.log(`getOwnedObjects raw response for ${capType}:`, JSON.stringify(caps.data, null, 2));
+
   return caps.data
     .map((cap) => cap.data?.objectId)
-    .filter((id): id is string => id !== undefined);
+    .filter((id): id is string => id !== undefined && id !== null);
 }
 
 /**
@@ -105,22 +109,67 @@ export async function fetchUserPositionFromPool(
 
     // Parse the MarginPool to get the position manager
     const marginPool = MarginPool.fromBase64(poolResponse.data.bcs.bcsBytes);
-    const positionTableId = marginPool.positions.positions.id.id;
+    
+    // Safe access to table ID
+    // Structure: marginPool -> positions (PositionManager) -> positions (Table) -> id (UID) -> id (Address)
+    const positionTableId = (marginPool as any)?.positions?.positions?.id?.id;
+
+    if (!positionTableId || typeof positionTableId !== 'string') {
+      console.error(`Invalid position table ID derived from pool ${poolId}:`, positionTableId);
+      console.log('Full margin pool structure:', JSON.stringify(marginPool, null, 2));
+      return null;
+    }
+
+    if (!supplierCapId) {
+        console.error(`Cannot fetch position: supplierCapId is missing/undefined for user ${userAddress}`);
+        return null;
+    }
 
     // Query the dynamic field for this user's position using SupplierCap ID
-    const positionField = await suiClient.getDynamicFieldObject({
-      parentId: positionTableId,
-      name: {
-        type: '0x2::object::ID',
-        value: supplierCapId,
-      },
-    });
+    console.log(`Fetching position for cap ${supplierCapId} in pool ${poolId} (Table: ${positionTableId})`);
+    
+    let positionField;
+    try {
+      positionField = await suiClient.getDynamicFieldObject({
+        parentId: positionTableId,
+        name: {
+          type: '0x2::object::ID',
+          value: supplierCapId,
+        },
+      });
+    } catch (err: any) {
+      // Check for explicit error types
+      if (err?.message?.includes('DynamicFieldNotFound')) {
+        // This is expected if the user has no position in this pool
+        return null;
+      }
+      
+      console.error(`Failed to fetch dynamic field:`, {
+        parentId: positionTableId,
+        nameType: '0x2::object::ID',
+        nameValue: supplierCapId,
+        error: err.message
+      });
+      throw err; // Re-throw to let the outer catch handle it
+    }
+
+    // If content is missing, fetch it explicitly
+    if (positionField.data?.objectId && !positionField.data?.content) {
+      console.log(`Content missing for DF ${positionField.data.objectId}, fetching explicitly...`);
+      positionField = await suiClient.getObject({
+        id: positionField.data.objectId,
+        options: { showContent: true }
+      });
+    }
 
     // Dynamic fields return content, not BCS
     if (!positionField.data?.content) {
+      console.log(`No position content found for cap ${supplierCapId}`);
       return null;
     }
     
+    console.log(`Position content structure:`, JSON.stringify(positionField.data.content, null, 2));
+
     // Extract shares from the nested dynamic field structure
     const shares = extractSharesFromDynamicField(positionField.data.content);
     
@@ -176,21 +225,32 @@ export async function fetchUserPositions(
     ? getPackageId(suiPoolResponse.data.type)
     : null;
 
+  console.log(`Derived package ID from pool: ${packageId}`);
+
   if (!packageId) {
     return [];
   }
 
   // Fetch all SupplierCaps for this package (one cap can be used across all pools)
   const allCapIds = await getAllSupplierCaps(suiClient, userAddress, packageId);
+  console.log(`Found ${allCapIds.length} supplier caps for ${userAddress}:`, allCapIds);
 
-  if (allCapIds.length === 0) {
+  // Extra safety check to ensure no undefined/null values made it through
+  const validCapIds = allCapIds.filter(id => id); 
+
+  if (validCapIds.length === 0) {
     return [];
   }
 
   // Fetch positions for each SupplierCap across both pools
   const positionPromises: Promise<UserPosition | null>[] = [];
   
-  for (const capId of allCapIds) {
+  for (const capId of validCapIds) {
+    // Double check capId is valid string
+    if (!capId) {
+        console.warn("Skipping invalid capId:", capId);
+        continue;
+    }
     // Try this cap against SUI pool
     positionPromises.push(
       fetchUserPositionFromPool(

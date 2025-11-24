@@ -50,14 +50,14 @@ async function main() {
       // extract inner type from MarginPool<T>
       const innerType = pools.suiPool.type.match(/<(.+)>/)?.[1];
       if (innerType) {
-        suiReferral = await mintReferral(PACKAGE_ID, registryId, pools.suiPool.id, innerType, NETWORK);
+        suiReferral = await mintReferral(client, PACKAGE_ID, registryId, pools.suiPool.id, innerType);
       }
     }
 
     if (pools.dbusdcPool) {
       const innerType = pools.dbusdcPool.type.match(/<(.+)>/)?.[1];
       if (innerType) {
-        dbusdcReferral = await mintReferral(PACKAGE_ID, registryId, pools.dbusdcPool.id, innerType, NETWORK);
+        dbusdcReferral = await mintReferral(client, PACKAGE_ID, registryId, pools.dbusdcPool.id, innerType);
       }
     }
 
@@ -97,4 +97,3 @@ async function main() {
 }
 
 main();
-

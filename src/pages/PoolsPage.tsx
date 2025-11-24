@@ -42,7 +42,7 @@ import {
   buildWithdrawTransaction,
   buildWithdrawAllTransaction,
 } from "../lib/suiTransactions";
-import type { PoolOverview } from "../features/lending/types";
+import type { PoolOverview, UserPosition } from "../features/lending/types";
 
 export function PoolsPage() {
   const account = useCurrentAccount();
@@ -87,6 +87,15 @@ export function PoolsPage() {
     return realPools;
   }, [suiPoolData.data, dbusdcPoolData.data]);
 
+  // Aggregate user positions from both pools to pass to PersonalPositions
+  const userPositions: UserPosition[] = React.useMemo(() => {
+    const positions: UserPosition[] = [];
+    if (suiPoolData.userPosition) positions.push(suiPoolData.userPosition);
+    if (dbusdcPoolData.userPosition)
+      positions.push(dbusdcPoolData.userPosition);
+    return positions;
+  }, [suiPoolData.userPosition, dbusdcPoolData.userPosition]);
+
   const [selectedPoolId, setSelectedPoolId] = React.useState<string | null>(
     null
   );
@@ -109,10 +118,10 @@ export function PoolsPage() {
   const [adminHistoryPoolId, setAdminHistoryPoolId] = React.useState<
     string | null
   >(null);
-  const [deepbookPoolHistoryOpen, setDeepbookPoolHistoryOpen] = React.useState(false);
-  const [deepbookPoolHistoryPoolId, setDeepbookPoolHistoryPoolId] = React.useState<
-    string | null
-  >(null);
+  const [deepbookPoolHistoryOpen, setDeepbookPoolHistoryOpen] =
+    React.useState(false);
+  const [deepbookPoolHistoryPoolId, setDeepbookPoolHistoryPoolId] =
+    React.useState<string | null>(null);
   const [interestRateHistoryOpen, setInterestRateHistoryOpen] =
     React.useState(false);
   const [interestRateHistoryPoolId, setInterestRateHistoryPoolId] =
@@ -240,7 +249,8 @@ export function PoolsPage() {
 
         // Check if transaction succeeded
         if (txResponse.effects?.status?.status !== "success") {
-          const errorMsg = txResponse.effects?.status?.error || "Transaction failed on-chain";
+          const errorMsg =
+            txResponse.effects?.status?.error || "Transaction failed on-chain";
           setTxStatus("error");
           setTxError(errorMsg);
           console.error("Deposit failed on-chain:", errorMsg);
@@ -322,7 +332,8 @@ export function PoolsPage() {
 
         // Check if transaction succeeded
         if (txResponse.effects?.status?.status !== "success") {
-          const errorMsg = txResponse.effects?.status?.error || "Transaction failed on-chain";
+          const errorMsg =
+            txResponse.effects?.status?.error || "Transaction failed on-chain";
           setTxStatus("error");
           setTxError(errorMsg);
           console.error("Withdraw failed on-chain:", errorMsg);
@@ -390,7 +401,8 @@ export function PoolsPage() {
 
       // Check if transaction succeeded
       if (txResponse.effects?.status?.status !== "success") {
-        const errorMsg = txResponse.effects?.status?.error || "Transaction failed on-chain";
+        const errorMsg =
+          txResponse.effects?.status?.error || "Transaction failed on-chain";
         setTxStatus("error");
         setTxError(errorMsg);
         console.error("Withdraw all failed on-chain:", errorMsg);
@@ -592,6 +604,7 @@ export function PoolsPage() {
                         <PersonalPositions
                           userAddress={account.address}
                           pools={pools}
+                          positions={userPositions}
                           onShowHistory={() => setHistoryOpen(true)}
                         />
                       ) : (

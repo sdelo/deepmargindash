@@ -12,14 +12,28 @@ type Props = {
   userAddress: string | undefined;
   pools: PoolOverview[];
   onShowHistory?: () => void;
+  positions?: UserPosition[]; // Optional prop to pass pre-fetched positions
 };
 
 export const PersonalPositions: FC<Props> = ({
   userAddress,
   pools,
   onShowHistory,
+  positions: propPositions,
 }) => {
-  const { data: positions, error, isLoading } = useUserPositions(userAddress);
+  const { data: fetchedPositions, error, isLoading } = useUserPositions(
+    propPositions ? undefined : userAddress
+  );
+  
+  // Use passed positions if available, otherwise use fetched ones
+  const positions = propPositions || fetchedPositions;
+
+  console.log("PersonalPositions rendered with:", { 
+    positions, 
+    error, 
+    isLoading: propPositions ? false : isLoading, 
+    userAddress 
+  });
   const { explorerUrl } = useAppNetwork();
   
   // Extract unique SupplierCap IDs from positions
