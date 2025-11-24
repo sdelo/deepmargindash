@@ -1,7 +1,7 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env bun
 
 import { Transaction } from '@mysten/sui/transactions';
-import { mintSupplyReferral } from '../src/deepbook_assets/deepbook_margin/margin_pool.js';
+import { mintSupplyReferral } from '../src/contracts/deepbook_margin/deepbook_margin/margin_pool.js';
 import { getActiveAddress, signAndExecute, ACTIVE_NETWORK } from '../src/utils/account.js';
 import { CONTRACTS } from '../src/config/contracts.js';
 
@@ -10,18 +10,18 @@ import { CONTRACTS } from '../src/config/contracts.js';
  * This creates a SupplyReferral object that can be used to earn referral fees.
  * 
  * Usage:
- *   NETWORK=testnet tsx scripts/mint-supply-referral.ts <MARGIN_POOL_ID>
+ *   NETWORK=testnet bun scripts/mint-supply-referral.ts <MARGIN_POOL_ID> <MARGIN_POOL_TYPE>
  * 
  * Example:
- *   NETWORK=testnet tsx scripts/mint-supply-referral.ts 0x1234...
+ *   NETWORK=testnet bun scripts/mint-supply-referral.ts 0x42c7... 0x...::sui::SUI
  */
 
 async function main() {
   const args = process.argv.slice(2);
   
   if (args.length !== 2) {
-    console.error('Usage: tsx scripts/mint-supply-referral.ts <MARGIN_POOL_ID>');
-    console.error('Example: tsx scripts/mint-supply-referral.ts 0x1234...');
+    console.error('Usage: bun scripts/mint-supply-referral.ts <MARGIN_POOL_ID> <MARGIN_POOL_TYPE>');
+    console.error('Example: bun scripts/mint-supply-referral.ts 0x1234... 0x...::sui::SUI');
     process.exit(1);
   }
   
@@ -29,8 +29,16 @@ async function main() {
   const marginPoolType: string = args[1];
   const sender = getActiveAddress();
   
+  // Get contract config for the active network
+  const config = CONTRACTS[ACTIVE_NETWORK as keyof typeof CONTRACTS];
+  if (!config) {
+    console.error(`❌ No contract config found for network: ${ACTIVE_NETWORK}`);
+    process.exit(1);
+  }
+
   console.log(`🔧 Minting supply referral for margin pool: ${marginPoolId}`);
   console.log(`📍 Network: ${ACTIVE_NETWORK}`);
+  console.log(`📝 Registry ID: ${config.MARGIN_REGISTRY_ID}`);
   console.log(`👤 Sender: ${sender}`);
   console.log('');
 
@@ -40,8 +48,10 @@ async function main() {
     
     // Add the mint_supply_referral call
     mintSupplyReferral({
+      package: config.MARGIN_PACKAGE_ID, // Explicitly set package ID
       arguments: {
-        self: marginPoolId,
+        self: tx.object(marginPoolId),
+        registry: tx.object(config.MARGIN_REGISTRY_ID),
       },
       typeArguments: [marginPoolType],
     })(tx);
@@ -59,6 +69,7 @@ async function main() {
       console.log(`📋 Transaction digest: ${result.digest}`);
       
       // Find the created SupplyReferral object
+      // Note: The ID returned by mint_supply_referral is the ID of the SupplyReferral object
       const createdObjects = result.objectChanges?.filter(
         change => change.type === 'created' && change.objectType?.includes('SupplyReferral')
       );
@@ -71,8 +82,11 @@ async function main() {
           console.log('💡 You can now use this referral address when calling supply():');
           console.log(`   referral: "${referralObject.objectId}"`);
           console.log('');
-          console.log('📖 To claim referral fees later, use the SupplyReferral object with withdraw_referral_fees()');
+          console.log('📝 Update your src/config/contracts.ts with this ID for the corresponding pool.');
         }
+      } else {
+          console.log("⚠️ Could not find created SupplyReferral object in changes.");
+          console.log("Full object changes:", JSON.stringify(result.objectChanges, null, 2));
       }
     } else {
       console.error('❌ Transaction failed:', result.effects?.status);

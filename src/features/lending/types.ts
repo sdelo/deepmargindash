@@ -52,5 +52,6 @@ export type UserPosition = {
   asset: PoolAssetSymbol;
   shares: number;
   balanceFormatted: string;
+  supplierCapId: string;
 };
 

@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "codegen": "sui-ts-codegen generate",
-    "mint-referral": "bun scripts/mint-supply-referral.ts"
+    "mint-referral": "bun scripts/mint-supply-referral.ts",
+    "update-contracts": "bun scripts/update-contracts.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

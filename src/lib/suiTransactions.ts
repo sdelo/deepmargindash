@@ -120,19 +120,19 @@ export async function buildDepositTransaction({
   let capArg;
 
   if (existingCap) {
-    capArg = existingCap;
+    capArg = tx.object(existingCap);
   } else {
     [capArg] = mintSupplierCap({
       package: packageId,
-      arguments: { registry: registryId }
+      arguments: { registry: tx.object(registryId) }
     })(tx);
   }
 
   supply({
     package: packageId,
     arguments: {
-      self: poolId,
-      registry: registryId,
+      self: tx.object(poolId),
+      registry: tx.object(registryId),
       supplierCap: capArg,
       coin: coinForDeposit,
       referral: referralArg,
@@ -212,19 +212,19 @@ export async function buildWithdrawTransaction({
   let capArg;
 
   if (existingCap) {
-    capArg = existingCap;
+    capArg = tx.object(existingCap);
   } else {
     [capArg] = mintSupplierCap({
       package: packageId,
-      arguments: { registry: registryId }
+      arguments: { registry: tx.object(registryId) }
     })(tx);
   }
 
   const [withdrawnCoin] = withdraw({
     package: packageId,
     arguments: {
-      self: poolId,
-      registry: registryId,
+      self: tx.object(poolId),
+      registry: tx.object(registryId),
       supplierCap: capArg,
       amount: tx.pure.option("u64", amount),
     },
@@ -276,19 +276,19 @@ export async function buildWithdrawAllTransaction({
   let capArg;
 
   if (existingCap) {
-    capArg = existingCap;
+    capArg = tx.object(existingCap);
   } else {
     [capArg] = mintSupplierCap({
       package: packageId,
-      arguments: { registry: registryId }
+      arguments: { registry: tx.object(registryId) }
     })(tx);
   }
 
   const [withdrawnCoin] = withdraw({
     package: packageId,
     arguments: {
-      self: poolId,
-      registry: registryId,
+      self: tx.object(poolId),
+      registry: tx.object(registryId),
       supplierCap: capArg,
       amount: tx.pure.option("u64", null),
     },

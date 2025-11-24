@@ -228,6 +228,26 @@ export function PoolsPage() {
           transaction: tx,
           chain: `sui:${network}`,
         });
+
+        // Wait for the transaction to be processed and check its status
+        const txResponse = await suiClient.waitForTransaction({
+          digest: result.digest,
+          options: {
+            showEffects: true,
+            showEvents: true,
+          },
+        });
+
+        // Check if transaction succeeded
+        if (txResponse.effects?.status?.status !== "success") {
+          const errorMsg = txResponse.effects?.status?.error || "Transaction failed on-chain";
+          setTxStatus("error");
+          setTxError(errorMsg);
+          console.error("Deposit failed on-chain:", errorMsg);
+          console.error("Full effects:", txResponse.effects);
+          return;
+        }
+
         setTxStatus("success");
         console.log("Deposit successful:", result.digest);
 
@@ -290,6 +310,26 @@ export function PoolsPage() {
           transaction: tx,
           chain: `sui:${network}`,
         });
+
+        // Wait for the transaction to be processed and check its status
+        const txResponse = await suiClient.waitForTransaction({
+          digest: result.digest,
+          options: {
+            showEffects: true,
+            showEvents: true,
+          },
+        });
+
+        // Check if transaction succeeded
+        if (txResponse.effects?.status?.status !== "success") {
+          const errorMsg = txResponse.effects?.status?.error || "Transaction failed on-chain";
+          setTxStatus("error");
+          setTxError(errorMsg);
+          console.error("Withdraw failed on-chain:", errorMsg);
+          console.error("Full effects:", txResponse.effects);
+          return;
+        }
+
         setTxStatus("success");
         console.log("Withdraw successful:", result.digest);
 
@@ -338,6 +378,26 @@ export function PoolsPage() {
         transaction: tx,
         chain: `sui:${network}`,
       });
+
+      // Wait for the transaction to be processed and check its status
+      const txResponse = await suiClient.waitForTransaction({
+        digest: result.digest,
+        options: {
+          showEffects: true,
+          showEvents: true,
+        },
+      });
+
+      // Check if transaction succeeded
+      if (txResponse.effects?.status?.status !== "success") {
+        const errorMsg = txResponse.effects?.status?.error || "Transaction failed on-chain";
+        setTxStatus("error");
+        setTxError(errorMsg);
+        console.error("Withdraw all failed on-chain:", errorMsg);
+        console.error("Full effects:", txResponse.effects);
+        return;
+      }
+
       setTxStatus("success");
       console.log("Withdraw all successful:", result.digest);
 

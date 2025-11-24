@@ -61,30 +61,33 @@ function getPackageId(poolType: string): string {
 }
 
 /**
- * Helper to find a user's SupplierCap for a given package
+ * Helper to find all user's SupplierCaps for a given package
  */
-async function getSupplierCapId(
+async function getAllSupplierCaps(
   client: SuiClient,
   owner: string,
   packageId: string
-): Promise<string | undefined> {
+): Promise<string[]> {
   const capType = `${packageId}::margin_pool::SupplierCap`;
   const caps = await client.getOwnedObjects({
     owner,
     filter: { StructType: capType },
   });
-  return caps.data[0]?.data?.objectId;
+  return caps.data
+    .map((cap) => cap.data?.objectId)
+    .filter((id): id is string => id !== undefined);
 }
 
 /**
- * Fetches a user's position from a specific margin pool
+ * Fetches a user's position from a specific margin pool for a given SupplierCap
  */
 export async function fetchUserPositionFromPool(
   suiClient: SuiClient,
   poolId: string,
   userAddress: string,
   asset: PoolAssetSymbol,
-  decimals: number
+  decimals: number,
+  supplierCapId: string
 ): Promise<UserPosition | null> {
   try {
     // Fetch the margin pool to access the position manager
@@ -103,15 +106,6 @@ export async function fetchUserPositionFromPool(
     // Parse the MarginPool to get the position manager
     const marginPool = MarginPool.fromBase64(poolResponse.data.bcs.bcsBytes);
     const positionTableId = marginPool.positions.positions.id.id;
-    
-    // Find user's SupplierCap
-    const packageId = getPackageId(poolResponse.data.type);
-    const supplierCapId = await getSupplierCapId(suiClient, userAddress, packageId);
-    
-    if (!supplierCapId) {
-      // User has no supplier cap, so they can't have a position
-      return null;
-    }
 
     // Query the dynamic field for this user's position using SupplierCap ID
     const positionField = await suiClient.getDynamicFieldObject({
@@ -149,6 +143,7 @@ export async function fetchUserPositionFromPool(
       asset,
       shares: Number(shares),
       balanceFormatted,
+      supplierCapId,
     };
   } catch (error) {
     // Ignore errors if the position field doesn't exist (user has cap but no position)
@@ -161,7 +156,7 @@ export async function fetchUserPositionFromPool(
 }
 
 /**
- * Fetches all user positions across all margin pools
+ * Fetches all user positions across all margin pools for all SupplierCaps
  */
 export async function fetchUserPositions(
   suiClient: SuiClient,
@@ -171,24 +166,58 @@ export async function fetchUserPositions(
     return [];
   }
 
-  // Fetch positions from both pools in parallel
-  const [suiPosition, dbusdcPosition] = await Promise.all([
-    fetchUserPositionFromPool(
-      suiClient,
-      CONTRACTS.testnet.SUI_MARGIN_POOL_ID,
-      userAddress,
-      'SUI',
-      9 // SUI has 9 decimals
-    ),
-    fetchUserPositionFromPool(
-      suiClient,
-      CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID,
-      userAddress,
-      'DBUSDC',
-      6 // DBUSDC has 6 decimals
-    ),
-  ]);
+  // Get package ID from one of the pools (both pools use the same package)
+  const suiPoolResponse = await suiClient.getObject({
+    id: CONTRACTS.testnet.SUI_MARGIN_POOL_ID,
+    options: { showType: true },
+  });
 
+  const packageId = suiPoolResponse.data?.type 
+    ? getPackageId(suiPoolResponse.data.type)
+    : null;
+
+  if (!packageId) {
+    return [];
+  }
+
+  // Fetch all SupplierCaps for this package (one cap can be used across all pools)
+  const allCapIds = await getAllSupplierCaps(suiClient, userAddress, packageId);
+
+  if (allCapIds.length === 0) {
+    return [];
+  }
+
+  // Fetch positions for each SupplierCap across both pools
+  const positionPromises: Promise<UserPosition | null>[] = [];
+  
+  for (const capId of allCapIds) {
+    // Try this cap against SUI pool
+    positionPromises.push(
+      fetchUserPositionFromPool(
+        suiClient,
+        CONTRACTS.testnet.SUI_MARGIN_POOL_ID,
+        userAddress,
+        'SUI',
+        9,
+        capId
+      )
+    );
+    
+    // Try this cap against DBUSDC pool
+    positionPromises.push(
+      fetchUserPositionFromPool(
+        suiClient,
+        CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID,
+        userAddress,
+        'DBUSDC',
+        6,
+        capId
+      )
+    );
+  }
+
+  const positions = await Promise.all(positionPromises);
+  
   // Return only non-null positions
-  return [suiPosition, dbusdcPosition].filter((pos): pos is UserPosition => pos !== null);
+  return positions.filter((pos): pos is UserPosition => pos !== null);
 }

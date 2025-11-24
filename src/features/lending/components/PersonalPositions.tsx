@@ -1,6 +1,8 @@
 import type { FC } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { UserPosition, PoolOverview } from "../types";
 import { useUserPositions } from "../../../hooks/useUserPositions";
+import { useAppNetwork } from "../../../context/AppNetworkContext";
 import {
   calculateInterestEarned,
   calculateCurrentBalance,
@@ -18,12 +20,58 @@ export const PersonalPositions: FC<Props> = ({
   onShowHistory,
 }) => {
   const { data: positions, error, isLoading } = useUserPositions(userAddress);
+  const { explorerUrl } = useAppNetwork();
+  
+  // Extract unique SupplierCap IDs from positions
+  const uniqueCapIds = useMemo(() => {
+    const capIds = new Set(
+      positions
+        .map((pos) => pos.supplierCapId)
+        .filter((id): id is string => id !== undefined)
+    );
+    return Array.from(capIds);
+  }, [positions]);
+
+  // State for selected SupplierCap (default to first one)
+  const [selectedCapId, setSelectedCapId] = useState<string | null>(
+    uniqueCapIds.length > 0 ? uniqueCapIds[0] : null
+  );
+
+  // Update selectedCapId when uniqueCapIds changes (e.g., after refetch)
+  useEffect(() => {
+    if (uniqueCapIds.length > 0 && (!selectedCapId || !uniqueCapIds.includes(selectedCapId))) {
+      setSelectedCapId(uniqueCapIds[0]);
+    } else if (uniqueCapIds.length === 0) {
+      setSelectedCapId(null);
+    }
+  }, [uniqueCapIds, selectedCapId]);
+
+  // Filter positions by selected SupplierCap (or show all if only one cap)
+  const filteredPositions = useMemo(() => {
+    if (uniqueCapIds.length <= 1) {
+      return positions; // Show all positions if only one cap or no caps
+    }
+    if (!selectedCapId) {
+      return [];
+    }
+    return positions.filter((pos) => pos.supplierCapId === selectedCapId);
+  }, [positions, selectedCapId, uniqueCapIds.length]);
 
   // Helper function to get pool data for a position
   const getPoolForPosition = (
     position: UserPosition
   ): PoolOverview | undefined => {
     return pools.find((pool) => pool.asset === position.asset);
+  };
+
+  // Helper to truncate address for display
+  const truncateAddress = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  // Helper to copy to clipboard
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
   };
 
   if (isLoading) {
@@ -143,6 +191,72 @@ export const PersonalPositions: FC<Props> = ({
           Show deposit history
         </button>
       </div>
+
+      {/* SupplierCap Selector (only show if multiple caps exist) */}
+      {uniqueCapIds.length > 1 && (
+        <div className="mb-4 p-3 bg-white/5 rounded-xl border border-white/10">
+          <div className="flex items-center gap-3 mb-2">
+            <label className="text-sm font-medium text-cyan-100/90">
+              SupplierCap:
+            </label>
+            <select
+              value={selectedCapId || ""}
+              onChange={(e) => setSelectedCapId(e.target.value)}
+              className="flex-1 px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg text-cyan-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+            >
+              {uniqueCapIds.map((capId) => (
+                <option key={capId} value={capId}>
+                  {truncateAddress(capId)}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => copyToClipboard(selectedCapId || "")}
+              className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20 text-cyan-200 transition-colors"
+              title="Copy SupplierCap ID"
+            >
+              Copy
+            </button>
+          </div>
+          <div className="text-xs text-cyan-200/70 flex items-center gap-1">
+            <span>ℹ️</span>
+            <span>
+              SupplierCap is a transferable NFT that allows you to supply/withdraw. One cap works across all pools.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* SupplierCap Info (show for single cap) */}
+      {uniqueCapIds.length === 1 && (
+        <div className="mb-4 p-3 bg-white/5 rounded-xl border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-medium text-cyan-100/90">SupplierCap:</span>
+            <a
+              href={`${explorerUrl}/object/${uniqueCapIds[0]}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-300 hover:text-cyan-200 underline text-sm font-mono"
+            >
+              {truncateAddress(uniqueCapIds[0])}
+            </a>
+            <button
+              onClick={() => copyToClipboard(uniqueCapIds[0])}
+              className="px-2 py-0.5 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20 text-cyan-200 transition-colors"
+              title="Copy SupplierCap ID"
+            >
+              Copy
+            </button>
+          </div>
+          <div className="text-xs text-cyan-200/70 flex items-center gap-1">
+            <span>ℹ️</span>
+            <span>
+              SupplierCap is a transferable NFT that allows you to supply/withdraw. One cap works across all pools.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-base">
           <thead className="text-cyan-100/70 border-b border-white/10">
@@ -150,10 +264,13 @@ export const PersonalPositions: FC<Props> = ({
               <th className="py-3 pr-4 font-semibold">Asset</th>
               <th className="py-3 pr-4 font-semibold">Deposited</th>
               <th className="py-3 pr-4 font-semibold">Interest Earned</th>
+              {uniqueCapIds.length > 1 && (
+                <th className="py-3 pr-4 font-semibold">SupplierCap</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
-            {positions.map((pos) => {
+            {filteredPositions.map((pos) => {
               const pool = getPoolForPosition(pos);
               const currentBalance = pool
                 ? calculateCurrentBalance(pos, pool)
@@ -164,12 +281,24 @@ export const PersonalPositions: FC<Props> = ({
 
               return (
                 <tr
-                  key={`${pos.address}-${pos.asset}`}
+                  key={`${pos.supplierCapId}-${pos.asset}`}
                   className="hover:bg-white/5 transition-colors"
                 >
                   <td className="py-4 pr-4 font-medium">{pos.asset}</td>
                   <td className="py-4 pr-4 text-amber-300 font-semibold">{currentBalance}</td>
                   <td className="py-4 pr-4 text-green-300 font-semibold">{interestEarned}</td>
+                  {uniqueCapIds.length > 1 && (
+                    <td className="py-4 pr-4">
+                      <a
+                        href={`${explorerUrl}/object/${pos.supplierCapId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-300 hover:text-cyan-200 underline text-sm font-mono"
+                      >
+                        {truncateAddress(pos.supplierCapId)}
+                      </a>
+                    </td>
+                  )}
                 </tr>
               );
             })}
