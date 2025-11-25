@@ -31,5 +31,6 @@ export interface TransactionDetailsModalProps {
   onClose: () => void;
   onContinue: () => void;
   transactionInfo: TransactionInfo;
+  disabled?: boolean; // New prop to disable the continue button
 }
 

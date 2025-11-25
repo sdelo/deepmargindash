@@ -6,23 +6,25 @@ export interface TransactionInfoIconProps {
   transactionInfo: TransactionInfo;
   className?: string;
   size?: "sm" | "md" | "lg";
+  disabled?: boolean; // New prop to disable the icon
 }
 
 /**
- * A simple info icon that opens the transaction details modal.
- * This doesn't interrupt the transaction flow - it's just for users who want to review details first.
+ * A button that opens the transaction details modal.
+ * Shows users what the transaction will do before they approve it in their wallet.
  */
 export function TransactionInfoIcon({
   transactionInfo,
   className = "",
   size = "md",
+  disabled = false,
 }: TransactionInfoIconProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-5 h-5",
-    lg: "w-6 h-6",
+  const paddingClasses = {
+    sm: "px-3 py-1.5 text-xs",
+    md: "px-3 py-2 text-sm",
+    lg: "px-4 py-2 text-sm",
   }[size];
 
   return (
@@ -31,15 +33,26 @@ export function TransactionInfoIcon({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setIsModalOpen(true);
+          if (!disabled) {
+            setIsModalOpen(true);
+          }
         }}
-        className={`inline-flex items-center justify-center text-cyan-400 hover:text-cyan-300 transition-colors ${className}`}
-        aria-label="View transaction details"
-        title="View transaction details"
+        disabled={disabled}
+        className={`inline-flex items-center gap-2 rounded-lg border transition-all font-medium ${
+          disabled
+            ? "border-gray-700 bg-gray-800/50 text-gray-500 cursor-not-allowed opacity-50"
+            : "border-cyan-400/30 bg-cyan-400/10 text-cyan-300 hover:bg-cyan-400/20 hover:border-cyan-400/50"
+        } ${paddingClasses} ${className}`}
+        aria-label="Review transaction details"
+        title={
+          disabled
+            ? "Enter an amount to review details"
+            : "Review transaction details"
+        }
         type="button"
       >
         <svg
-          className={sizeClasses}
+          className="w-4 h-4"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -48,9 +61,10 @@ export function TransactionInfoIcon({
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
+        <span className="whitespace-nowrap">Review</span>
       </button>
 
       <TransactionDetailsModal
@@ -61,6 +75,7 @@ export function TransactionInfoIcon({
           setIsModalOpen(false);
         }}
         transactionInfo={transactionInfo}
+        disabled={disabled}
       />
     </>
   );

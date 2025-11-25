@@ -12,6 +12,7 @@ export function TransactionDetailsModal({
   onClose,
   onContinue,
   transactionInfo,
+  disabled = false,
 }: TransactionDetailsModalProps) {
   // Handle ESC key
   useEffect(() => {
@@ -39,14 +40,14 @@ export function TransactionDetailsModal({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-[fadeIn_200ms_ease-out]"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 animate-[fadeIn_200ms_ease-out]"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="bg-[#050c1d] border border-cyan-400/50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] max-w-[360px] w-full mx-4 max-h-[90vh] overflow-y-auto pointer-events-auto animate-[modalEnter_200ms_ease-out]"
+          className="bg-[#050c1d] border border-cyan-400/50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] w-full max-w-md max-h-[90vh] overflow-y-auto pointer-events-auto animate-[modalEnter_200ms_ease-out]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -244,10 +245,15 @@ export function TransactionDetailsModal({
             </button>
             <button
               onClick={handleContinue}
-              className="flex-1 px-6 py-3 rounded-lg bg-cyan-400 text-slate-900 hover:bg-cyan-300 transition-colors font-semibold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+              disabled={disabled}
+              className={`flex-1 px-6 py-3 rounded-lg transition-colors font-semibold flex items-center justify-center gap-2 ${
+                disabled
+                  ? "bg-gray-600 text-gray-400 cursor-not-allowed opacity-50"
+                  : "bg-cyan-400 text-slate-900 hover:bg-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+              }`}
             >
-              <span>Continue to Wallet</span>
-              <span>→</span>
+              <span>{disabled ? "Enter Amount" : "Continue to Wallet"}</span>
+              {!disabled && <span>→</span>}
             </button>
           </div>
         </div>

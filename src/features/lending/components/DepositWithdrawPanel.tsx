@@ -50,6 +50,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
   const account = useCurrentAccount();
   const [connectOpen, setConnectOpen] = React.useState(false);
   const [inputAmount, setInputAmount] = React.useState<string>("");
+  const [withdrawAmount, setWithdrawAmount] = React.useState<string>("");
   const [isFlashing, setIsFlashing] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const { network } = useAppNetwork();
@@ -256,6 +257,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
                   )}
                   size="lg"
                   className="p-2"
+                  disabled={!inputAmount || Number(inputAmount || 0) <= 0}
                 />
               </>
             ) : (
@@ -294,27 +296,24 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
               placeholder="Enter amount"
               className="input-surface flex-1 text-lg px-5 py-4"
               id="withdraw-amount"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
             />
           </div>
           <div className="flex gap-3">
             {account ? (
               <>
                 <TransactionInfoIcon
-                  transactionInfo={(() => {
-                    const el = document.getElementById(
-                      "withdraw-amount"
-                    ) as HTMLInputElement | null;
-                    const withdrawAmount = el?.value || "0";
-                    return createWithdrawTransactionInfo(
-                      asset,
-                      withdrawAmount
-                        ? `${withdrawAmount} ${asset}`
-                        : `0 ${asset}`,
-                      network
-                    );
-                  })()}
+                  transactionInfo={createWithdrawTransactionInfo(
+                    asset,
+                    withdrawAmount
+                      ? `${withdrawAmount} ${asset}`
+                      : `0 ${asset}`,
+                    network
+                  )}
                   size="md"
                   className="p-2"
+                  disabled={!withdrawAmount || Number(withdrawAmount || 0) <= 0}
                 />
                 <button
                   className={`pill flex-1 text-base py-3 ${
@@ -325,11 +324,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
                   disabled={txStatus === "pending" || suiBalanceNum < 0.01}
                   onClick={() => {
                     if (txStatus === "pending") return;
-                    const el = document.getElementById(
-                      "withdraw-amount"
-                    ) as HTMLInputElement | null;
-                    if (!el) return;
-                    const v = Number(el.value || 0);
+                    const v = Number(withdrawAmount || 0);
                     if (!Number.isFinite(v) || v <= 0) return;
                     onWithdraw?.(v);
                   }}
