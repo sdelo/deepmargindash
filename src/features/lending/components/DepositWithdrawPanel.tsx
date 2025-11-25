@@ -2,6 +2,12 @@ import type { FC } from "react";
 import React from "react";
 import { ConnectModal, useCurrentAccount } from "@mysten/dapp-kit";
 import { MIN_DEPOSIT_AMOUNT } from "../../../constants";
+import { TransactionInfoIcon } from "../../../components/TransactionButton";
+import { useAppNetwork } from "../../../context/AppNetworkContext";
+import {
+  createSupplyTransactionInfo,
+  createWithdrawTransactionInfo,
+} from "../../../utils/transactionInfo";
 
 type Props = {
   asset: "DBUSDC" | "SUI";
@@ -21,7 +27,10 @@ export interface DepositWithdrawPanelHandle {
   focusDepositInput: () => void;
 }
 
-const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<DepositWithdrawPanelHandle, Props> = (
+const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
+  DepositWithdrawPanelHandle,
+  Props
+> = (
   {
     asset,
     apy = 0,
@@ -43,6 +52,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<DepositWithd
   const [inputAmount, setInputAmount] = React.useState<string>("");
   const [isFlashing, setIsFlashing] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const { network } = useAppNetwork();
 
   // Expose focus method to parent component
   React.useImperativeHandle(ref, () => ({
@@ -128,33 +138,49 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<DepositWithd
               max={assetBalanceNum}
               step="0.000001"
               placeholder={`Enter ${asset} amount`}
-              className={`input-surface flex-1 text-lg px-5 py-4 transition-all ${isFlashing ? 'ring-4 ring-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.6)]' : ''}`}
+              className={`input-surface flex-1 text-lg px-5 py-4 transition-all ${isFlashing ? "ring-4 ring-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.6)]" : ""}`}
               value={inputAmount}
               onChange={(e) => setInputAmount(e.target.value)}
               id="deposit-amount"
             />
           </div>
-          
+
           {/* Earnings Projection */}
-          {inputAmount && !isNaN(parseFloat(inputAmount)) && parseFloat(inputAmount) > 0 && (
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <h4 className="text-xs text-indigo-200/80 uppercase tracking-wider mb-2">Estimated Earnings</h4>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-sm text-cyan-100/70">Daily</div>
-                  <div className="text-lg font-bold text-emerald-300">
-                    +{earnings.daily.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} {asset}
+          {inputAmount &&
+            !isNaN(parseFloat(inputAmount)) &&
+            parseFloat(inputAmount) > 0 && (
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h4 className="text-xs text-indigo-200/80 uppercase tracking-wider mb-2">
+                  Estimated Earnings
+                </h4>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-sm text-cyan-100/70">Daily</div>
+                    <div className="text-lg font-bold text-emerald-300">
+                      +
+                      {earnings.daily.toLocaleString(undefined, {
+                        minimumFractionDigits: 4,
+                        maximumFractionDigits: 4,
+                      })}{" "}
+                      {asset}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-cyan-100/70">Yearly (APY {apy.toFixed(2)}%)</div>
-                  <div className="text-lg font-bold text-emerald-300">
-                    +{earnings.yearly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {asset}
+                  <div className="text-right">
+                    <div className="text-sm text-cyan-100/70">
+                      Yearly (APY {apy.toFixed(2)}%)
+                    </div>
+                    <div className="text-lg font-bold text-emerald-300">
+                      +
+                      {earnings.yearly.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      {asset}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           <div className="flex items-center justify-between text-sm text-indigo-200/80">
             <span>Quick %</span>
@@ -182,53 +208,73 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<DepositWithd
           {balance && (
             <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
               Available {asset}:{" "}
-              <span className="text-amber-300 font-bold">{roundedAssetBalance}</span>
+              <span className="text-amber-300 font-bold">
+                {roundedAssetBalance}
+              </span>
             </p>
           )}
 
           <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
-            Min Borrow: <span className="text-amber-300 font-semibold">{minBorrow}</span> ·
+            Min Borrow:{" "}
+            <span className="text-amber-300 font-semibold">{minBorrow}</span> ·
             Supply Cap:{" "}
-            <span className="text-amber-300 font-semibold">{supplyCap.toLocaleString()}</span>
+            <span className="text-amber-300 font-semibold">
+              {supplyCap.toLocaleString()}
+            </span>
           </p>
-          {account ? (
-            <button
-              className={`btn-primary text-lg py-4 ${
-                txStatus === "pending"
-                  ? "opacity-50 cursor-not-allowed"
-                  : "animate-[pulse_2.2s_ease-in-out_infinite] hover:opacity-95"
-              }`}
-              disabled={txStatus === "pending" || suiBalanceNum < 0.01}
-              onClick={() => {
-                if (txStatus === "pending") return;
-                let v = Number(inputAmount || 0);
-                if (!Number.isFinite(v) || v <= 0) return;
-                if (v < 0) v = 0;
-                onDeposit?.(v);
-              }}
-            >
-              <span className="relative z-10 font-bold">
-                {txStatus === "pending"
-                  ? "Depositing..."
-                  : suiBalanceNum < 0.01
-                    ? "Insufficient SUI for Gas"
-                    : "Deposit"}
-              </span>
-            </button>
-          ) : (
-            <ConnectModal
-              open={connectOpen}
-              onOpenChange={setConnectOpen}
-              trigger={
+          <div className="flex items-center gap-2">
+            {account ? (
+              <>
                 <button
-                  onClick={() => setConnectOpen(true)}
-                  className="btn-primary text-lg py-4 hover:opacity-95"
+                  className={`btn-primary text-lg py-4 flex-1 ${
+                    txStatus === "pending"
+                      ? "opacity-50 cursor-not-allowed"
+                      : "animate-[pulse_2.2s_ease-in-out_infinite] hover:opacity-95"
+                  }`}
+                  disabled={txStatus === "pending" || suiBalanceNum < 0.01}
+                  onClick={() => {
+                    if (txStatus === "pending") return;
+                    let v = Number(inputAmount || 0);
+                    if (!Number.isFinite(v) || v <= 0) return;
+                    if (v < 0) v = 0;
+                    onDeposit?.(v);
+                  }}
                 >
-                  <span className="relative z-10 font-bold">Connect Wallet</span>
+                  <span className="relative z-10 font-bold">
+                    {txStatus === "pending"
+                      ? "Depositing..."
+                      : suiBalanceNum < 0.01
+                        ? "Insufficient SUI for Gas"
+                        : "Deposit"}
+                  </span>
                 </button>
-              }
-            />
-          )}
+                <TransactionInfoIcon
+                  transactionInfo={createSupplyTransactionInfo(
+                    asset,
+                    inputAmount ? `${inputAmount} ${asset}` : `0 ${asset}`,
+                    network
+                  )}
+                  size="lg"
+                  className="p-2"
+                />
+              </>
+            ) : (
+              <ConnectModal
+                open={connectOpen}
+                onOpenChange={setConnectOpen}
+                trigger={
+                  <button
+                    onClick={() => setConnectOpen(true)}
+                    className="btn-primary text-lg py-4 hover:opacity-95 flex-1"
+                  >
+                    <span className="relative z-10 font-bold">
+                      Connect Wallet
+                    </span>
+                  </button>
+                }
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -252,28 +298,49 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<DepositWithd
           </div>
           <div className="flex gap-3">
             {account ? (
-              <button
-                className={`pill flex-1 text-base py-3 ${
-                  txStatus === "pending" ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-                disabled={txStatus === "pending" || suiBalanceNum < 0.01}
-                onClick={() => {
-                  if (txStatus === "pending") return;
-                  const el = document.getElementById(
-                    "withdraw-amount"
-                  ) as HTMLInputElement | null;
-                  if (!el) return;
-                  const v = Number(el.value || 0);
-                  if (!Number.isFinite(v) || v <= 0) return;
-                  onWithdraw?.(v);
-                }}
-              >
-                {txStatus === "pending"
-                  ? "Withdrawing..."
-                  : suiBalanceNum < 0.01
-                    ? "Insufficient SUI for Gas"
-                    : "Withdraw"}
-              </button>
+              <>
+                <TransactionInfoIcon
+                  transactionInfo={(() => {
+                    const el = document.getElementById(
+                      "withdraw-amount"
+                    ) as HTMLInputElement | null;
+                    const withdrawAmount = el?.value || "0";
+                    return createWithdrawTransactionInfo(
+                      asset,
+                      withdrawAmount
+                        ? `${withdrawAmount} ${asset}`
+                        : `0 ${asset}`,
+                      network
+                    );
+                  })()}
+                  size="md"
+                  className="p-2"
+                />
+                <button
+                  className={`pill flex-1 text-base py-3 ${
+                    txStatus === "pending"
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                  disabled={txStatus === "pending" || suiBalanceNum < 0.01}
+                  onClick={() => {
+                    if (txStatus === "pending") return;
+                    const el = document.getElementById(
+                      "withdraw-amount"
+                    ) as HTMLInputElement | null;
+                    if (!el) return;
+                    const v = Number(el.value || 0);
+                    if (!Number.isFinite(v) || v <= 0) return;
+                    onWithdraw?.(v);
+                  }}
+                >
+                  {txStatus === "pending"
+                    ? "Withdrawing..."
+                    : suiBalanceNum < 0.01
+                      ? "Insufficient SUI for Gas"
+                      : "Withdraw"}
+                </button>
+              </>
             ) : (
               <ConnectModal
                 open={connectOpen}
@@ -294,7 +361,8 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<DepositWithd
         <div className="mt-4 space-y-2">
           {balance && (
             <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
-              {asset} Balance: <span className="text-amber-300 font-bold">{balance}</span>
+              {asset} Balance:{" "}
+              <span className="text-amber-300 font-bold">{balance}</span>
             </p>
           )}
           {suiBalance && (
@@ -338,6 +406,8 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<DepositWithd
   );
 };
 
-export const DepositWithdrawPanel = React.forwardRef(DepositWithdrawPanelComponent);
+export const DepositWithdrawPanel = React.forwardRef(
+  DepositWithdrawPanelComponent
+);
 
 export default DepositWithdrawPanel;
