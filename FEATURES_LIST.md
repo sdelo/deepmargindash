@@ -35,7 +35,7 @@ Leviathan is a comprehensive dashboard for monitoring and interacting with DeepB
 
 ## 💼 Main Dashboard Features
 
-**Routes:** `/pools`
+**Routes:** `/pools` or `/dashboard`
 
 ### 1. Pool Management
 

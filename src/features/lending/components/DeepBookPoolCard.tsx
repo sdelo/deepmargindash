@@ -226,7 +226,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-black/20 rounded-lg p-2">
             <div className="text-[10px] text-indigo-200/60 mb-1">
-              Min Borrow
+              Borrow Risk Ratio
             </div>
             <div className="text-xs font-semibold text-white">
               {config?.risk_ratios?.min_borrow_risk_ratio
@@ -237,7 +237,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
 
           <div className="bg-black/20 rounded-lg p-2">
             <div className="text-[10px] text-indigo-200/60 mb-1">
-              Liquidation
+              Liq. Risk Ratio
             </div>
             <div className="text-xs font-semibold text-amber-300">
               {config?.risk_ratios?.liquidation_risk_ratio
@@ -248,7 +248,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
 
           <div className="bg-black/20 rounded-lg p-2">
             <div className="text-[10px] text-indigo-200/60 mb-1">
-              Min Withdraw
+              Withdraw Risk Ratio
             </div>
             <div className="text-xs font-semibold text-white">
               {config?.risk_ratios?.min_withdraw_risk_ratio
@@ -259,7 +259,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
 
           <div className="bg-black/20 rounded-lg p-2">
             <div className="text-[10px] text-indigo-200/60 mb-1">
-              Target Liq.
+              Target Liq. Risk
             </div>
             <div className="text-xs font-semibold text-green-300">
               {config?.risk_ratios?.target_liquidation_risk_ratio

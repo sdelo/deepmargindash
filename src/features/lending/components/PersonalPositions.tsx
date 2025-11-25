@@ -3,10 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import type { UserPosition, PoolOverview } from "../types";
 import { useUserPositions } from "../../../hooks/useUserPositions";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
-import {
-  calculateInterestEarned,
-  calculateCurrentBalance,
-} from "../../../utils/interestCalculation";
+import { useEnrichedUserPositions } from "../../../hooks/useEnrichedUserPositions";
 
 type Props = {
   userAddress: string | undefined;
@@ -27,24 +24,28 @@ export const PersonalPositions: FC<Props> = ({
   
   // Use passed positions if available, otherwise use fetched ones
   const positions = propPositions || fetchedPositions;
+  
+  // Enrich positions with live on-chain data
+  const enrichedPositions = useEnrichedUserPositions(positions, pools);
 
   console.log("PersonalPositions rendered with:", { 
     positions, 
+    enrichedPositions,
     error, 
     isLoading: propPositions ? false : isLoading, 
     userAddress 
   });
   const { explorerUrl } = useAppNetwork();
   
-  // Extract unique SupplierCap IDs from positions
+  // Extract unique SupplierCap IDs from enriched positions
   const uniqueCapIds = useMemo(() => {
     const capIds = new Set(
-      positions
+      enrichedPositions
         .map((pos) => pos.supplierCapId)
         .filter((id): id is string => id !== undefined)
     );
     return Array.from(capIds);
-  }, [positions]);
+  }, [enrichedPositions]);
 
   // State for selected SupplierCap (default to first one)
   const [selectedCapId, setSelectedCapId] = useState<string | null>(
@@ -63,13 +64,13 @@ export const PersonalPositions: FC<Props> = ({
   // Filter positions by selected SupplierCap (or show all if only one cap)
   const filteredPositions = useMemo(() => {
     if (uniqueCapIds.length <= 1) {
-      return positions; // Show all positions if only one cap or no caps
+      return enrichedPositions; // Show all positions if only one cap or no caps
     }
     if (!selectedCapId) {
       return [];
     }
-    return positions.filter((pos) => pos.supplierCapId === selectedCapId);
-  }, [positions, selectedCapId, uniqueCapIds.length]);
+    return enrichedPositions.filter((pos) => pos.supplierCapId === selectedCapId);
+  }, [enrichedPositions, selectedCapId, uniqueCapIds.length]);
 
   // Helper function to get pool data for a position
   const getPoolForPosition = (
@@ -88,7 +89,10 @@ export const PersonalPositions: FC<Props> = ({
     navigator.clipboard.writeText(text);
   };
 
-  if (isLoading) {
+  // Check if any enriched position is still loading
+  const isEnriching = enrichedPositions.some(pos => pos.isLoading);
+
+  if (isLoading || isEnriching) {
     return (
       <div
         className="rounded-3xl p-6 bg-white/5 border min-h-[400px]"
@@ -107,7 +111,7 @@ export const PersonalPositions: FC<Props> = ({
           </button>
         </div>
         <div className="text-center py-16 text-cyan-100/70 text-base">
-          Loading positions...
+          {isLoading ? 'Loading positions...' : 'Calculating interest...'}
         </div>
       </div>
     );
@@ -276,7 +280,7 @@ export const PersonalPositions: FC<Props> = ({
           <thead className="text-cyan-100/70 border-b border-white/10">
             <tr className="text-left">
               <th className="py-3 pr-4 font-semibold">Asset</th>
-              <th className="py-3 pr-4 font-semibold">Deposited</th>
+              <th className="py-3 pr-4 font-semibold">Current Balance</th>
               <th className="py-3 pr-4 font-semibold">Interest Earned</th>
               {uniqueCapIds.length > 1 && (
                 <th className="py-3 pr-4 font-semibold">SupplierCap</th>
@@ -285,13 +289,10 @@ export const PersonalPositions: FC<Props> = ({
           </thead>
           <tbody className="divide-y divide-white/10">
             {filteredPositions.map((pos) => {
-              const pool = getPoolForPosition(pos);
-              const currentBalance = pool
-                ? calculateCurrentBalance(pos, pool)
-                : pos.balanceFormatted;
-              const interestEarned = pool
-                ? calculateInterestEarned(pos, pool)
-                : "—";
+              // Use the enriched data if available, otherwise fall back to static data
+              const currentBalance = pos.currentValueFromChain || pos.balanceFormatted;
+              const interestEarned = pos.interestEarned || "—";
+              const isIndexerPending = interestEarned.includes('indexer pending');
 
               return (
                 <tr
@@ -299,8 +300,21 @@ export const PersonalPositions: FC<Props> = ({
                   className="hover:bg-white/5 transition-colors"
                 >
                   <td className="py-4 pr-4 font-medium">{pos.asset}</td>
-                  <td className="py-4 pr-4 text-amber-300 font-semibold">{currentBalance}</td>
-                  <td className="py-4 pr-4 text-green-300 font-semibold">{interestEarned}</td>
+                  <td className="py-4 pr-4 text-amber-300 font-semibold">
+                    {currentBalance}
+                    {pos.isLoading && <span className="ml-2 text-xs text-cyan-300 animate-pulse">updating...</span>}
+                  </td>
+                  <td className="py-4 pr-4 text-green-300 font-semibold">
+                    {interestEarned}
+                    {isIndexerPending && (
+                      <span 
+                        className="ml-1 text-xs text-cyan-400/70 cursor-help" 
+                        title="Interest calculation requires event history from the indexer. The indexer is currently behind or not running. Interest will display once events are available."
+                      >
+                        ⓘ
+                      </span>
+                    )}
+                  </td>
                   {uniqueCapIds.length > 1 && (
                     <td className="py-4 pr-4">
                       <a

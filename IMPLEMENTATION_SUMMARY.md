@@ -1,286 +1,195 @@
-# DeepBook Margin Dashboard - Implementation Summary
+# Interest Calculation Implementation Summary
 
-## Overview
+## What Was Built
 
-This document describes the comprehensive dashboard implementation for DeepBook Margin protocol. The dashboard provides a user-friendly interface to view all protocol metrics, lending activity, borrowing activity, liquidations, and administrative actions.
+A complete system to accurately calculate and display **Interest Earned** on user deposits in DeepBook Margin lending pools.
 
-## What Was Implemented
+## Key Changes
 
-### 1. **Global Metrics Panel**
+### 1. UI Updates (`PersonalPositions.tsx`)
+- Changed "Deposited" column label to **"Current Balance"** (more accurate)
+- Shows current value fetched from on-chain via `user_supply_amount` view function
+- Displays **"Interest Earned"** as a separate column
+- Added info tooltip (ⓘ) when showing "— (indexer pending)" for interest
+- Graceful handling when indexer is behind
 
-- **Location:** `src/features/lending/components/GlobalMetricsPanel.tsx`
-- **Features:**
-  - Total Value Locked (TVL) across all margin pools
-  - Total Borrowed amount
-  - Total Supply (assets supplied by lenders)
-  - Active Margin Managers count
-  - Total Liquidations count
-- **Data Source:** Aggregates data from on-chain pool objects and event history
+### 2. On-Chain Data Fetching (`onChainReads.ts`)
+- Implemented `fetchUserCurrentSupply()` function
+- Calls Move contract's `user_supply_amount` view function via `devInspectTransactionBlock`
+- Returns: `shares × current_ratio` (current value including accrued interest)
 
-### 2. **Enhanced Pool Analytics**
+### 3. Event-Based Cost Basis (`userHistory.ts`)
+- Implemented `fetchUserOriginalValue()` function
+- Fetches `AssetSupplied` and `AssetWithdrawn` events from Mysten indexer
+- Calculates **weighted-average cost basis** using proper accounting:
+  - Sums all tokens spent to acquire shares
+  - Adjusts for withdrawals (removes proportional cost basis)
+  - Returns original value of current shares
+- Uses high-precision BigInt arithmetic with 1 trillion scaling factor
 
-- **Location:** `src/features/lending/components/EnhancedPoolAnalytics.tsx`
-- **Features:**
-  - Real-time vault balance (available liquidity)
-  - Total supply with accrued interest
-  - Total borrowed amount
-  - Utilization rate with visual progress bar
-  - Borrow APR (what borrowers pay)
-  - Supply APR (what suppliers earn)
-  - Complete pool configuration display
-  - Interest rate model parameters with formula
-- **Data Source:** Direct BCS parsing from MarginPool on-chain object
+### 4. Hook Integration (`useEnrichedUserPositions.ts`)
+- Orchestrates both on-chain and event-based fetching
+- Calculates: `Interest = Current Value - Original Value`
+- Returns enriched position data with formatted values
+- Handles null cases when indexer is unavailable
 
-### 3. **Supplier Analytics**
+### 5. Documentation (`INTEREST_CALCULATION.md`)
+- Comprehensive explanation of the Move contract's share-based system
+- Clear examples of weighted-average cost accounting
+- Error handling and testing guidance
 
-- **Location:** `src/features/lending/components/SupplierAnalytics.tsx`
-- **Features:**
-  - Top 20 suppliers by net supply ranking
-  - Unique supplier count
-  - New suppliers in last 24 hours
-  - Total transaction count
-  - Supply/withdraw activity feed
-  - Time range filtering (1W, 1M, 3M, YTD, ALL)
-- **Data Source:** AssetSupplied and AssetWithdrawn events from API
+## How It Works
 
-### 4. **Borrower Overview**
+### Share-Based Interest System
 
-- **Location:** `src/features/lending/components/BorrowerOverview.tsx`
-- **Features:**
-  - Total margin managers count
-  - New managers in last 24 hours
-  - Active trading pools count
-  - Managers per DeepBook pool distribution
-  - Recently created managers list
-- **Data Source:** MarginManagerCreated events from API
+The DeepBook Margin contract uses a clever share-based system:
 
-### 5. **Liquidation Dashboard**
+1. **When depositing:** `shares = amount / current_ratio`
+2. **Shares stay constant** for each user
+3. **The ratio increases** over time as interest accrues
+4. **Current value:** `shares × current_ratio` (always calculable on-chain)
+5. **Original value:** Requires historical ratio from events
 
-- **Location:** `src/features/lending/components/LiquidationDashboard.tsx`
-- **Features:**
-  - Total liquidations count
-  - Liquidation volume
-  - Rewards distributed
-  - Bad debt incurred
-  - Complete liquidation history table
-  - Bad debt alert monitor
-  - Time range filtering
-- **Data Source:** Liquidation events from API
+### The Cost Basis Problem
 
-### 6. **Administrative Panel**
+**Why we need events:**
+- The contract stores only current state (shares, current ratio)
+- It does NOT store the ratio at which each user deposited
+- Without the deposit ratio, we can't calculate the original value
+- The `AssetSupplied` event contains both `supply_amount` and `supply_shares`
+- This lets us reconstruct: `ratio_at_deposit = supply_amount / supply_shares`
 
-- **Location:** `src/features/lending/components/AdministrativePanel.tsx`
-- **Features:**
-  - Maintainer fees withdrawn history
-  - Protocol fees withdrawn history
-  - Interest rate updates log with before/after values
-  - Pool configuration updates log
-  - DeepBook pool enabled/disabled changes
-  - Summary KPI cards
-  - Time range filtering
-- **Data Source:** Multiple admin-related events (MaintainerFeesWithdrawn, ProtocolFeesWithdrawn, InterestParamsUpdated, MarginPoolConfigUpdated, etc.)
+**Weighted-average accounting:**
+- User can make multiple deposits at different ratios
+- User can make partial withdrawals
+- We track the total cost paid for shares, adjusted for withdrawals
+- `Average cost per share = total_cost / total_shares`
+- `Original value = current_shares × avg_cost_per_share`
 
-### 7. **Section Navigation**
-
-- **Location:** `src/features/shared/components/SectionNav.tsx`
-- **Features:**
-  - Tab-based navigation for 5 main sections:
-    - Overview (protocol metrics + pool selection)
-    - Lending (supplier analytics)
-    - Borrowing (margin manager analytics)
-    - Liquidations (liquidation history & monitoring)
-    - Admin (fee withdrawals & config changes)
-  - Desktop: Beautiful horizontal tabs with icons
-  - Mobile: Dropdown selector
-- **Design:** Ocean-themed with gradient highlights
-
-### 8. **Custom Hooks**
-
-- **useProtocolMetrics** (`src/hooks/useProtocolMetrics.ts`)
-  - Aggregates protocol-wide metrics
-  - Auto-refreshes every 30 seconds
-- **useMarginManagers** (`src/hooks/useMarginManagers.ts`)
-  - Fetches and analyzes margin manager data
-  - Provides manager distribution by pool
-  - Tracks recent manager creation
-- **useMarginManagerState** (`src/hooks/useMarginManagers.ts`)
-  - Fetches on-chain state for specific margin manager
-  - Parses BCS data for detailed position info
-
-### 9. **Reorganized PoolsPage**
-
-- **Location:** `src/pages/PoolsPageNew.tsx`
-- **Structure:**
-  - Global metrics at the top
-  - Section navigation tabs
-  - Content dynamically switches based on selected section
-  - Maintains existing deposit/withdraw functionality
-  - All features accessible without complex navigation
-
-## Key Design Decisions
-
-### 1. **Data Architecture**
-
-- **On-Chain Objects:** Used for current state (pool balances, configurations, vault)
-- **Events:** Used for historical data (supply/withdraw activity, liquidations, admin changes)
-- **Hybrid Approach:** Combines both for complete picture
-
-### 2. **User Experience**
-
-- **Single Page:** All information accessible from one page with tabs
-- **No Deep Navigation:** Users don't need to click through multiple pages
-- **Contextual Data:** Information grouped logically by user role:
-  - Suppliers see supply analytics in Lending tab
-  - Borrowers see margin manager analytics in Borrowing tab
-  - Liquidators see opportunities in Liquidations tab
-  - Admins see fee withdrawals and config changes in Admin tab
-
-### 3. **Performance**
-
-- **Auto-Refresh:** Protocol metrics refresh every 30 seconds
-- **Time Range Filters:** Users can adjust data scope to reduce load
-- **Lazy Loading:** Only active section's data is actively displayed
-
-### 4. **Data Formatting**
-
-- **Decimal Conversion:** Properly handles 9-decimal (SUI) and 6-decimal (DBUSDC) values
-- **9-Decimal Config Values:** All config values (interest rates, spreads) use 9-decimal format
-- **Address Truncation:** Long addresses shown as `0x1234...5678` for readability
-- **Percentages:** Consistently formatted with 2-3 decimal places
-
-## How to Use
-
-### For Suppliers/Lenders
-
-1. Navigate to **Overview** tab
-2. View global TVL and your positions
-3. Select a pool and deposit/withdraw
-4. Switch to **Lending** tab to see:
-   - Top suppliers ranking
-   - Your position relative to others
-   - Recent supply/withdraw activity
-
-### For Borrowers/Margin Traders
-
-1. Switch to **Borrowing** tab
-2. View all margin managers across pools
-3. See distribution by DeepBook trading pools
-4. Track recently created managers
-
-### For Liquidators
-
-1. Switch to **Liquidations** tab
-2. View liquidation history
-3. Monitor bad debt
-4. Track liquidation rewards
-
-### For Protocol Admins
-
-1. Switch to **Admin** tab
-2. View all fee withdrawals
-3. Track interest rate changes over time
-4. Monitor pool configuration updates
-5. See DeepBook pool enabled/disabled changes
-
-## Integration Points
-
-### API Endpoints
-
-All event data comes from:
-
-- Base URL configured in `src/config/api.ts`
-- Default: `http://localhost:9008`
-- Override with `API_URL` environment variable
-
-### On-Chain Data
-
-- Fetched via `@mysten/dapp-kit` hooks
-- Network configured in app (testnet/mainnet/localnet)
-- Pool IDs from `src/config/contracts.ts`
-
-### Generated Contracts
-
-- BCS parsing types in `src/contracts/deepbook_margin/`
-- Auto-generated from Move contracts
-- Ensures type safety
-
-## File Structure
+### Example Calculation
 
 ```
-src/
-├── hooks/
-│   ├── useProtocolMetrics.ts          # Protocol-wide aggregated metrics
-│   ├── useMarginManagers.ts           # Margin manager analytics
-│   ├── usePoolData.ts                 # Individual pool data (existing)
-│   └── useUserPositions.ts            # User positions (existing)
-├── features/
-│   ├── lending/
-│   │   ├── components/
-│   │   │   ├── GlobalMetricsPanel.tsx         # Protocol overview KPIs
-│   │   │   ├── EnhancedPoolAnalytics.tsx      # Detailed pool info
-│   │   │   ├── SupplierAnalytics.tsx          # Supplier rankings & activity
-│   │   │   ├── BorrowerOverview.tsx           # Margin manager overview
-│   │   │   ├── LiquidationDashboard.tsx       # Liquidation history & monitor
-│   │   │   ├── AdministrativePanel.tsx        # Admin actions & config changes
-│   │   │   └── ... (existing components)
-│   │   └── api/
-│   │       └── events.ts                      # Event API functions (existing)
-│   └── shared/
-│       └── components/
-│           └── SectionNav.tsx                 # Tab navigation
-└── pages/
-    └── PoolsPageNew.tsx                       # Reorganized main page
+User Timeline:
+1. Deposits 100 tokens at ratio 1.0 → receives 100 shares (cost: 100 tokens)
+2. Time passes, ratio becomes 1.1 (interest accrues)
+3. Deposits 110 tokens at ratio 1.1 → receives 100 shares (cost: 110 tokens)
+4. Total position: 200 shares, cost basis: 210 tokens
+
+Cost Basis Calculation:
+- Total shares acquired: 200
+- Total cost: 210 tokens
+- Average cost per share: 1.05 tokens/share
+
+Current Value (from on-chain):
+- Current ratio: 1.15 (more interest accrued)
+- Current value = 200 shares × 1.15 = 230 tokens
+
+Interest Earned:
+- Interest = 230 - 210 = 20 tokens
 ```
 
-## Technical Notes
+## Why This Approach is Correct
 
-### Why Separate Files?
+1. **Relies on Move contract for current value** ✅
+   - Calls `user_supply_amount` directly
+   - No approximations or frontend calculations
 
-- **Modularity:** Each feature is self-contained
-- **Maintainability:** Easy to update individual sections
-- **Performance:** Can optimize rendering per component
-- **Reusability:** Components can be used elsewhere if needed
+2. **Uses events for historical data** ✅
+   - Standard Web3 pattern (used by Aave, Compound, Uniswap)
+   - Events are immutable blockchain records
+   - Weighted-average is a standard accounting method (IRS Form 8949)
 
-### Event API vs On-Chain Objects
+3. **Handles multiple deposits/withdrawals** ✅
+   - Proper cost basis accounting
+   - No drift or rounding errors (BigInt arithmetic)
 
-| Use Case            | Data Source            | Why                                                  |
-| ------------------- | ---------------------- | ---------------------------------------------------- |
-| Current pool state  | On-chain objects (BCS) | Most up-to-date, includes vault balance              |
-| Historical activity | Event API              | Efficient for time series, no need to replay history |
-| User positions      | On-chain objects       | Current balance with interest                        |
-| Liquidation history | Event API              | Complete historical record                           |
-| Config changes      | Event API              | Track all changes over time                          |
+4. **Graceful degradation** ✅
+   - Works even if indexer is behind
+   - Shows current balance (most important for users)
+   - Clearly indicates when interest is pending
 
-### Performance Considerations
+## Known Limitations
 
-- **Initial Load:** Fetches all pools + protocol metrics (~2-3 API calls)
-- **Tab Switch:** Only loads data for active tab
-- **Auto-Refresh:** 30-second interval for protocol metrics
-- **Event Queries:** Limited to 1000-5000 events with time range filters
+### Indexer Dependency
 
-## Future Enhancements (Not Implemented)
+**The indexer is REQUIRED to show interest earned.** This is by design:
+- The Move contract doesn't store historical ratios (gas efficiency)
+- Events are the standard way to track historical data in Web3
+- Alternative would require on-chain changes (see below)
 
-1. **Real-time WebSocket Updates**
-   - Currently polls every 30 seconds
-   - Could add WebSocket for instant updates
+### Indexer Lag
 
-2. **Liquidation Opportunities**
-   - Would require fetching all active margin managers
-   - Calculate risk ratios in real-time
-   - Flag at-risk positions
+The Mysten testnet indexer can be several days behind:
+- Recent deposits won't show interest immediately
+- Once indexer catches up, interest will calculate correctly
+- This is a testnet limitation; mainnet indexers are typically real-time
 
-3. **Referral Analytics**
-   - Track referral usage and fees earned
-   - Top referrers leaderboard
+## Potential On-Chain Improvements
 
-4. **Export Functionality**
-   - CSV export of tables
-   - Historical data download
+If the DeepBook team wants to eliminate the indexer dependency, they could:
 
-5. **Notifications**
-   - Alert users of rate changes
-   - Notify of position risks
+### Option 1: Store weighted-average cost per share
+```move
+public struct Position has store {
+    shares: u64,
+    total_cost: u64,  // ← Add this: total tokens paid for shares
+    referral: Option<ID>,
+}
+```
 
-## Conclusion
+**Pros:**
+- Frontend can calculate interest without indexer
+- Only 8 bytes per position
 
-This implementation provides a comprehensive, user-friendly dashboard that presents all DeepBook Margin protocol information in a logical, streamlined way. The tab-based navigation ensures users can quickly access the information relevant to their role without complex navigation or information duplication.
+**Cons:**
+- More complex withdraw logic (need to update total_cost)
+- Slight gas cost increase
+- Still need to decide on accounting method (FIFO/LIFO/weighted-avg)
+
+### Option 2: Accept approximate interest
+Calculate interest as: `current_value - (shares × 1.0)`
+
+**Pros:**
+- No on-chain changes
+- No indexer dependency
+
+**Cons:**
+- Inaccurate for users who deposited after pool had interest
+- Could show incorrect values
+
+## Testing
+
+To verify the implementation:
+
+1. **Fresh deposit:**
+   - Deposit into a pool
+   - Should show current balance immediately
+   - Interest shows "— (indexer pending)" until events sync
+
+2. **After indexer syncs:**
+   - Interest should show as positive amount
+   - Verify: Current Balance - Interest ≈ Original Deposit
+
+3. **Multiple deposits:**
+   - Make two deposits at different times
+   - Interest should reflect weighted-average cost basis
+
+4. **Withdrawal:**
+   - Withdraw partial amount
+   - Cost basis should adjust proportionally
+
+## Files Changed
+
+- `src/features/lending/components/PersonalPositions.tsx` (UI)
+- `src/hooks/useEnrichedUserPositions.ts` (orchestration)
+- `src/api/onChainReads.ts` (on-chain reads)
+- `src/api/userHistory.ts` (event processing)
+- `INTEREST_CALCULATION.md` (documentation)
+
+## Console Logging
+
+Added strategic console logs for debugging:
+- `[fetchUserOriginalValue]` - Event fetching and cost basis calculation
+- `[useEnrichedUserPositions]` - Current/original values and interest
+
+These can be removed in production or kept for observability.
