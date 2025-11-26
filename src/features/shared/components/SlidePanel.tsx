@@ -43,7 +43,9 @@ export default function SlidePanel({
       {/* Backdrop */}
       <div
         className={`fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          open
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
       />
@@ -62,20 +64,35 @@ export default function SlidePanel({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag Handle */}
-        <div className="flex-shrink-0 py-3 flex justify-center" onClick={onClose}>
+        <div
+          className="flex-shrink-0 py-3 flex justify-center"
+          onClick={onClose}
+        >
           <div className="w-10 h-1 bg-white/30 rounded-full" />
         </div>
 
         {/* Header */}
         <div className="flex-shrink-0 px-4 pb-3 flex items-center justify-between border-b border-white/10">
-          <div className="text-white font-semibold text-lg truncate pr-4">{title}</div>
+          <div className="text-white font-semibold text-lg truncate pr-4">
+            {title}
+          </div>
           <button
             onClick={onClose}
             className="flex-shrink-0 p-2 rounded-lg bg-white/10 hover:bg-white/15 text-white transition-colors"
             aria-label="Close"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -102,7 +119,9 @@ export default function SlidePanel({
       >
         {/* Header */}
         <div className="flex-shrink-0 px-6 py-4 flex items-center justify-between border-b border-white/10 bg-slate-900/80 backdrop-blur-sm">
-          <div className="text-white font-semibold text-lg truncate pr-4">{title}</div>
+          <div className="text-white font-semibold text-lg truncate pr-4">
+            {title}
+          </div>
           <button
             onClick={onClose}
             className="flex-shrink-0 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-white text-sm font-medium transition-colors"

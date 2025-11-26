@@ -32,8 +32,12 @@ export const PoolCarousel: FC<Props> = ({
 }) => {
   const { explorerUrl } = useAppNetwork();
   const suiClient = useSuiClient();
-  const [vaultBalances, setVaultBalances] = React.useState<Record<string, number>>({});
-  const [allowedDeepbookPools, setAllowedDeepbookPools] = React.useState<Record<string, string[]>>({});
+  const [vaultBalances, setVaultBalances] = React.useState<
+    Record<string, number>
+  >({});
+  const [allowedDeepbookPools, setAllowedDeepbookPools] = React.useState<
+    Record<string, string[]>
+  >({});
 
   const ICONS: Record<string, string> = {
     SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
@@ -82,12 +86,15 @@ export const PoolCarousel: FC<Props> = ({
           const vaultValue =
             Number(marginPool.vault.value) / 10 ** pool.contracts.coinDecimals;
           setVaultBalances((prev) => ({ ...prev, [pool.id]: vaultValue }));
-          
+
           // Extract allowed deepbook pools
-          const deepbookPools = marginPool.allowed_deepbook_pools.contents.map(addr => 
-            typeof addr === 'string' ? addr : `0x${addr}`
+          const deepbookPools = marginPool.allowed_deepbook_pools.contents.map(
+            (addr) => (typeof addr === "string" ? addr : `0x${addr}`)
           );
-          setAllowedDeepbookPools((prev) => ({ ...prev, [pool.id]: deepbookPools }));
+          setAllowedDeepbookPools((prev) => ({
+            ...prev,
+            [pool.id]: deepbookPools,
+          }));
         }
       } catch (error) {
         console.error("Error fetching vault balance:", error);
@@ -170,15 +177,18 @@ export const PoolCarousel: FC<Props> = ({
     );
   }
 
-  const currentPool =
-    currentIndex >= 0 ? pools[currentIndex] : pools[0];
+  const currentPool = currentIndex >= 0 ? pools[currentIndex] : pools[0];
   const utilizationPct =
     currentPool.state.supply > 0
       ? (currentPool.state.borrow / currentPool.state.supply) * 100
       : 0;
   const risk = getRiskLevel(utilizationPct);
-  const vaultBalance = vaultBalances[currentPool.id] ?? (currentPool.state.supply - currentPool.state.borrow);
-  const supplyCap = Number(currentPool.protocolConfig.margin_pool_config.supply_cap);
+  const vaultBalance =
+    vaultBalances[currentPool.id] ??
+    currentPool.state.supply - currentPool.state.borrow;
+  const supplyCap = Number(
+    currentPool.protocolConfig.margin_pool_config.supply_cap
+  );
   const supplyCapPct = (currentPool.state.supply / supplyCap) * 100;
   const deepbookPoolIds = allowedDeepbookPools[currentPool.id] || [];
 
@@ -188,7 +198,8 @@ export const PoolCarousel: FC<Props> = ({
   const currentUtilization = utilizationPct / 100;
   let borrowApr: number;
   if (currentUtilization <= optimalUtilization) {
-    borrowApr = interestConfig.base_rate + interestConfig.base_slope * currentUtilization;
+    borrowApr =
+      interestConfig.base_rate + interestConfig.base_slope * currentUtilization;
   } else {
     borrowApr =
       interestConfig.base_rate +
@@ -283,225 +294,233 @@ export const PoolCarousel: FC<Props> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Margin Pool Card - Full width on mobile, 2/3 on desktop */}
           <div className="lg:col-span-2">
-            <div
-              className="relative rounded-3xl p-6 border transition-all duration-300 bg-white/10 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)] h-full"
-            >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <img
-                  src={getIcon(currentPool.asset)}
-                  alt={`${currentPool.asset} logo`}
-                  className="w-12 h-12 rounded-full"
-                />
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-slate-900 flex items-center justify-center">
-                  <svg
-                    className="w-2.5 h-2.5 text-slate-900"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
+            <div className="relative rounded-3xl p-6 border transition-all duration-300 bg-white/10 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)] h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <img
+                      src={getIcon(currentPool.asset)}
+                      alt={`${currentPool.asset} logo`}
+                      className="w-12 h-12 rounded-full"
                     />
-                  </svg>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                      <svg
+                        className="w-2.5 h-2.5 text-slate-900"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      {currentPool.asset} Pool
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={`${risk.color} font-medium`}>
+                        {risk.label}
+                      </span>
+                      <Tooltip content="Liquidity status based on utilization rate. High utilization means higher APY but potential withdrawal delays.">
+                        <span className="text-white/40 cursor-help">ⓘ</span>
+                      </Tooltip>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-cyan-200/70 mb-1">
+                    Supply APY
+                  </div>
+                  <div className="text-3xl font-extrabold text-cyan-300">
+                    {Number(currentPool.ui.aprSupplyPct).toFixed(2)}%
+                  </div>
                 </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">
-                  {currentPool.asset} Pool
-                </h3>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={`${risk.color} font-medium`}>
-                    {risk.label}
-                  </span>
-                  <Tooltip content="Liquidity status based on utilization rate. High utilization means higher APY but potential withdrawal delays.">
-                    <span className="text-white/40 cursor-help">ⓘ</span>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-cyan-200/70 mb-1">Supply APY</div>
-              <div className="text-3xl font-extrabold text-cyan-300">
-                {Number(currentPool.ui.aprSupplyPct).toFixed(2)}%
-              </div>
-            </div>
-          </div>
 
-          {/* Metrics */}
-          <div className="space-y-4">
-            {/* Utilization Bar */}
-            <div>
-              <div className="flex justify-between text-xs text-indigo-200/60 mb-2">
-                <span>Utilization</span>
-                <span>{utilizationPct.toFixed(2)}%</span>
-              </div>
-              <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ${risk.barColor}`}
-                  style={{ width: `${utilizationPct}%` }}
-                />
-              </div>
-            </div>
+              {/* Metrics */}
+              <div className="space-y-4">
+                {/* Utilization Bar */}
+                <div>
+                  <div className="flex justify-between text-xs text-indigo-200/60 mb-2">
+                    <span>Utilization</span>
+                    <span>{utilizationPct.toFixed(2)}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 ${risk.barColor}`}
+                      style={{ width: `${utilizationPct}%` }}
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-3 gap-3 pt-2">
-              <div>
-                <div className="text-xs text-indigo-200/60 mb-1">
-                  Total Supplied
+                <div className="grid grid-cols-3 gap-3 pt-2">
+                  <div>
+                    <div className="text-xs text-indigo-200/60 mb-1">
+                      Total Supplied
+                    </div>
+                    <div className="text-white font-semibold tabular-nums text-sm">
+                      {formatNumber(currentPool.state.supply)}{" "}
+                      <span className="text-xs text-white/50">
+                        {currentPool.asset}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-indigo-200/60 mb-1">
+                      Total Borrowed
+                    </div>
+                    <div className="text-white font-semibold tabular-nums text-sm">
+                      {formatNumber(currentPool.state.borrow)}{" "}
+                      <span className="text-xs text-white/50">
+                        {currentPool.asset}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-indigo-200/60 mb-1">
+                      Available
+                    </div>
+                    <div className="text-green-300 font-semibold tabular-nums text-sm">
+                      {formatNumber(vaultBalance)}{" "}
+                      <span className="text-xs text-white/50">
+                        {currentPool.asset}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-white font-semibold tabular-nums text-sm">
-                  {formatNumber(currentPool.state.supply)}{" "}
-                  <span className="text-xs text-white/50">
-                    {currentPool.asset}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-indigo-200/60 mb-1">
-                  Total Borrowed
-                </div>
-                <div className="text-white font-semibold tabular-nums text-sm">
-                  {formatNumber(currentPool.state.borrow)}{" "}
-                  <span className="text-xs text-white/50">
-                    {currentPool.asset}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-indigo-200/60 mb-1">
-                  Available
-                </div>
-                <div className="text-green-300 font-semibold tabular-nums text-sm">
-                  {formatNumber(vaultBalance)}{" "}
-                  <span className="text-xs text-white/50">
-                    {currentPool.asset}
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            {/* Additional metrics from Analytics */}
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
-              <div>
-                <div className="text-xs text-indigo-200/60 mb-1">
-                  Borrow APR
+                {/* Additional metrics from Analytics */}
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                  <div>
+                    <div className="text-xs text-indigo-200/60 mb-1">
+                      Borrow APR
+                    </div>
+                    <div className="text-amber-300 font-semibold">
+                      {borrowAprPct.toFixed(3)}%
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-indigo-200/60 mb-1">
+                      Supply Cap Usage
+                    </div>
+                    <div className="text-white font-semibold">
+                      {supplyCapPct.toFixed(1)}%
+                    </div>
+                  </div>
                 </div>
-                <div className="text-amber-300 font-semibold">
-                  {borrowAprPct.toFixed(3)}%
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-indigo-200/60 mb-1">
-                  Supply Cap Usage
-                </div>
-                <div className="text-white font-semibold">
-                  {supplyCapPct.toFixed(1)}%
-                </div>
-              </div>
-            </div>
 
-            {/* Pool Configuration Metrics */}
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
-              <div>
-                <div className="text-xs text-indigo-200/60 mb-1">
-                  Referral Spread
-                </div>
-                <div className="text-white font-semibold">
-                  {(currentPool.protocolConfig.margin_pool_config.protocol_spread * 100).toFixed(2)}%
+                {/* Pool Configuration Metrics */}
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                  <div>
+                    <div className="text-xs text-indigo-200/60 mb-1">
+                      Referral Spread
+                    </div>
+                    <div className="text-white font-semibold">
+                      {(
+                        currentPool.protocolConfig.margin_pool_config
+                          .protocol_spread * 100
+                      ).toFixed(2)}
+                      %
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-indigo-200/60 mb-1">
+                      Max Utilization Rate
+                    </div>
+                    <div className="text-white font-semibold">
+                      {(
+                        currentPool.protocolConfig.margin_pool_config
+                          .max_utilization_rate * 100
+                      ).toFixed(2)}
+                      %
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="text-xs text-indigo-200/60 mb-1">
-                  Max Utilization Rate
-                </div>
-                <div className="text-white font-semibold">
-                  {(currentPool.protocolConfig.margin_pool_config.max_utilization_rate * 100).toFixed(2)}%
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Actions */}
-          <div className="mt-6 pt-6 border-t border-white/5">
-            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <a
-                href={`${explorerUrl}/object/${currentPool.contracts?.marginPoolId || currentPool.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-                className="text-xs text-indigo-300 hover:text-white transition-colors flex items-center gap-1"
-              >
-                <span>View Contract</span>
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
-              </a>
+              {/* Actions */}
+              <div className="mt-6 pt-6 border-t border-white/5">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <a
+                    href={`${explorerUrl}/object/${currentPool.contracts?.marginPoolId || currentPool.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className="text-xs text-indigo-300 hover:text-white transition-colors flex items-center gap-1"
+                  >
+                    <span>View Contract</span>
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
+                  </a>
 
-              {currentPool.maintainerCapId && (
-                <a
-                  href={`${explorerUrl}/object/${currentPool.maintainerCapId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  {currentPool.maintainerCapId && (
+                    <a
+                      href={`${explorerUrl}/object/${currentPool.maintainerCapId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="text-xs text-purple-300 hover:text-purple-100 transition-colors flex items-center gap-1"
+                    >
+                      <span>Maintainer Cap</span>
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                    </a>
+                  )}
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAdminAuditClick?.(currentPool.id);
+                    }}
+                    className="text-xs text-amber-300 hover:text-amber-100 transition-colors flex items-center gap-1"
+                  >
+                    <span>⚙️ Admin History</span>
+                  </button>
+                </div>
+
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    onDepositClick?.(currentPool.id);
                   }}
-                  className="text-xs text-purple-300 hover:text-purple-100 transition-colors flex items-center gap-1"
+                  className="w-full px-4 py-3 rounded-xl text-sm font-bold transition-all bg-amber-400 text-slate-900 hover:bg-amber-300"
                 >
-                  <span>Maintainer Cap</span>
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
-              )}
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAdminAuditClick?.(currentPool.id);
-                }}
-                className="text-xs text-amber-300 hover:text-amber-100 transition-colors flex items-center gap-1"
-              >
-                <span>⚙️ Admin History</span>
-              </button>
-            </div>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDepositClick?.(currentPool.id);
-              }}
-              className="w-full px-4 py-3 rounded-xl text-sm font-bold transition-all bg-amber-400 text-slate-900 hover:bg-amber-300"
-            >
-              Deposit Now
-            </button>
-          </div>
+                  Deposit Now
+                </button>
+              </div>
             </div>
           </div>
 
@@ -519,4 +538,3 @@ export const PoolCarousel: FC<Props> = ({
 };
 
 export default PoolCarousel;
-
