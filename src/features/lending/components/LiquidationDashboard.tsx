@@ -20,13 +20,14 @@ import {
   HealthyAnchorIcon,
   HistoryIcon,
   TridentIcon,
+  ChartIcon,
 } from "../../../components/ThemedIcons";
 
-type DashboardTab = 'opportunities' | 'history' | 'leaderboard';
+type DashboardTab = 'positions' | 'analytics' | 'history' | 'leaderboard';
 
 export function LiquidationDashboard() {
   const { serverUrl } = useAppNetwork();
-  const [activeTab, setActiveTab] = React.useState<DashboardTab>('opportunities');
+  const [activeTab, setActiveTab] = React.useState<DashboardTab>('positions');
   const [historyTimeRange, setHistoryTimeRange] = React.useState<TimeRange>("1M");
   const [liquidations, setLiquidations] = React.useState<LiquidationEventResponse[]>([]);
   const [historyLoading, setHistoryLoading] = React.useState(true);
@@ -194,18 +195,18 @@ export function LiquidationDashboard() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-xl border border-white/10">
+      <div className="flex items-center gap-1 bg-white/5 p-1.5 rounded-xl border border-white/10 overflow-x-auto">
         <button
-          onClick={() => setActiveTab('opportunities')}
-          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'opportunities'
+          onClick={() => setActiveTab('positions')}
+          className={`flex-1 min-w-fit px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'positions'
               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               : 'text-white/60 hover:text-white hover:bg-white/10'
           }`}
         >
           <div className="flex items-center justify-center gap-2">
-            <HarpoonIcon size={18} />
-            <span>Opportunities</span>
+            <DepthPressureIcon size={18} />
+            <span>At-Risk Positions</span>
             {liquidatableCount > 0 && (
               <span className="px-1.5 py-0.5 text-xs font-bold bg-rose-500/30 text-rose-300 rounded">
                 {liquidatableCount}
@@ -214,8 +215,21 @@ export function LiquidationDashboard() {
           </div>
         </button>
         <button
+          onClick={() => setActiveTab('analytics')}
+          className={`flex-1 min-w-fit px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'analytics'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+              : 'text-white/60 hover:text-white hover:bg-white/10'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <ChartIcon size={18} />
+            <span>Risk Analytics</span>
+          </div>
+        </button>
+        <button
           onClick={() => setActiveTab('history')}
-          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+          className={`flex-1 min-w-fit px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === 'history'
               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               : 'text-white/60 hover:text-white hover:bg-white/10'
@@ -223,12 +237,12 @@ export function LiquidationDashboard() {
         >
           <div className="flex items-center justify-center gap-2">
             <HistoryIcon size={18} />
-            <span>History</span>
+            <span>Liquidation History</span>
           </div>
         </button>
         <button
           onClick={() => setActiveTab('leaderboard')}
-          className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+          className={`flex-1 min-w-fit px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === 'leaderboard'
               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               : 'text-white/60 hover:text-white hover:bg-white/10'
@@ -236,15 +250,15 @@ export function LiquidationDashboard() {
         >
           <div className="flex items-center justify-center gap-2">
             <TridentIcon size={18} />
-            <span>Leaderboard</span>
+            <span>Top Liquidators</span>
           </div>
         </button>
       </div>
 
       {/* Tab Content */}
       <div className="min-h-[500px]">
-        {/* Opportunities Tab */}
-        {activeTab === 'opportunities' && (
+        {/* At-Risk Positions Tab */}
+        {activeTab === 'positions' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
             {positionsError ? (
               <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6">
@@ -253,31 +267,32 @@ export function LiquidationDashboard() {
                 </p>
               </div>
             ) : (
-              <>
-                {/* At-Risk Positions Table */}
-                <AtRiskPositionsTable
-                  positions={positions}
-                  isLoading={positionsLoading}
-                  lastUpdated={lastUpdated}
-                  onRefresh={refetchPositions}
-                />
-
-                {/* Two-column layout for charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Risk Distribution Chart */}
-                  <RiskDistributionChart
-                    buckets={riskDistribution}
-                    isLoading={positionsLoading}
-                  />
-
-                  {/* Price Sensitivity Simulator */}
-                  <PriceSensitivitySimulator
-                    positions={positions}
-                    isLoading={positionsLoading}
-                  />
-                </div>
-              </>
+              <AtRiskPositionsTable
+                positions={positions}
+                isLoading={positionsLoading}
+                lastUpdated={lastUpdated}
+                onRefresh={refetchPositions}
+              />
             )}
+          </div>
+        )}
+
+        {/* Risk Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Risk Distribution Chart */}
+              <RiskDistributionChart
+                buckets={riskDistribution}
+                isLoading={positionsLoading}
+              />
+
+              {/* Price Sensitivity Simulator */}
+              <PriceSensitivitySimulator
+                positions={positions}
+                isLoading={positionsLoading}
+              />
+            </div>
           </div>
         )}
 
@@ -458,6 +473,10 @@ export function LiquidationDashboard() {
     </div>
   );
 }
+
+
+
+
 
 
 

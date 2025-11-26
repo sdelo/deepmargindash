@@ -235,20 +235,32 @@ export function AtRiskPositionsTable({
                     <tr
                       key={position.marginManagerId}
                       onClick={() => handleRowClick(position)}
-                      className={`border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${
+                      className={`group border-b border-white/5 hover:bg-amber-500/5 hover:border-l-2 hover:border-l-amber-500 transition-all cursor-pointer ${
                         position.isLiquidatable ? 'bg-rose-500/5' : ''
                       }`}
                     >
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-1 text-xs font-bold rounded border ${badge.className}`}>
-                          {badge.label}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 text-xs font-bold rounded border ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                          {/* Click indicator */}
+                          <svg 
+                            className="w-4 h-4 text-white/0 group-hover:text-amber-400 transition-colors" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <a
                           href={`https://suivision.xyz/object/${position.marginManagerId}`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="font-mono text-cyan-300 hover:text-cyan-200 transition-colors"
                         >
                           {formatAddress(position.marginManagerId)}
@@ -327,7 +339,7 @@ export function AtRiskPositionsTable({
       </div>
 
       {/* Legend */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-white/60">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/60">
         <div className="flex items-center gap-4 flex-wrap justify-center">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded bg-rose-500/50" />
@@ -346,8 +358,11 @@ export function AtRiskPositionsTable({
             <span>Watch</span>
           </div>
         </div>
-        <div className="text-white/40">
-          Click any row to view position history
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-300">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          </svg>
+          <span>Click any row to view full history</span>
         </div>
       </div>
 
