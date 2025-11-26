@@ -187,8 +187,32 @@ export interface MarginManagersInfoResponse {
   quote_margin_pool_id: string | null;
 }
 
-// Margin Manager States Response (returns JSON directly)
-export type MarginManagerStatesResponse = unknown[];
+// Margin Manager State Response - pre-computed state with risk ratios
+export interface MarginManagerStateResponse {
+  id: number;
+  margin_manager_id: string;
+  deepbook_pool_id: string;
+  base_margin_pool_id: string | null;
+  quote_margin_pool_id: string | null;
+  base_asset_id: string | null;
+  base_asset_symbol: string | null;
+  quote_asset_id: string | null;
+  quote_asset_symbol: string | null;
+  risk_ratio: string | null;           // Pre-computed risk ratio (9 decimal precision)
+  base_asset: string | null;           // Base asset value
+  quote_asset: string | null;          // Quote asset value
+  base_debt: string | null;            // Base debt amount
+  quote_debt: string | null;           // Quote debt amount
+  base_pyth_price: number | null;      // Pyth price for base asset
+  base_pyth_decimals: number | null;   // Pyth decimals for base asset
+  quote_pyth_price: number | null;     // Pyth price for quote asset
+  quote_pyth_decimals: number | null;  // Pyth decimals for quote asset
+  created_at: string;
+  updated_at: string;                  // Freshness indicator
+}
+
+// Margin Manager States Response (array of state objects)
+export type MarginManagerStatesResponse = MarginManagerStateResponse[];
 
 /**
  * Helper function to build query string from params
@@ -350,12 +374,33 @@ export async function fetchMarginManagersInfo(): Promise<MarginManagersInfoRespo
 }
 
 /**
- * Fetch margin manager states
+ * Query parameters specific to margin_manager_states endpoint
+ */
+export interface MarginManagerStatesQueryParams {
+  max_risk_ratio?: number;    // Filter by maximum risk ratio
+  deepbook_pool_id?: string;  // Filter by DeepBook pool
+}
+
+/**
+ * Fetch margin manager states with pre-computed risk ratios
+ * This endpoint doesn't use time-based filtering
  */
 export async function fetchMarginManagerStates(
-  params?: QueryParams
+  params?: MarginManagerStatesQueryParams
 ): Promise<MarginManagerStatesResponse> {
-  return apiClient.get<MarginManagerStatesResponse>(`/margin_manager_states${buildQuery(params)}`);
+  const searchParams = new URLSearchParams();
+  
+  if (params?.max_risk_ratio !== undefined) {
+    searchParams.append('max_risk_ratio', String(params.max_risk_ratio));
+  }
+  if (params?.deepbook_pool_id) {
+    searchParams.append('deepbook_pool_id', params.deepbook_pool_id);
+  }
+  
+  const queryString = searchParams.toString();
+  const path = queryString ? `/margin_manager_states?${queryString}` : '/margin_manager_states';
+  
+  return apiClient.get<MarginManagerStatesResponse>(path);
 }
 
 /**
