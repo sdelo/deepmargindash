@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "codegen": "sui-ts-codegen generate",
     "mint-referral": "bun scripts/mint-supply-referral.ts",
-    "update-contracts": "bun scripts/update-contracts.ts"
+    "update-contracts": "bun scripts/update-contracts.ts",
+    "deploy": "vite build && site-builder publish --epochs 1 dist"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

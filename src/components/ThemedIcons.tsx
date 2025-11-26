@@ -272,3 +272,518 @@ export function WhaleIcon({ className = "", size = 24 }: IconProps) {
   );
 }
 
+// Lightning bolt icon - For liquidation events
+export function BoltIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fbbf24" />
+          <stop offset="100%" stopColor="#f59e0b" />
+        </linearGradient>
+      </defs>
+      <path 
+        d="M13 2L4 14h7v8l9-12h-7V2z" 
+        fill="url(#boltGrad)" 
+        stroke="#b45309" 
+        strokeWidth="0.5"
+      />
+    </svg>
+  );
+}
+
+// Treasure chest icon - For volume/value metrics
+export function TreasureIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="chestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fbbf24" />
+          <stop offset="50%" stopColor="#f59e0b" />
+          <stop offset="100%" stopColor="#d97706" />
+        </linearGradient>
+      </defs>
+      {/* Chest body */}
+      <rect x="4" y="10" width="16" height="10" rx="1" fill="url(#chestGrad)" stroke="#92400e" strokeWidth="0.5"/>
+      {/* Chest lid */}
+      <path d="M4 10 Q12 4 20 10" fill="#fcd34d" stroke="#92400e" strokeWidth="0.5"/>
+      {/* Lock */}
+      <circle cx="12" cy="13" r="2" fill="#0c4a6e" stroke="#164e63" strokeWidth="0.3"/>
+      <rect x="11" y="13" width="2" height="3" fill="#0c4a6e"/>
+      {/* Coins inside */}
+      <ellipse cx="8" cy="16" rx="2" ry="1" fill="#fde68a" stroke="#fbbf24" strokeWidth="0.3"/>
+      <ellipse cx="16" cy="16" rx="2" ry="1" fill="#fde68a" stroke="#fbbf24" strokeWidth="0.3"/>
+    </svg>
+  );
+}
+
+// Depth gauge icon - For metrics/measurements
+export function DepthGaugeIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="50%" stopColor="#22d3ee" />
+          <stop offset="100%" stopColor="#06b6d4" />
+        </linearGradient>
+      </defs>
+      {/* Gauge body */}
+      <circle cx="12" cy="12" r="9" fill="url(#gaugeGrad)" stroke="#0c4a6e" strokeWidth="1"/>
+      <circle cx="12" cy="12" r="7" fill="#164e63" stroke="#0e7490" strokeWidth="0.5"/>
+      {/* Tick marks */}
+      <path d="M12 5.5V7" stroke="#5eead4" strokeWidth="0.8" strokeLinecap="round"/>
+      <path d="M12 17V18.5" stroke="#5eead4" strokeWidth="0.8" strokeLinecap="round"/>
+      <path d="M5.5 12H7" stroke="#5eead4" strokeWidth="0.8" strokeLinecap="round"/>
+      <path d="M17 12H18.5" stroke="#5eead4" strokeWidth="0.8" strokeLinecap="round"/>
+      {/* Needle */}
+      <path d="M12 12L15 9" stroke="#22d3ee" strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="12" cy="12" r="1.5" fill="#2dd4bf"/>
+    </svg>
+  );
+}
+
+// Warning/Alert icon - Helmet with warning symbol
+export function AlertIcon({ className = "", size = 24, variant = "warning" }: IconProps & { variant?: "warning" | "danger" | "success" }) {
+  const colors = {
+    warning: { fill: "#fbbf24", stroke: "#92400e" },
+    danger: { fill: "#ef4444", stroke: "#7f1d1d" },
+    success: { fill: "#10b981", stroke: "#065f46" }
+  };
+  const { fill, stroke } = colors[variant];
+  
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Triangle */}
+      <path 
+        d="M12 3L22 20H2L12 3Z" 
+        fill={fill} 
+        stroke={stroke} 
+        strokeWidth="0.5"
+      />
+      {/* Exclamation mark */}
+      <path d="M12 9V14" stroke={stroke} strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="12" cy="17" r="1" fill={stroke}/>
+    </svg>
+  );
+}
+
+// Checkmark icon - For success states
+export function CheckIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#34d399" />
+          <stop offset="100%" stopColor="#10b981" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="10" fill="url(#checkGrad)" stroke="#065f46" strokeWidth="0.5"/>
+      <path 
+        d="M7 12L10.5 15.5L17 9" 
+        stroke="white" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// Chart/Analytics icon - For data visualization
+export function ChartIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="chartGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stopColor="#0891b2" />
+          <stop offset="100%" stopColor="#22d3ee" />
+        </linearGradient>
+      </defs>
+      {/* Background */}
+      <rect x="2" y="2" width="20" height="20" rx="2" fill="#164e63" stroke="#0c4a6e" strokeWidth="0.5"/>
+      {/* Grid lines */}
+      <path d="M2 17H22" stroke="#0e7490" strokeWidth="0.3"/>
+      <path d="M2 12H22" stroke="#0e7490" strokeWidth="0.3"/>
+      <path d="M2 7H22" stroke="#0e7490" strokeWidth="0.3"/>
+      {/* Chart line */}
+      <path 
+        d="M4 16L8 12L12 14L16 8L20 10" 
+        stroke="url(#chartGrad)" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Arrow up */}
+      <path d="M18 6L20 10M20 10L22 8" stroke="#2dd4bf" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+// Diamond icon - For top suppliers/value
+export function DiamondIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="diamondGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#67e8f9" />
+          <stop offset="50%" stopColor="#22d3ee" />
+          <stop offset="100%" stopColor="#06b6d4" />
+        </linearGradient>
+        <linearGradient id="diamondShine" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8"/>
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      {/* Diamond shape */}
+      <path 
+        d="M12 2L4 8L12 22L20 8L12 2Z" 
+        fill="url(#diamondGrad)" 
+        stroke="#0c4a6e" 
+        strokeWidth="0.5"
+      />
+      {/* Top facet */}
+      <path d="M12 2L4 8H20L12 2Z" fill="#a5f3fc" stroke="#0c4a6e" strokeWidth="0.3"/>
+      {/* Center line */}
+      <path d="M4 8L12 12L20 8" stroke="#0c4a6e" strokeWidth="0.3" fill="none"/>
+      <path d="M12 12V22" stroke="#0c4a6e" strokeWidth="0.3"/>
+      {/* Shine */}
+      <path d="M7 8L12 5L10 8Z" fill="url(#diamondShine)"/>
+    </svg>
+  );
+}
+
+// Info/Lightbulb icon - For insights
+export function InsightIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="bulbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fde68a" />
+          <stop offset="50%" stopColor="#fbbf24" />
+          <stop offset="100%" stopColor="#f59e0b" />
+        </linearGradient>
+      </defs>
+      {/* Bulb */}
+      <path 
+        d="M12 2C8.13 2 5 5.13 5 9C5 11.38 6.19 13.47 8 14.74V17C8 17.55 8.45 18 9 18H15C15.55 18 16 17.55 16 17V14.74C17.81 13.47 19 11.38 19 9C19 5.13 15.87 2 12 2Z" 
+        fill="url(#bulbGrad)" 
+        stroke="#92400e" 
+        strokeWidth="0.5"
+      />
+      {/* Light rays */}
+      <path d="M12 0V1" stroke="#fbbf24" strokeWidth="1" strokeLinecap="round"/>
+      <path d="M4.22 4.22L4.93 4.93" stroke="#fbbf24" strokeWidth="1" strokeLinecap="round"/>
+      <path d="M19.78 4.22L19.07 4.93" stroke="#fbbf24" strokeWidth="1" strokeLinecap="round"/>
+      <path d="M2 9H3" stroke="#fbbf24" strokeWidth="1" strokeLinecap="round"/>
+      <path d="M21 9H22" stroke="#fbbf24" strokeWidth="1" strokeLinecap="round"/>
+      {/* Base */}
+      <rect x="9" y="19" width="6" height="1" rx="0.5" fill="#164e63"/>
+      <rect x="9" y="21" width="6" height="1" rx="0.5" fill="#164e63"/>
+      <path d="M10 22V23H14V22" stroke="#0c4a6e" strokeWidth="0.5"/>
+    </svg>
+  );
+}
+
+// Lock icon - For connect wallet
+export function LockIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="lockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="50%" stopColor="#2dd4bf" />
+          <stop offset="100%" stopColor="#0891b2" />
+        </linearGradient>
+      </defs>
+      {/* Lock body */}
+      <rect x="5" y="11" width="14" height="10" rx="2" fill="url(#lockGrad)" stroke="#0c4a6e" strokeWidth="0.5"/>
+      {/* Shackle */}
+      <path 
+        d="M8 11V7C8 4.79 9.79 3 12 3C14.21 3 16 4.79 16 7V11" 
+        stroke="#164e63" 
+        strokeWidth="2" 
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* Keyhole */}
+      <circle cx="12" cy="15" r="1.5" fill="#164e63"/>
+      <path d="M12 16.5V18" stroke="#164e63" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+// Error/Cross icon - For error states
+export function ErrorIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="errorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f87171" />
+          <stop offset="100%" stopColor="#ef4444" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="10" fill="url(#errorGrad)" stroke="#7f1d1d" strokeWidth="0.5"/>
+      <path 
+        d="M8 8L16 16M16 8L8 16" 
+        stroke="white" 
+        strokeWidth="2" 
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+// Anchor icon - For stability/security
+export function AnchorIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="anchorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="100%" stopColor="#0891b2" />
+        </linearGradient>
+      </defs>
+      {/* Ring */}
+      <circle cx="12" cy="5" r="2.5" stroke="url(#anchorGrad)" strokeWidth="2" fill="none"/>
+      {/* Shaft */}
+      <path d="M12 7.5V20" stroke="url(#anchorGrad)" strokeWidth="2" strokeLinecap="round"/>
+      {/* Arms */}
+      <path d="M5 17L12 20L19 17" stroke="url(#anchorGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      {/* Cross bar */}
+      <path d="M8 12H16" stroke="url(#anchorGrad)" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+// Borrowers icon - Submarine going down
+export function BorrowersIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="subGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f59e0b" />
+          <stop offset="100%" stopColor="#d97706" />
+        </linearGradient>
+      </defs>
+      {/* Submarine body */}
+      <ellipse cx="12" cy="12" rx="8" ry="4" fill="url(#subGrad)" stroke="#92400e" strokeWidth="0.5"/>
+      {/* Conning tower */}
+      <rect x="10" y="6" width="4" height="4" rx="1" fill="#fbbf24" stroke="#92400e" strokeWidth="0.5"/>
+      {/* Periscope */}
+      <path d="M12 6V3M12 3H14" stroke="#164e63" strokeWidth="1" strokeLinecap="round"/>
+      {/* Windows */}
+      <circle cx="8" cy="12" r="1.5" fill="#164e63" stroke="#0c4a6e" strokeWidth="0.3"/>
+      <circle cx="12" cy="12" r="1.5" fill="#164e63" stroke="#0c4a6e" strokeWidth="0.3"/>
+      <circle cx="16" cy="12" r="1.5" fill="#164e63" stroke="#0c4a6e" strokeWidth="0.3"/>
+      {/* Arrow down */}
+      <path d="M12 17V21M10 19L12 21L14 19" stroke="#ef4444" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+// History icon - Diving helmet with hourglass/time waves
+export function HistoryIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="historyHelmetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="50%" stopColor="#2dd4bf" />
+          <stop offset="100%" stopColor="#0891b2" />
+        </linearGradient>
+        <linearGradient id="hourglassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#a78bfa" />
+          <stop offset="100%" stopColor="#7c3aed" />
+        </linearGradient>
+      </defs>
+      {/* Helmet dome */}
+      <ellipse cx="12" cy="12" rx="7" ry="6" fill="url(#historyHelmetGrad)" stroke="#0c4a6e" strokeWidth="0.5"/>
+      <ellipse cx="12" cy="12" rx="4.5" ry="3.5" fill="#5eead4" fillOpacity="0.3" stroke="#2dd4bf" strokeWidth="0.4"/>
+      {/* Hourglass shape inside */}
+      <path d="M9 9H15L12 12L15 15H9L12 12L9 9Z" fill="url(#hourglassGrad)" stroke="#5b21b6" strokeWidth="0.4"/>
+      {/* Sand particles */}
+      <circle cx="12" cy="11" r="0.4" fill="#ddd6fe"/>
+      <circle cx="11.5" cy="10.5" r="0.3" fill="#ddd6fe"/>
+      <circle cx="12.5" cy="10.5" r="0.3" fill="#ddd6fe"/>
+      {/* Time wave ripples outside helmet */}
+      <path d="M3 12C4 10.5 5 13.5 6 12" stroke="#a78bfa" strokeWidth="0.6" strokeLinecap="round" fill="none" opacity="0.7"/>
+      <path d="M18 12C19 10.5 20 13.5 21 12" stroke="#a78bfa" strokeWidth="0.6" strokeLinecap="round" fill="none" opacity="0.7"/>
+      {/* Bottom collar */}
+      <ellipse cx="12" cy="17" rx="6" ry="1.2" fill="#164e63" stroke="#0c4a6e" strokeWidth="0.4"/>
+    </svg>
+  );
+}
+
+// Concentration icon - Diving helmet with converging currents/vortex
+export function ConcentrationIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="concHelmetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="50%" stopColor="#2dd4bf" />
+          <stop offset="100%" stopColor="#0891b2" />
+        </linearGradient>
+        <linearGradient id="vortexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fb923c" />
+          <stop offset="100%" stopColor="#f97316" />
+        </linearGradient>
+      </defs>
+      {/* Helmet dome */}
+      <ellipse cx="12" cy="12" rx="7" ry="6" fill="url(#concHelmetGrad)" stroke="#0c4a6e" strokeWidth="0.5"/>
+      <ellipse cx="12" cy="12" rx="4.5" ry="3.5" fill="#5eead4" fillOpacity="0.3" stroke="#2dd4bf" strokeWidth="0.4"/>
+      {/* Spiral/vortex pattern showing concentration */}
+      <circle cx="12" cy="12" r="2.5" fill="none" stroke="url(#vortexGrad)" strokeWidth="0.8" strokeDasharray="2 1"/>
+      <circle cx="12" cy="12" r="1.5" fill="none" stroke="#fb923c" strokeWidth="0.6"/>
+      <circle cx="12" cy="12" r="0.6" fill="#f97316"/>
+      {/* Converging arrows */}
+      <path d="M8 9L10 11" stroke="#f97316" strokeWidth="0.8" strokeLinecap="round"/>
+      <path d="M16 9L14 11" stroke="#f97316" strokeWidth="0.8" strokeLinecap="round"/>
+      <path d="M8 15L10 13" stroke="#f97316" strokeWidth="0.8" strokeLinecap="round"/>
+      <path d="M16 15L14 13" stroke="#f97316" strokeWidth="0.8" strokeLinecap="round"/>
+      {/* Bottom collar */}
+      <ellipse cx="12" cy="17" rx="6" ry="1.2" fill="#164e63" stroke="#0c4a6e" strokeWidth="0.4"/>
+    </svg>
+  );
+}
+
+// Pool Activity icon - Diving helmet with flowing waves and tide lines
+export function PoolActivityIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="activityHelmetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="50%" stopColor="#2dd4bf" />
+          <stop offset="100%" stopColor="#0891b2" />
+        </linearGradient>
+        <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#34d399" />
+          <stop offset="100%" stopColor="#10b981" />
+        </linearGradient>
+      </defs>
+      {/* Helmet dome */}
+      <ellipse cx="12" cy="12" rx="7" ry="6" fill="url(#activityHelmetGrad)" stroke="#0c4a6e" strokeWidth="0.5"/>
+      <ellipse cx="12" cy="12" rx="4.5" ry="3.5" fill="#5eead4" fillOpacity="0.3" stroke="#2dd4bf" strokeWidth="0.4"/>
+      {/* Rising bars inside helmet (TVL growth) */}
+      <rect x="9" y="13" width="1.2" height="2" fill="#10b981" rx="0.3"/>
+      <rect x="11" y="11" width="1.2" height="4" fill="#34d399" rx="0.3"/>
+      <rect x="13" y="10" width="1.2" height="5" fill="url(#waveGrad)" rx="0.3"/>
+      {/* Wave line above bars */}
+      <path d="M8.5 10C9.5 9 10.5 11 11.5 10C12.5 9 13.5 11 14.5 10" stroke="#2dd4bf" strokeWidth="0.6" strokeLinecap="round" fill="none"/>
+      {/* Flow arrows on sides */}
+      <path d="M4.5 10L6 12L4.5 14" stroke="#10b981" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      <path d="M19.5 10L18 12L19.5 14" stroke="#ef4444" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      {/* Bottom collar */}
+      <ellipse cx="12" cy="17" rx="6" ry="1.2" fill="#164e63" stroke="#0c4a6e" strokeWidth="0.4"/>
+    </svg>
+  );
+}
+

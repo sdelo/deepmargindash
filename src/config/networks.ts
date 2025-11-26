@@ -14,7 +14,11 @@ export interface IndexerOption {
 // The first one in this list will be used as the default
 export const TESTNET_INDEXERS: IndexerOption[] = [
   {
-    label: "Dummy Data",
+    label: "Local Dev Server",
+    url: "http://localhost:9008",
+  },
+  {
+    label: "Dummy Data (Remote)",
     url: "https://deepmargindash.duckdns.org",
   },
   {

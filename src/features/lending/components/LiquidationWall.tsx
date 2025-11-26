@@ -6,6 +6,17 @@ import {
 import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
+import {
+  LiquidationIcon,
+  BoltIcon,
+  TreasureIcon,
+  DepthGaugeIcon,
+  AlertIcon,
+  CheckIcon,
+  ChartIcon,
+  ErrorIcon,
+  InsightIcon,
+} from "../../../components/ThemedIcons";
 
 interface LiquidationWallProps {
   poolId?: string;
@@ -120,7 +131,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <span className="text-3xl">📉</span> Liquidation Wall
+            <LiquidationIcon size={32} /> Liquidation Wall
           </h2>
           <p className="text-sm text-white/60">
             Historical liquidation activity and system health
@@ -134,7 +145,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
         {/* Total Liquidations */}
         <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">⚡</span>
+            <BoltIcon size={28} />
           </div>
           <div className="space-y-1">
             <div className="text-2xl font-bold text-white">
@@ -148,7 +159,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
         {/* Total Volume */}
         <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">💰</span>
+            <TreasureIcon size={28} />
           </div>
           <div className="space-y-1">
             <div className="text-2xl font-bold text-orange-300">
@@ -164,7 +175,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
         {/* Average Size */}
         <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">📊</span>
+            <DepthGaugeIcon size={28} />
           </div>
           <div className="space-y-1">
             <div className="text-2xl font-bold text-cyan-300">
@@ -186,9 +197,11 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
           }`}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">
-              {stats.totalBadDebt > 0 ? "⚠️" : "✅"}
-            </span>
+            {stats.totalBadDebt > 0 ? (
+              <AlertIcon size={28} variant="warning" />
+            ) : (
+              <CheckIcon size={28} />
+            )}
           </div>
           <div className="space-y-1">
             <div
@@ -215,7 +228,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
       {/* Chart */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <h3 className="text-lg font-bold text-cyan-200 mb-4 flex items-center gap-2">
-          <span>📈</span> Liquidations Over Time
+          <ChartIcon size={24} /> Liquidations Over Time
         </h3>
 
         {isLoading ? (
@@ -228,7 +241,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
         ) : error ? (
           <div className="h-80 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-red-400 mb-2 text-2xl">❌</div>
+              <div className="mb-2 flex justify-center"><ErrorIcon size={32} /></div>
               <div className="text-red-300 font-semibold mb-1">
                 Error loading data
               </div>
@@ -238,7 +251,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
         ) : dailyData.length === 0 ? (
           <div className="h-80 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-green-400 mb-3 text-5xl">✅</div>
+              <div className="mb-3 flex justify-center"><CheckIcon size={48} /></div>
               <div className="text-white font-semibold text-lg mb-2">
                 No Liquidations Found
               </div>
@@ -350,7 +363,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
       {/* Interpretation Guide */}
       <div className="bg-indigo-900/20 rounded-2xl p-6 border border-indigo-500/30">
         <h3 className="text-lg font-bold text-indigo-300 mb-3 flex items-center gap-2">
-          <span>💡</span> What This Tells You
+          <InsightIcon size={24} /> What This Tells You
         </h3>
         <div className="space-y-3 text-sm text-white/70">
           <div className="flex gap-3">

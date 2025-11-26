@@ -12,6 +12,16 @@ import {
 import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
+import {
+  ConcentrationIcon,
+  CheckIcon,
+  AlertIcon,
+  BoltIcon,
+  DiamondIcon,
+  BorrowersIcon,
+  InsightIcon,
+  ErrorIcon,
+} from "../../../components/ThemedIcons";
 
 interface WhaleWatchProps {
   poolId?: string;
@@ -183,12 +193,12 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
   // Determine risk level
   const getRiskLevel = (concentrationPercent: number) => {
     if (concentrationPercent > 70)
-      return { label: "Very High", color: "red", icon: "🚨" };
+      return { label: "Very High", color: "red", icon: <AlertIcon size={20} variant="danger" /> };
     if (concentrationPercent > 50)
-      return { label: "High", color: "orange", icon: "⚠️" };
+      return { label: "High", color: "orange", icon: <AlertIcon size={20} variant="warning" /> };
     if (concentrationPercent > 30)
-      return { label: "Moderate", color: "yellow", icon: "⚡" };
-    return { label: "Low", color: "green", icon: "✅" };
+      return { label: "Moderate", color: "yellow", icon: <BoltIcon size={20} /> };
+    return { label: "Low", color: "green", icon: <CheckIcon size={20} /> };
   };
 
   const supplyRisk = getRiskLevel(concentration.supplyConcentration);
@@ -205,10 +215,10 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <span className="text-3xl">🐋</span> Whale Watch
+            <ConcentrationIcon size={32} /> Concentration
           </h2>
           <p className="text-sm text-white/60">
-            Concentration risk analysis - Top suppliers vs. borrowers
+            Position concentration risk - Top suppliers vs. borrowers
           </p>
         </div>
         <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
@@ -224,7 +234,7 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
       ) : error ? (
         <div className="h-96 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-red-400 mb-2 text-2xl">❌</div>
+            <div className="mb-2 flex justify-center"><ErrorIcon size={32} /></div>
             <div className="text-red-300 font-semibold mb-1">
               Error loading data
             </div>
@@ -247,7 +257,7 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span>{supplyRisk.icon}</span> Supply Concentration
+                  {supplyRisk.icon} Supply Concentration
                 </h3>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -315,7 +325,7 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span>{borrowRisk.icon}</span> Borrow Concentration
+                  {borrowRisk.icon} Borrow Concentration
                 </h3>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -377,7 +387,7 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
             {/* Top Suppliers */}
             <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
               <h3 className="text-lg font-bold text-cyan-200 mb-4 flex items-center gap-2">
-                <span>💎</span> Top 5 Suppliers
+                <DiamondIcon size={24} /> Top 5 Suppliers
               </h3>
 
               {topSuppliers.length === 0 ? (
@@ -440,7 +450,7 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
             {/* Top Borrowers */}
             <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
               <h3 className="text-lg font-bold text-amber-200 mb-4 flex items-center gap-2">
-                <span>📊</span> Top 5 Borrowers
+                <BorrowersIcon size={24} /> Top 5 Borrowers
               </h3>
 
               {topBorrowers.length === 0 ? (
@@ -504,11 +514,11 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
           {/* Risk Interpretation */}
           <div className="bg-indigo-900/20 rounded-2xl p-6 border border-indigo-500/30">
             <h3 className="text-lg font-bold text-indigo-300 mb-3 flex items-center gap-2">
-              <span>💡</span> What This Means
+              <InsightIcon size={24} /> What This Means
             </h3>
             <div className="space-y-3 text-sm text-white/70">
               <div className="flex gap-3">
-                <span className="text-amber-400 font-bold shrink-0">⚠️</span>
+                <span className="shrink-0"><AlertIcon size={18} variant="warning" /></span>
                 <div>
                   <span className="font-semibold text-white">
                     Supply Concentration:
@@ -534,7 +544,11 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
               </div>
 
               <div className="flex gap-3">
-                <span className="text-cyan-400 font-bold shrink-0">→</span>
+                <span className="text-cyan-400 font-bold shrink-0">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
                 <div>
                   <span className="font-semibold text-white">
                     Borrow Concentration:
@@ -559,7 +573,12 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
               </div>
 
               <div className="flex gap-3">
-                <span className="text-green-400 font-bold shrink-0">ⓘ</span>
+                <span className="text-green-400 shrink-0">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </span>
                 <div>
                   <span className="font-semibold text-white">Note:</span> This
                   shows net positions based on event history in the selected

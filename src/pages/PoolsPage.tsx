@@ -18,7 +18,8 @@ import { SupplierAnalytics } from "../features/lending/components/SupplierAnalyt
 import { BorrowerOverview } from "../features/lending/components/BorrowerOverview";
 import { LiquidationDashboard } from "../features/lending/components/LiquidationDashboard";
 import { AdministrativePanel } from "../features/lending/components/AdministrativePanel";
-import { LiquidityHealthCheck } from "../features/lending/components/LiquidityHealthCheck";
+import { APYHistory } from "../features/lending/components/APYHistory";
+import { PoolActivity } from "../features/lending/components/PoolActivity";
 import { LiquidationWall } from "../features/lending/components/LiquidationWall";
 import { WhaleWatch } from "../features/lending/components/WhaleWatch";
 import { AdminHistorySlidePanel } from "../features/lending/components/AdminHistorySlidePanel";
@@ -28,7 +29,7 @@ import {
   SectionNav,
   type DashboardSection,
 } from "../features/shared/components/SectionNav";
-import { YieldIcon, LiquidityIcon, WhaleIcon } from "../components/ThemedIcons";
+import { YieldIcon, HistoryIcon, PoolActivityIcon, ConcentrationIcon, LockIcon } from "../components/ThemedIcons";
 import { useCoinBalance } from "../hooks/useCoinBalance";
 import { usePoolData } from "../hooks/usePoolData";
 import { CONTRACTS } from "../config/contracts";
@@ -59,7 +60,7 @@ export function PoolsPage() {
   const [isHelpVisible, setIsHelpVisible] = React.useState(false);
 
   const [overviewTab, setOverviewTab] = React.useState<
-    "yield" | "liquidity" | "liquidations" | "whales"
+    "yield" | "history" | "activity" | "liquidations" | "concentration"
   >("yield");
 
   // Fetch real pool data
@@ -609,7 +610,7 @@ export function PoolsPage() {
                         />
                       ) : (
                         <div className="card-surface text-center py-6 border border-white/10 text-cyan-100/80 rounded-2xl bg-white/5">
-                          <div className="mb-2 text-2xl">🔐</div>
+                          <div className="mb-2 flex justify-center"><LockIcon size={32} /></div>
                           <div className="text-sm font-semibold mb-1">
                             Connect Your Wallet
                           </div>
@@ -637,7 +638,7 @@ export function PoolsPage() {
                     >
                       <div className="flex items-center justify-center gap-2">
                         <YieldIcon
-                          size={35}
+                          size={28}
                           className={
                             overviewTab === "yield"
                               ? "opacity-100"
@@ -647,32 +648,57 @@ export function PoolsPage() {
                         <div className="flex flex-col items-start">
                           <span>Yield</span>
                           <span className="text-[10px] text-white/50">
-                            Interest Rate
+                            Rate Model
                           </span>
                         </div>
                       </div>
                     </button>
                     <button
-                      onClick={() => setOverviewTab("liquidity")}
+                      onClick={() => setOverviewTab("history")}
                       className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                        overviewTab === "liquidity"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
+                        overviewTab === "history"
+                          ? "bg-violet-500/20 text-violet-300 border border-violet-500/50 shadow-lg shadow-violet-500/10"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
                       <div className="flex items-center justify-center gap-2">
-                        <LiquidityIcon
-                          size={35}
+                        <HistoryIcon
+                          size={28}
                           className={
-                            overviewTab === "liquidity"
+                            overviewTab === "history"
                               ? "opacity-100"
                               : "opacity-60"
                           }
                         />
                         <div className="flex flex-col items-start">
-                          <span>Liquidity</span>
+                          <span>History</span>
                           <span className="text-[10px] text-white/50">
-                            Health Check
+                            APY Over Time
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setOverviewTab("activity")}
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                        overviewTab === "activity"
+                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-lg shadow-emerald-500/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <PoolActivityIcon
+                          size={28}
+                          className={
+                            overviewTab === "activity"
+                              ? "opacity-100"
+                              : "opacity-60"
+                          }
+                        />
+                        <div className="flex flex-col items-start">
+                          <span>Activity</span>
+                          <span className="text-[10px] text-white/50">
+                            TVL & Flows
                           </span>
                         </div>
                       </div>
@@ -681,7 +707,7 @@ export function PoolsPage() {
                       onClick={() => setOverviewTab("liquidations")}
                       className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                         overviewTab === "liquidations"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
+                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-lg shadow-amber-500/10"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
@@ -701,36 +727,36 @@ export function PoolsPage() {
                             d="M13 10V3L4 14h7v7l9-11h-7z"
                             stroke="currentColor"
                             strokeWidth="1.5"
-                            fill="#38bdf8"
+                            fill="#fbbf24"
                           />
                         </svg>
                         <div className="flex flex-col items-start">
                           <span>Liquidations</span>
                           <span className="text-[10px] text-white/50">
-                            Activity
+                            Risk Events
                           </span>
                         </div>
                       </div>
                     </button>
                     <button
-                      onClick={() => setOverviewTab("whales")}
+                      onClick={() => setOverviewTab("concentration")}
                       className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                        overviewTab === "whales"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
+                        overviewTab === "concentration"
+                          ? "bg-orange-500/20 text-orange-300 border border-orange-500/50 shadow-lg shadow-orange-500/10"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
                       <div className="flex items-center justify-center gap-2">
-                        <WhaleIcon
-                          size={35}
+                        <ConcentrationIcon
+                          size={28}
                           className={
-                            overviewTab === "whales"
+                            overviewTab === "concentration"
                               ? "opacity-100"
                               : "opacity-60"
                           }
                         />
                         <div className="flex flex-col items-start">
-                          <span>Whales</span>
+                          <span>Concentration</span>
                           <span className="text-[10px] text-white/50">
                             Top Positions
                           </span>
@@ -763,8 +789,12 @@ export function PoolsPage() {
                     </div>
                   )}
 
-                  {overviewTab === "liquidity" && (
-                    <LiquidityHealthCheck pool={selectedPool} />
+                  {overviewTab === "history" && (
+                    <APYHistory pool={selectedPool} />
+                  )}
+
+                  {overviewTab === "activity" && (
+                    <PoolActivity pool={selectedPool} />
                   )}
 
                   {overviewTab === "liquidations" && (
@@ -773,7 +803,7 @@ export function PoolsPage() {
                     />
                   )}
 
-                  {overviewTab === "whales" && (
+                  {overviewTab === "concentration" && (
                     <WhaleWatch
                       poolId={selectedPool.contracts?.marginPoolId}
                       decimals={selectedPool.contracts?.coinDecimals}
