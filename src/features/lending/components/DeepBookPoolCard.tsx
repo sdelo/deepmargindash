@@ -7,6 +7,43 @@ import type {
 import { fetchLatestDeepbookPoolConfig } from "../api/events";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 
+// Tooltip component for info icons
+const InfoTooltip: FC<{ tooltip: string }> = ({ tooltip }) => {
+  const [show, setShow] = React.useState(false);
+  
+  return (
+    <div className="relative inline-flex ml-1">
+      <button
+        type="button"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onFocus={() => setShow(true)}
+        onBlur={() => setShow(false)}
+        className="w-3 h-3 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-[8px] text-white/50 hover:text-white/70 transition-all cursor-help"
+        aria-label="More info"
+      >
+        ?
+      </button>
+      {show && (
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1.5 text-[10px] text-white/90 bg-slate-900 border border-white/20 rounded-lg shadow-xl w-48 leading-relaxed pointer-events-none">
+          {tooltip}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-white/20" />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Tooltip definitions for each ratio
+const TOOLTIPS = {
+  borrowRiskRatio: "Minimum collateral ratio required to borrow. Your position must maintain at least this ratio of assets to debt to take new loans.",
+  liquidationRiskRatio: "Threshold below which your position can be liquidated. If your collateral ratio falls below this, liquidators can close your position.",
+  withdrawRiskRatio: "Minimum ratio required to withdraw collateral. You cannot withdraw if it would push your position below this threshold.",
+  targetLiqRisk: "Target ratio after partial liquidation. When liquidated, the system aims to restore your position to this healthier ratio.",
+  poolReward: "Percentage of liquidation amount given to the lending pool as compensation for absorbed risk.",
+  userReward: "Percentage of liquidation amount given to the liquidator as incentive for maintaining system health.",
+};
+
 interface Props {
   poolIds: string[];
   onHistoryClick?: (poolId: string) => void;
@@ -227,8 +264,9 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
 
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-white/5 rounded-lg p-2 border border-white/5">
-            <div className="text-[10px] text-white/40 mb-1">
+            <div className="text-[10px] text-white/40 mb-1 flex items-center">
               Borrow Risk Ratio
+              <InfoTooltip tooltip={TOOLTIPS.borrowRiskRatio} />
             </div>
             <div className="text-xs font-semibold text-white">
               {config?.risk_ratios?.min_borrow_risk_ratio
@@ -238,8 +276,9 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
           </div>
 
           <div className="bg-white/5 rounded-lg p-2 border border-white/5">
-            <div className="text-[10px] text-white/40 mb-1">
+            <div className="text-[10px] text-white/40 mb-1 flex items-center">
               Liq. Risk Ratio
+              <InfoTooltip tooltip={TOOLTIPS.liquidationRiskRatio} />
             </div>
             <div className="text-xs font-semibold text-amber-400">
               {config?.risk_ratios?.liquidation_risk_ratio
@@ -249,8 +288,9 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
           </div>
 
           <div className="bg-white/5 rounded-lg p-2 border border-white/5">
-            <div className="text-[10px] text-white/40 mb-1">
+            <div className="text-[10px] text-white/40 mb-1 flex items-center">
               Withdraw Risk Ratio
+              <InfoTooltip tooltip={TOOLTIPS.withdrawRiskRatio} />
             </div>
             <div className="text-xs font-semibold text-white">
               {config?.risk_ratios?.min_withdraw_risk_ratio
@@ -260,8 +300,9 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
           </div>
 
           <div className="bg-white/5 rounded-lg p-2 border border-white/5">
-            <div className="text-[10px] text-white/40 mb-1">
+            <div className="text-[10px] text-white/40 mb-1 flex items-center">
               Target Liq. Risk
+              <InfoTooltip tooltip={TOOLTIPS.targetLiqRisk} />
             </div>
             <div className="text-xs font-semibold text-emerald-400">
               {config?.risk_ratios?.target_liquidation_risk_ratio
@@ -276,8 +317,9 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
         {/* Liquidation Rewards */}
         <div className="grid grid-cols-2 gap-2 pt-2">
           <div className="bg-white/5 rounded-lg p-2 border border-white/5">
-            <div className="text-[10px] text-white/40 mb-1">
+            <div className="text-[10px] text-white/40 mb-1 flex items-center">
               Pool Reward
+              <InfoTooltip tooltip={TOOLTIPS.poolReward} />
             </div>
             <div className="text-xs font-semibold text-cyan-400">
               {config?.pool_liquidation_reward
@@ -287,8 +329,9 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
           </div>
 
           <div className="bg-white/5 rounded-lg p-2 border border-white/5">
-            <div className="text-[10px] text-white/40 mb-1">
+            <div className="text-[10px] text-white/40 mb-1 flex items-center">
               User Reward
+              <InfoTooltip tooltip={TOOLTIPS.userReward} />
             </div>
             <div className="text-xs font-semibold text-cyan-400">
               {config?.user_liquidation_reward

@@ -22,6 +22,7 @@ import { APYHistory } from "../features/lending/components/APYHistory";
 import { PoolActivity } from "../features/lending/components/PoolActivity";
 import { LiquidationWall } from "../features/lending/components/LiquidationWall";
 import { WhaleWatch } from "../features/lending/components/WhaleWatch";
+import { EarningsCalculator } from "../features/lending/components/EarningsCalculator";
 import { AdminHistorySlidePanel } from "../features/lending/components/AdminHistorySlidePanel";
 import { InterestRateHistoryPanel } from "../features/lending/components/InterestRateHistoryPanel";
 import { DeepbookPoolHistoryPanel } from "../features/lending/components/DeepbookPoolHistoryPanel";
@@ -29,7 +30,13 @@ import {
   SectionNav,
   type DashboardSection,
 } from "../features/shared/components/SectionNav";
-import { YieldIcon, HistoryIcon, PoolActivityIcon, ConcentrationIcon, LockIcon } from "../components/ThemedIcons";
+import {
+  YieldIcon,
+  HistoryIcon,
+  PoolActivityIcon,
+  ConcentrationIcon,
+  LockIcon,
+} from "../components/ThemedIcons";
 import { useCoinBalance } from "../hooks/useCoinBalance";
 import { usePoolData } from "../hooks/usePoolData";
 import { CONTRACTS } from "../config/contracts";
@@ -60,7 +67,12 @@ export function PoolsPage() {
   const [isHelpVisible, setIsHelpVisible] = React.useState(false);
 
   const [overviewTab, setOverviewTab] = React.useState<
-    "yield" | "history" | "activity" | "liquidations" | "concentration"
+    | "yield"
+    | "history"
+    | "activity"
+    | "liquidations"
+    | "concentration"
+    | "calculator"
   >("yield");
 
   // Fetch real pool data
@@ -569,7 +581,7 @@ export function PoolsPage() {
                   <h2 className="text-xl font-bold text-cyan-200 mb-4">
                     Core Actions
                   </h2>
-                  {/* Two panels side by side on larger screens */}
+                  {/* Three panels in a grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Deposit/Withdraw Panel */}
                     <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
@@ -610,7 +622,9 @@ export function PoolsPage() {
                         />
                       ) : (
                         <div className="card-surface text-center py-6 border border-white/10 text-cyan-100/80 rounded-2xl bg-white/5">
-                          <div className="mb-2 flex justify-center"><LockIcon size={32} /></div>
+                          <div className="mb-2 flex justify-center">
+                            <LockIcon size={32} />
+                          </div>
                           <div className="text-sm font-semibold mb-1">
                             Connect Your Wallet
                           </div>
@@ -763,6 +777,70 @@ export function PoolsPage() {
                         </div>
                       </div>
                     </button>
+                    <button
+                      onClick={() => setOverviewTab("calculator")}
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                        overviewTab === "calculator"
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
+                          : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className={
+                            overviewTab === "calculator"
+                              ? "opacity-100"
+                              : "opacity-60"
+                          }
+                        >
+                          <rect
+                            x="4"
+                            y="2"
+                            width="16"
+                            height="20"
+                            rx="2"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            fill="#22d3ee"
+                            fillOpacity="0.15"
+                          />
+                          <rect
+                            x="7"
+                            y="5"
+                            width="10"
+                            height="3"
+                            rx="1"
+                            fill="#22d3ee"
+                            fillOpacity="0.5"
+                          />
+                          <circle cx="8" cy="11" r="1" fill="currentColor" />
+                          <circle cx="12" cy="11" r="1" fill="currentColor" />
+                          <circle cx="16" cy="11" r="1" fill="currentColor" />
+                          <circle cx="8" cy="14" r="1" fill="currentColor" />
+                          <circle cx="12" cy="14" r="1" fill="currentColor" />
+                          <circle cx="16" cy="14" r="1" fill="currentColor" />
+                          <circle cx="8" cy="17" r="1" fill="currentColor" />
+                          <rect
+                            x="11"
+                            y="16"
+                            width="6"
+                            height="2"
+                            rx="0.5"
+                            fill="#22d3ee"
+                          />
+                        </svg>
+                        <div className="flex flex-col items-start">
+                          <span>Calculator</span>
+                          <span className="text-[10px] text-white/50">
+                            Estimate
+                          </span>
+                        </div>
+                      </div>
+                    </button>
                   </div>
                 </div>
 
@@ -808,6 +886,10 @@ export function PoolsPage() {
                       poolId={selectedPool.contracts?.marginPoolId}
                       decimals={selectedPool.contracts?.coinDecimals}
                     />
+                  )}
+
+                  {overviewTab === "calculator" && (
+                    <EarningsCalculator pool={selectedPool} />
                   )}
                 </div>
               </div>
