@@ -11,6 +11,16 @@ import { AtRiskPositionsTable } from "./AtRiskPositionsTable";
 import { RiskDistributionChart } from "./RiskDistributionChart";
 import { LiquidatorLeaderboard } from "./LiquidatorLeaderboard";
 import { PriceSensitivitySimulator } from "./PriceSensitivitySimulator";
+import {
+  LiquidationCenterIcon,
+  HarpoonIcon,
+  DepthPressureIcon,
+  TreasureIcon,
+  BrokenAnchorIcon,
+  HealthyAnchorIcon,
+  HistoryIcon,
+  TridentIcon,
+} from "../../../components/ThemedIcons";
 
 type DashboardTab = 'opportunities' | 'history' | 'leaderboard';
 
@@ -86,9 +96,10 @@ export function LiquidationDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            ⚡ Liquidations Center
+            <LiquidationCenterIcon size={28} />
+            Liquidations Center
             {liquidatableCount > 0 && (
-              <span className="px-3 py-1 text-sm font-bold bg-red-500/20 text-red-300 border border-red-500/50 rounded-full animate-pulse">
+              <span className="px-3 py-1 text-sm font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded-full animate-pulse">
                 {liquidatableCount} LIQUIDATABLE NOW
               </span>
             )}
@@ -101,48 +112,48 @@ export function LiquidationDashboard() {
 
       {/* Summary KPIs - Always Visible */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-red-500/10 p-4 rounded-2xl border border-red-500/20">
+        <div className="bg-white/5 p-4 rounded-2xl border border-rose-500/30">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">🎯</span>
+            <HarpoonIcon size={24} />
             {positionsLoading && (
-              <div className="animate-pulse h-2 w-2 rounded-full bg-red-400" />
+              <div className="animate-pulse h-2 w-2 rounded-full bg-rose-400" />
             )}
           </div>
-          <div className="text-2xl font-bold text-red-400">
+          <div className="text-2xl font-bold text-rose-400">
             {positionsLoading ? (
               <div className="h-7 w-12 bg-white/10 rounded animate-pulse" />
             ) : (
               liquidatableCount
             )}
           </div>
-          <div className="text-xs text-red-300/80">Liquidatable Now</div>
+          <div className="text-xs text-white/60">Liquidatable Now</div>
         </div>
 
-        <div className="bg-orange-500/10 p-4 rounded-2xl border border-orange-500/20">
+        <div className="bg-white/5 p-4 rounded-2xl border border-amber-500/30">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">⚠️</span>
+            <DepthPressureIcon size={24} />
             {positionsLoading && (
-              <div className="animate-pulse h-2 w-2 rounded-full bg-orange-400" />
+              <div className="animate-pulse h-2 w-2 rounded-full bg-amber-400" />
             )}
           </div>
-          <div className="text-2xl font-bold text-orange-400">
+          <div className="text-2xl font-bold text-amber-400">
             {positionsLoading ? (
               <div className="h-7 w-12 bg-white/10 rounded animate-pulse" />
             ) : (
               atRiskCount
             )}
           </div>
-          <div className="text-xs text-orange-300/80">At-Risk Positions</div>
+          <div className="text-xs text-white/60">At-Risk Positions</div>
         </div>
 
-        <div className="bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20">
+        <div className="bg-white/5 p-4 rounded-2xl border border-cyan-500/30">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">💰</span>
+            <TreasureIcon size={24} />
             {positionsLoading && (
-              <div className="animate-pulse h-2 w-2 rounded-full bg-amber-400" />
+              <div className="animate-pulse h-2 w-2 rounded-full bg-cyan-400" />
             )}
           </div>
-          <div className="text-2xl font-bold text-amber-400">
+          <div className="text-2xl font-bold text-cyan-400">
             {positionsLoading ? (
               <div className="h-7 w-16 bg-white/10 rounded animate-pulse" />
             ) : totalDebtAtRiskUsd >= 1000000 ? (
@@ -153,22 +164,22 @@ export function LiquidationDashboard() {
               `$${totalDebtAtRiskUsd.toFixed(0)}`
             )}
           </div>
-          <div className="text-xs text-amber-300/80">Debt at Risk</div>
+          <div className="text-xs text-white/60">Debt at Risk</div>
         </div>
 
-        <div className={`p-4 rounded-2xl border ${
-          analytics.totalBadDebt > 0 
-            ? 'bg-rose-500/10 border-rose-500/20' 
-            : 'bg-green-500/10 border-green-500/20'
-        }`}>
+        <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">{analytics.totalBadDebt > 0 ? '🔴' : '✅'}</span>
+            {analytics.totalBadDebt > 0 ? (
+              <BrokenAnchorIcon size={24} />
+            ) : (
+              <HealthyAnchorIcon size={24} />
+            )}
             {historyLoading && (
               <div className="animate-pulse h-2 w-2 rounded-full bg-white/40" />
             )}
           </div>
           <div className={`text-2xl font-bold ${
-            analytics.totalBadDebt > 0 ? 'text-rose-400' : 'text-green-400'
+            analytics.totalBadDebt > 0 ? 'text-rose-400' : 'text-cyan-400'
           }`}>
             {historyLoading ? (
               <div className="h-7 w-12 bg-white/10 rounded animate-pulse" />
@@ -188,15 +199,15 @@ export function LiquidationDashboard() {
           onClick={() => setActiveTab('opportunities')}
           className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === 'opportunities'
-              ? 'bg-red-500/20 text-red-300 border border-red-500/50'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               : 'text-white/60 hover:text-white hover:bg-white/10'
           }`}
         >
           <div className="flex items-center justify-center gap-2">
-            <span>🎯</span>
+            <HarpoonIcon size={18} />
             <span>Opportunities</span>
             {liquidatableCount > 0 && (
-              <span className="px-1.5 py-0.5 text-xs font-bold bg-red-500/30 rounded">
+              <span className="px-1.5 py-0.5 text-xs font-bold bg-rose-500/30 text-rose-300 rounded">
                 {liquidatableCount}
               </span>
             )}
@@ -206,12 +217,12 @@ export function LiquidationDashboard() {
           onClick={() => setActiveTab('history')}
           className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === 'history'
-              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               : 'text-white/60 hover:text-white hover:bg-white/10'
           }`}
         >
           <div className="flex items-center justify-center gap-2">
-            <span>📜</span>
+            <HistoryIcon size={18} />
             <span>History</span>
           </div>
         </button>
@@ -219,12 +230,12 @@ export function LiquidationDashboard() {
           onClick={() => setActiveTab('leaderboard')}
           className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
             activeTab === 'leaderboard'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               : 'text-white/60 hover:text-white hover:bg-white/10'
           }`}
         >
           <div className="flex items-center justify-center gap-2">
-            <span>🏆</span>
+            <TridentIcon size={18} />
             <span>Leaderboard</span>
           </div>
         </button>
@@ -327,8 +338,10 @@ export function LiquidationDashboard() {
                 </div>
               ) : liquidations.length === 0 ? (
                 <div className="text-center py-12 text-white/60">
-                  <div className="text-5xl mb-3">✨</div>
-                  <p className="text-lg font-semibold">No Liquidations</p>
+                  <div className="mb-3 flex justify-center">
+                    <HealthyAnchorIcon size={48} />
+                  </div>
+                  <p className="text-lg font-semibold text-white">No Liquidations</p>
                   <p className="text-sm mt-2">No liquidation events in the selected time range</p>
                 </div>
               ) : (
@@ -410,9 +423,9 @@ export function LiquidationDashboard() {
 
             {/* Bad Debt Alert */}
             {analytics.totalBadDebt > 0 && (
-              <div className="bg-rose-500/10 p-6 rounded-2xl border border-rose-500/30">
+              <div className="bg-white/5 p-6 rounded-2xl border border-rose-500/30">
                 <div className="flex items-start gap-4">
-                  <div className="text-4xl">⚠️</div>
+                  <BrokenAnchorIcon size={40} />
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-rose-300 mb-2">Bad Debt Alert</h3>
                     <p className="text-white/80 text-sm mb-3">
@@ -445,6 +458,12 @@ export function LiquidationDashboard() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

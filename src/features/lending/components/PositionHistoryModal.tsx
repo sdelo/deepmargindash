@@ -10,6 +10,13 @@ import {
   type LiquidationEventResponse,
   type MarginManagerCreatedEventResponse,
 } from '../api/events';
+import {
+  HistoryIcon,
+  AnchorIcon,
+  BorrowingIcon,
+  CheckIcon,
+  BoltIcon,
+} from '../../../components/ThemedIcons';
 
 interface PositionHistoryModalProps {
   position: AtRiskPosition;
@@ -67,16 +74,16 @@ function formatAmount(amount: number, decimals: number = 9): string {
 /**
  * Get event icon and color
  */
-function getEventStyle(type: TimelineEventType): { icon: string; color: string; bgColor: string } {
+function getEventStyle(type: TimelineEventType): { icon: React.ReactNode; color: string; bgColor: string } {
   switch (type) {
     case 'created':
-      return { icon: '🎉', color: 'text-purple-400', bgColor: 'bg-purple-500/20 border-purple-500/50' };
+      return { icon: <AnchorIcon size={24} />, color: 'text-cyan-400', bgColor: 'bg-white/5 border-cyan-500/40' };
     case 'borrow':
-      return { icon: '💸', color: 'text-orange-400', bgColor: 'bg-orange-500/20 border-orange-500/50' };
+      return { icon: <BorrowingIcon size={24} />, color: 'text-amber-400', bgColor: 'bg-white/5 border-amber-500/40' };
     case 'repay':
-      return { icon: '✅', color: 'text-green-400', bgColor: 'bg-green-500/20 border-green-500/50' };
+      return { icon: <CheckIcon size={24} />, color: 'text-cyan-400', bgColor: 'bg-white/5 border-cyan-500/40' };
     case 'liquidation':
-      return { icon: '⚡', color: 'text-red-400', bgColor: 'bg-red-500/20 border-red-500/50' };
+      return { icon: <BoltIcon size={24} />, color: 'text-rose-400', bgColor: 'bg-white/5 border-rose-500/40' };
   }
 }
 
@@ -254,7 +261,8 @@ export function PositionHistoryModal({
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                📊 Position History
+                <HistoryIcon size={24} />
+                Position History
               </h2>
               <a
                 href={`https://suivision.xyz/object/${position.marginManagerId}`}
@@ -280,10 +288,10 @@ export function PositionHistoryModal({
             <div className="bg-white/5 rounded-lg p-3">
               <div className="text-xs text-white/60">Risk Ratio</div>
               <div className={`text-lg font-bold ${
-                position.isLiquidatable ? 'text-red-400' :
-                position.distanceToLiquidation < 5 ? 'text-orange-400' :
-                position.distanceToLiquidation < 15 ? 'text-yellow-400' :
-                'text-green-400'
+                position.isLiquidatable ? 'text-rose-400' :
+                position.distanceToLiquidation < 5 ? 'text-amber-400' :
+                position.distanceToLiquidation < 15 ? 'text-amber-300' :
+                'text-cyan-400'
               }`}>
                 {position.riskRatio.toFixed(4)}
               </div>
@@ -297,10 +305,10 @@ export function PositionHistoryModal({
             <div className="bg-white/5 rounded-lg p-3">
               <div className="text-xs text-white/60">Distance to Liq</div>
               <div className={`text-lg font-bold ${
-                position.distanceToLiquidation < 0 ? 'text-red-400' :
-                position.distanceToLiquidation < 5 ? 'text-orange-400' :
-                position.distanceToLiquidation < 15 ? 'text-yellow-400' :
-                'text-green-400'
+                position.distanceToLiquidation < 0 ? 'text-rose-400' :
+                position.distanceToLiquidation < 5 ? 'text-amber-400' :
+                position.distanceToLiquidation < 15 ? 'text-amber-300' :
+                'text-cyan-400'
               }`}>
                 {position.distanceToLiquidation > 0 ? '+' : ''}{position.distanceToLiquidation.toFixed(1)}%
               </div>
@@ -335,19 +343,19 @@ export function PositionHistoryModal({
                     <div className="text-xs text-white/60">Total Events</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-orange-400">
+                    <div className="text-2xl font-bold text-amber-400">
                       {timeline.filter(e => e.type === 'borrow').length}
                     </div>
                     <div className="text-xs text-white/60">Borrows</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-green-400">
+                    <div className="text-2xl font-bold text-cyan-400">
                       {timeline.filter(e => e.type === 'repay').length}
                     </div>
                     <div className="text-xs text-white/60">Repays</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-red-400">
+                    <div className="text-2xl font-bold text-rose-400">
                       {timeline.filter(e => e.type === 'liquidation').length}
                     </div>
                     <div className="text-xs text-white/60">Liquidations</div>
@@ -359,15 +367,15 @@ export function PositionHistoryModal({
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-white/60">Total Borrowed: </span>
-                      <span className="font-semibold text-orange-400">{formatAmount(totals.totalBorrowed)}</span>
+                      <span className="font-semibold text-amber-400">{formatAmount(totals.totalBorrowed)}</span>
                     </div>
                     <div>
                       <span className="text-white/60">Total Repaid: </span>
-                      <span className="font-semibold text-green-400">{formatAmount(totals.totalRepaid)}</span>
+                      <span className="font-semibold text-cyan-400">{formatAmount(totals.totalRepaid)}</span>
                     </div>
                     <div>
                       <span className="text-white/60">Total Liquidated: </span>
-                      <span className="font-semibold text-red-400">{formatAmount(totals.totalLiquidated)}</span>
+                      <span className="font-semibold text-rose-400">{formatAmount(totals.totalLiquidated)}</span>
                     </div>
                   </div>
                 </div>
@@ -410,7 +418,7 @@ export function PositionHistoryModal({
                       {position.baseDebt > 0 && (
                         <div className="flex justify-between">
                           <span className="text-white/70">{position.baseAssetSymbol}</span>
-                          <span className="font-semibold text-orange-400">
+                          <span className="font-semibold text-amber-400">
                             {formatAmount(position.baseDebt)} ({formatUsd(position.baseDebtUsd)})
                           </span>
                         </div>
@@ -418,7 +426,7 @@ export function PositionHistoryModal({
                       {position.quoteDebt > 0 && (
                         <div className="flex justify-between">
                           <span className="text-white/70">{position.quoteAssetSymbol}</span>
-                          <span className="font-semibold text-orange-400">
+                          <span className="font-semibold text-amber-400">
                             {formatAmount(position.quoteDebt, 6)} ({formatUsd(position.quoteDebtUsd)})
                           </span>
                         </div>
@@ -449,7 +457,7 @@ export function PositionHistoryModal({
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                              <span className="text-2xl">{style.icon}</span>
+                              <div className="flex-shrink-0">{style.icon}</div>
                               <div>
                                 <div className={`font-semibold capitalize ${style.color}`}>
                                   {event.type === 'created' ? 'Position Created' :
@@ -485,7 +493,7 @@ export function PositionHistoryModal({
                                 {event.data.riskRatio !== undefined && (
                                   <div>
                                     <span className="text-white/60">Risk Ratio: </span>
-                                    <span className="font-semibold text-red-400">
+                                    <span className="font-semibold text-rose-400">
                                       {event.data.riskRatio.toFixed(4)}
                                     </span>
                                   </div>
@@ -493,7 +501,7 @@ export function PositionHistoryModal({
                                 {event.data.reward !== undefined && (
                                   <div>
                                     <span className="text-white/60">Reward: </span>
-                                    <span className="font-semibold text-green-400">
+                                    <span className="font-semibold text-cyan-400">
                                       {formatAmount(event.data.reward)}
                                     </span>
                                   </div>

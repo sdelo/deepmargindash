@@ -1,5 +1,6 @@
 import React from 'react';
 import { type AtRiskPosition } from '../../../hooks/useAtRiskPositions';
+import { DepthGaugeIcon, BoltIcon } from '../../../components/ThemedIcons';
 
 interface PriceSensitivitySimulatorProps {
   positions: AtRiskPosition[];
@@ -144,12 +145,13 @@ export function PriceSensitivitySimulator({
   }
 
   return (
-    <div className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl border border-purple-500/20 p-6 space-y-6">
+    <div className="bg-white/5 rounded-2xl border border-cyan-500/30 p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            💹 Price Sensitivity Simulator
+            <DepthGaugeIcon size={24} />
+            Price Sensitivity Simulator
           </h3>
           <p className="text-sm text-white/60 mt-1">
             See how price changes affect liquidation opportunities
@@ -169,14 +171,14 @@ export function PriceSensitivitySimulator({
           </label>
           <div className="flex items-center gap-3">
             <span className={`text-lg font-bold ${
-              priceChangePct < 0 ? 'text-red-400' : 
-              priceChangePct > 0 ? 'text-green-400' : 
+              priceChangePct < 0 ? 'text-rose-400' : 
+              priceChangePct > 0 ? 'text-cyan-400' : 
               'text-white'
             }`}>
               {priceChangePct > 0 ? '+' : ''}{priceChangePct}%
             </span>
             <span className="text-white/60">→</span>
-            <span className="text-lg font-bold text-purple-300">
+            <span className="text-lg font-bold text-amber-300">
               ${simulatedPrice.toFixed(2)}
             </span>
           </div>
@@ -196,7 +198,7 @@ export function PriceSensitivitySimulator({
                        [&::-webkit-slider-thumb]:w-6
                        [&::-webkit-slider-thumb]:h-6
                        [&::-webkit-slider-thumb]:rounded-full
-                       [&::-webkit-slider-thumb]:bg-purple-500
+                       [&::-webkit-slider-thumb]:bg-amber-500
                        [&::-webkit-slider-thumb]:border-2
                        [&::-webkit-slider-thumb]:border-white
                        [&::-webkit-slider-thumb]:shadow-lg
@@ -222,7 +224,7 @@ export function PriceSensitivitySimulator({
               onClick={() => setPriceChangePct(change)}
               className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                 priceChangePct === change
-                  ? 'bg-purple-500 text-white'
+                  ? 'bg-amber-500 text-slate-900'
                   : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
               }`}
             >
@@ -258,8 +260,8 @@ export function PriceSensitivitySimulator({
           priceChangePct === 0 
             ? 'bg-white/5 border-white/10' 
             : simulatedState.newLiquidatableCount > currentState.newLiquidatableCount
-              ? 'bg-red-500/10 border-red-500/30'
-              : 'bg-green-500/10 border-green-500/30'
+              ? 'bg-white/5 border-rose-500/40'
+              : 'bg-white/5 border-cyan-500/40'
         }`}>
           <div className="text-xs text-white/60 uppercase tracking-wider mb-3">
             {priceChangePct === 0 ? 'Simulated State' : `If ${priceChangePct > 0 ? '+' : ''}${priceChangePct}%`}
@@ -270,15 +272,15 @@ export function PriceSensitivitySimulator({
               <div className="flex items-center gap-2">
                 <span className={`font-bold ${
                   simulatedState.newLiquidatableCount > currentState.newLiquidatableCount
-                    ? 'text-red-400'
+                    ? 'text-rose-400'
                     : simulatedState.newLiquidatableCount < currentState.newLiquidatableCount
-                      ? 'text-green-400'
+                      ? 'text-cyan-400'
                       : 'text-white'
                 }`}>
                   {simulatedState.newLiquidatableCount}
                 </span>
                 {simulatedState.positionsAffected > 0 && (
-                  <span className="px-1.5 py-0.5 text-xs bg-red-500/20 text-red-300 rounded">
+                  <span className="px-1.5 py-0.5 text-xs bg-rose-500/20 text-rose-300 rounded">
                     +{simulatedState.positionsAffected} new
                   </span>
                 )}
@@ -288,7 +290,7 @@ export function PriceSensitivitySimulator({
               <span className="text-white/70">At-Risk:</span>
               <span className={`font-bold ${
                 simulatedState.newAtRiskCount > currentState.newAtRiskCount
-                  ? 'text-orange-400'
+                  ? 'text-amber-400'
                   : 'text-white'
               }`}>
                 {simulatedState.newAtRiskCount}
@@ -328,23 +330,23 @@ export function PriceSensitivitySimulator({
                   <div
                     className={`absolute bottom-0 left-0 right-0 rounded-t transition-all ${
                       isSelected
-                        ? 'bg-purple-500'
+                        ? 'bg-amber-500'
                         : scenario.priceChange < 0
-                          ? 'bg-red-500/40 group-hover:bg-red-500/60'
-                          : 'bg-green-500/40 group-hover:bg-green-500/60'
+                          ? 'bg-rose-500/40 group-hover:bg-rose-500/60'
+                          : 'bg-cyan-500/40 group-hover:bg-cyan-500/60'
                     } ${isCurrent ? 'border-2 border-white/50' : ''}`}
                     style={{ height: `${Math.max(heightPct, 5)}%` }}
                   />
                   {/* Count label */}
                   <div className={`absolute -top-5 left-0 right-0 text-center text-xs ${
-                    isSelected ? 'text-purple-300 font-bold' : 'text-white/40'
+                    isSelected ? 'text-amber-300 font-bold' : 'text-white/40'
                   }`}>
                     {scenario.newLiquidatableCount}
                   </div>
                 </div>
                 {/* Price change label */}
                 <div className={`text-xs ${
-                  isSelected ? 'text-purple-300 font-bold' : 'text-white/40'
+                  isSelected ? 'text-amber-300 font-bold' : 'text-white/40'
                 }`}>
                   {scenario.priceChange > 0 ? '+' : ''}{scenario.priceChange}%
                 </div>
@@ -356,9 +358,9 @@ export function PriceSensitivitySimulator({
 
       {/* Insight Box */}
       {priceChangePct !== 0 && simulatedState.positionsAffected > 0 && (
-        <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
+        <div className="bg-white/5 rounded-xl p-4 border border-amber-500/40">
           <div className="flex items-start gap-3">
-            <span className="text-2xl">⚡</span>
+            <BoltIcon size={28} />
             <div>
               <div className="font-semibold text-amber-300 mb-1">Opportunity Alert</div>
               <p className="text-sm text-white/80">
@@ -377,7 +379,7 @@ export function PriceSensitivitySimulator({
 
       {/* Disclaimer */}
       <p className="text-xs text-white/40 text-center">
-        ⚠️ This is a simulation based on current position data. Actual results may vary due to 
+        This is a simulation based on current position data. Actual results may vary due to 
         oracle price feeds, gas costs, and competing liquidators.
       </p>
     </div>

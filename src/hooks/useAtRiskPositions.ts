@@ -289,12 +289,13 @@ export interface RiskDistributionBucket {
 
 export function useRiskDistribution(positions: AtRiskPosition[]): RiskDistributionBucket[] {
   return React.useMemo(() => {
+    // Theme-consistent colors: rose for danger, amber for warning, cyan/teal for safe
     const buckets: RiskDistributionBucket[] = [
-      { label: '< 1.05', minRatio: 0, maxRatio: 1.05, count: 0, totalDebtUsd: 0, color: '#ef4444' },      // Red - Liquidatable
-      { label: '1.05-1.10', minRatio: 1.05, maxRatio: 1.10, count: 0, totalDebtUsd: 0, color: '#f97316' }, // Orange - Critical
-      { label: '1.10-1.20', minRatio: 1.10, maxRatio: 1.20, count: 0, totalDebtUsd: 0, color: '#eab308' }, // Yellow - Warning
-      { label: '1.20-1.50', minRatio: 1.20, maxRatio: 1.50, count: 0, totalDebtUsd: 0, color: '#22c55e' }, // Green - Safe
-      { label: '1.50+', minRatio: 1.50, maxRatio: Infinity, count: 0, totalDebtUsd: 0, color: '#06b6d4' }, // Cyan - Very Safe
+      { label: '< 1.05', minRatio: 0, maxRatio: 1.05, count: 0, totalDebtUsd: 0, color: '#fb7185' },      // Rose-400 - Liquidatable
+      { label: '1.05-1.10', minRatio: 1.05, maxRatio: 1.10, count: 0, totalDebtUsd: 0, color: '#fbbf24' }, // Amber-400 - Critical
+      { label: '1.10-1.20', minRatio: 1.10, maxRatio: 1.20, count: 0, totalDebtUsd: 0, color: '#fcd34d' }, // Amber-300 - Warning
+      { label: '1.20-1.50', minRatio: 1.20, maxRatio: 1.50, count: 0, totalDebtUsd: 0, color: '#2dd4bf' }, // Teal-400 - Safe
+      { label: '1.50+', minRatio: 1.50, maxRatio: Infinity, count: 0, totalDebtUsd: 0, color: '#22d3ee' }, // Cyan-400 - Very Safe
     ];
 
     positions.forEach(position => {

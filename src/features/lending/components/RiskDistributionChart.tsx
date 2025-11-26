@@ -1,5 +1,6 @@
 import React from 'react';
 import { type RiskDistributionBucket } from '../../../hooks/useAtRiskPositions';
+import { ChartIcon, InsightIcon } from '../../../components/ThemedIcons';
 
 interface RiskDistributionChartProps {
   buckets: RiskDistributionBucket[];
@@ -45,7 +46,8 @@ export function RiskDistributionChart({ buckets, isLoading }: RiskDistributionCh
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            📊 Risk Distribution
+            <ChartIcon size={22} />
+            Risk Distribution
           </h3>
           <p className="text-sm text-white/60 mt-1">
             Position count by risk ratio range
@@ -59,17 +61,17 @@ export function RiskDistributionChart({ buckets, isLoading }: RiskDistributionCh
 
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-red-500/10 rounded-xl p-3 border border-red-500/20">
-          <div className="text-2xl font-bold text-red-400">
+        <div className="bg-white/5 rounded-xl p-3 border border-rose-500/30">
+          <div className="text-2xl font-bold text-rose-400">
             {buckets[0]?.count || 0}
           </div>
-          <div className="text-xs text-red-300/80">Liquidatable</div>
+          <div className="text-xs text-white/60">Liquidatable</div>
         </div>
-        <div className="bg-orange-500/10 rounded-xl p-3 border border-orange-500/20">
-          <div className="text-2xl font-bold text-orange-400">
+        <div className="bg-white/5 rounded-xl p-3 border border-amber-500/30">
+          <div className="text-2xl font-bold text-amber-400">
             {(buckets[0]?.count || 0) + (buckets[1]?.count || 0)}
           </div>
-          <div className="text-xs text-orange-300/80">Critical Zone</div>
+          <div className="text-xs text-white/60">Critical Zone</div>
         </div>
         <div className="bg-white/5 rounded-xl p-3 border border-white/10">
           <div className="text-2xl font-bold text-white">
@@ -172,13 +174,13 @@ export function RiskDistributionChart({ buckets, isLoading }: RiskDistributionCh
 
       {/* Interpretation */}
       {totalPositions > 0 && (
-        <div className="mt-4 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+        <div className="mt-4 p-3 bg-white/5 rounded-lg border border-cyan-500/30">
           <div className="flex items-start gap-2 text-sm">
-            <span className="text-indigo-400">💡</span>
-            <div className="text-indigo-200/80">
+            <InsightIcon size={20} className="flex-shrink-0 mt-0.5" />
+            <div className="text-white/80">
               {buckets[0]?.count > 0 ? (
                 <>
-                  <span className="font-semibold text-red-300">
+                  <span className="font-semibold text-rose-300">
                     {buckets[0].count} position{buckets[0].count !== 1 ? 's' : ''}
                   </span>{' '}
                   can be liquidated now with{' '}
@@ -188,7 +190,7 @@ export function RiskDistributionChart({ buckets, isLoading }: RiskDistributionCh
               ) : buckets[1]?.count > 0 ? (
                 <>
                   No positions are currently liquidatable, but{' '}
-                  <span className="font-semibold text-orange-300">
+                  <span className="font-semibold text-amber-300">
                     {buckets[1].count} position{buckets[1].count !== 1 ? 's' : ''}
                   </span>{' '}
                   are in the critical zone and may become liquidatable soon.

@@ -4,6 +4,7 @@ import { TransactionDetailsModal } from '../../../components/TransactionButton/T
 import { PositionHistoryModal } from './PositionHistoryModal';
 import { CONTRACTS } from '../../../config/contracts';
 import { useSuiClientContext } from '@mysten/dapp-kit';
+import { HarpoonIcon, HealthyAnchorIcon, BoltIcon } from '../../../components/ThemedIcons';
 
 interface AtRiskPositionsTableProps {
   positions: AtRiskPosition[];
@@ -40,24 +41,24 @@ function getRiskBadge(position: AtRiskPosition): { label: string; className: str
   if (position.isLiquidatable) {
     return {
       label: 'LIQUIDATABLE',
-      className: 'bg-red-500/20 text-red-300 border-red-500/50 animate-pulse',
+      className: 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse',
     };
   }
   if (position.distanceToLiquidation < 5) {
     return {
       label: 'CRITICAL',
-      className: 'bg-orange-500/20 text-orange-300 border-orange-500/50',
+      className: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
     };
   }
   if (position.distanceToLiquidation < 15) {
     return {
       label: 'WARNING',
-      className: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50',
+      className: 'bg-amber-400/15 text-amber-200 border-amber-400/30',
     };
   }
   return {
     label: 'WATCH',
-    className: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50',
+    className: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
   };
 }
 
@@ -140,9 +141,10 @@ export function AtRiskPositionsTable({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            🎯 At-Risk Positions
+            <HarpoonIcon size={22} />
+            At-Risk Positions
             {positions.filter(p => p.isLiquidatable).length > 0 && (
-              <span className="px-2 py-0.5 text-xs font-bold bg-red-500/20 text-red-300 border border-red-500/50 rounded-full animate-pulse">
+              <span className="px-2 py-0.5 text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded-full animate-pulse">
                 {positions.filter(p => p.isLiquidatable).length} LIQUIDATABLE
               </span>
             )}
@@ -189,7 +191,9 @@ export function AtRiskPositionsTable({
           </div>
         ) : positions.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="text-5xl mb-3">✨</div>
+            <div className="mb-3 flex justify-center">
+              <HealthyAnchorIcon size={48} />
+            </div>
             <p className="text-lg font-semibold text-white">No At-Risk Positions</p>
             <p className="text-sm text-white/60 mt-2">
               All positions are healthy with comfortable margins
@@ -232,7 +236,7 @@ export function AtRiskPositionsTable({
                       key={position.marginManagerId}
                       onClick={() => handleRowClick(position)}
                       className={`border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${
-                        position.isLiquidatable ? 'bg-red-500/5' : ''
+                        position.isLiquidatable ? 'bg-rose-500/5' : ''
                       }`}
                     >
                       <td className="py-3 px-4">
@@ -252,9 +256,9 @@ export function AtRiskPositionsTable({
                       </td>
                       <td className="py-3 px-4 text-right">
                         <span className={`font-bold ${
-                          position.isLiquidatable ? 'text-red-400' :
-                          position.distanceToLiquidation < 5 ? 'text-orange-400' :
-                          position.distanceToLiquidation < 15 ? 'text-yellow-400' :
+                          position.isLiquidatable ? 'text-rose-400' :
+                          position.distanceToLiquidation < 5 ? 'text-amber-400' :
+                          position.distanceToLiquidation < 15 ? 'text-amber-300' :
                           'text-white'
                         }`}>
                           {position.riskRatio.toFixed(4)}
@@ -265,10 +269,10 @@ export function AtRiskPositionsTable({
                       </td>
                       <td className="py-3 px-4 text-right">
                         <span className={`font-semibold ${
-                          position.distanceToLiquidation < 0 ? 'text-red-400' :
-                          position.distanceToLiquidation < 5 ? 'text-orange-400' :
-                          position.distanceToLiquidation < 15 ? 'text-yellow-400' :
-                          'text-green-400'
+                          position.distanceToLiquidation < 0 ? 'text-rose-400' :
+                          position.distanceToLiquidation < 5 ? 'text-amber-400' :
+                          position.distanceToLiquidation < 15 ? 'text-amber-300' :
+                          'text-cyan-400'
                         }`}>
                           {position.distanceToLiquidation < 0 ? '' : '+'}
                           {position.distanceToLiquidation.toFixed(1)}%
@@ -299,13 +303,18 @@ export function AtRiskPositionsTable({
                             handleLiquidateClick(position);
                           }}
                           disabled={!position.isLiquidatable}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                             position.isLiquidatable
-                              ? 'bg-red-500 hover:bg-red-400 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40'
+                              ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40'
                               : 'bg-white/10 text-white/40 cursor-not-allowed'
                           }`}
                         >
-                          {position.isLiquidatable ? '⚡ LIQUIDATE' : 'Not Yet'}
+                          {position.isLiquidatable ? (
+                            <>
+                              <BoltIcon size={14} />
+                              LIQUIDATE
+                            </>
+                          ) : 'Not Yet'}
                         </button>
                       </td>
                     </tr>
@@ -321,15 +330,15 @@ export function AtRiskPositionsTable({
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-white/60">
         <div className="flex items-center gap-4 flex-wrap justify-center">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-red-500/50" />
+            <span className="w-3 h-3 rounded bg-rose-500/50" />
             <span>Liquidatable (&lt;1.05)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-orange-500/50" />
+            <span className="w-3 h-3 rounded bg-amber-500/50" />
             <span>Critical (&lt;5%)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-yellow-500/50" />
+            <span className="w-3 h-3 rounded bg-amber-400/40" />
             <span>Warning (&lt;15%)</span>
           </div>
           <div className="flex items-center gap-2">
@@ -338,7 +347,7 @@ export function AtRiskPositionsTable({
           </div>
         </div>
         <div className="text-white/40">
-          💡 Click any row to view position history
+          Click any row to view position history
         </div>
       </div>
 
