@@ -79,18 +79,18 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
 
   if (!poolId) {
     return (
-      <div className="p-8 text-center text-indigo-200/60">No pool selected</div>
+      <div className="p-8 text-center text-white/50">No pool selected</div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-6">
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white/5 rounded-2xl p-4 border border-white/10 animate-pulse"
+              className="bg-white/5 rounded-xl p-4 border border-white/10 animate-pulse"
             >
               <div className="h-4 w-32 bg-white/10 rounded mb-2" />
               <div className="h-3 w-full bg-white/10 rounded mb-1" />
@@ -106,30 +106,30 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
     return (
       <div className="p-8 text-center">
         <div className="text-red-400 mb-2">Error Loading History</div>
-        <div className="text-sm text-indigo-200/60">{error}</div>
+        <div className="text-sm text-white/50">{error}</div>
       </div>
     );
   }
 
   if (events.length === 0) {
     return (
-      <div className="p-8 text-center text-indigo-200/60">
+      <div className="p-8 text-center text-white/50">
         No configuration history found for this pool
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       {/* Header */}
       <div className="mb-6 pb-4 border-b border-white/10">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-xl md:text-2xl font-bold text-white">
             DeepBook Pool Config History
           </h2>
           <button
             onClick={onClose}
-            className="text-indigo-300 hover:text-white transition-colors"
+            className="text-white/60 hover:text-white transition-colors md:hidden"
           >
             <svg
               className="w-6 h-6"
@@ -146,13 +146,13 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
             </svg>
           </button>
         </div>
-        <div className="flex items-center gap-2 text-sm text-indigo-200/80">
+        <div className="flex items-center gap-2 text-sm text-white/60">
           <span className="font-mono">{formatAddress(poolId)}</span>
           <a
             href={`https://suivision.xyz/object/${poolId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-purple-300 hover:text-purple-100 transition-colors"
+            className="text-cyan-400 hover:text-cyan-300 transition-colors"
           >
             <svg
               className="w-4 h-4"
@@ -186,16 +186,16 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
             <div
               key={`${event.eventType}-${event.onchain_timestamp}-${index}`}
               className={`
-                relative rounded-2xl p-5 border transition-all
+                relative rounded-xl p-4 md:p-5 border transition-all
                 ${
                   isLatest
-                    ? "bg-purple-500/10 border-purple-400/50 shadow-lg"
+                    ? "bg-amber-400/5 border-amber-400/30"
                     : "bg-white/5 border-white/10"
                 }
               `}
             >
               {isLatest && (
-                <div className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                <div className="absolute -top-2 -right-2 bg-amber-400 text-slate-900 text-xs font-bold px-2 py-1 rounded-full">
                   Latest
                 </div>
               )}
@@ -206,11 +206,17 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       event.eventType === "registered"
-                        ? "bg-green-500/20 text-green-300"
-                        : "bg-blue-500/20 text-blue-300"
+                        ? "bg-emerald-500/20"
+                        : "bg-cyan-500/20"
                     }`}
                   >
-                    {event.eventType === "registered" ? "🎉" : "⚙️"}
+                    <svg className={`w-5 h-5 ${event.eventType === "registered" ? "text-emerald-400" : "text-cyan-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {event.eventType === "registered" ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      )}
+                    </svg>
                   </div>
                   <div>
                     <div className="font-semibold text-white">
@@ -218,7 +224,7 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                         ? "Pool Registered"
                         : "Config Updated"}
                     </div>
-                    <div className="text-xs text-indigo-200/60">
+                    <div className="text-xs text-white/50">
                       {formatTimestamp(event.onchain_timestamp)}
                     </div>
                   </div>
@@ -226,7 +232,7 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                 <div
                   className={`px-2 py-1 rounded-lg text-xs font-semibold ${
                     config?.enabled
-                      ? "bg-green-500/20 text-green-300"
+                      ? "bg-emerald-500/20 text-emerald-300"
                       : "bg-red-500/20 text-red-300"
                   }`}
                 >
@@ -235,15 +241,15 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
               </div>
 
               {/* Transaction Info */}
-              <div className="mb-4 p-3 bg-black/20 rounded-lg">
-                <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="mb-4 p-3 bg-white/5 rounded-lg border border-white/5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                   <div>
-                    <div className="text-indigo-200/60 mb-1">Transaction</div>
+                    <div className="text-white/40 mb-1">Transaction</div>
                     <a
                       href={`https://suivision.xyz/txblock/${event.digest}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-cyan-300 hover:text-cyan-100 transition-colors font-mono flex items-center gap-1"
+                      className="text-cyan-400 hover:text-cyan-300 transition-colors font-mono flex items-center gap-1"
                     >
                       {formatAddress(event.digest)}
                       <svg
@@ -262,7 +268,7 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                     </a>
                   </div>
                   <div>
-                    <div className="text-indigo-200/60 mb-1">Sender</div>
+                    <div className="text-white/40 mb-1">Sender</div>
                     <div className="text-white font-mono">
                       {formatAddress(event.sender)}
                     </div>
@@ -272,12 +278,12 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
 
               {/* Risk Ratios */}
               <div className="mb-4">
-                <div className="text-sm font-semibold text-indigo-200 mb-2">
+                <div className="text-sm font-semibold text-white/80 mb-2">
                   Risk Ratios
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-black/20 rounded-lg p-3">
-                    <div className="text-xs text-indigo-200/60 mb-1">
+                <div className="grid grid-cols-2 gap-2 md:gap-3">
+                  <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
+                    <div className="text-xs text-white/40 mb-1">
                       Min Borrow Risk
                     </div>
                     <div className="text-sm font-semibold text-white">
@@ -288,11 +294,11 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                         : "N/A"}
                     </div>
                   </div>
-                  <div className="bg-black/20 rounded-lg p-3">
-                    <div className="text-xs text-indigo-200/60 mb-1">
+                  <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
+                    <div className="text-xs text-white/40 mb-1">
                       Liquidation Risk
                     </div>
-                    <div className="text-sm font-semibold text-amber-300">
+                    <div className="text-sm font-semibold text-amber-400">
                       {config?.risk_ratios?.liquidation_risk_ratio
                         ? formatRiskRatio(
                             config.risk_ratios.liquidation_risk_ratio
@@ -300,8 +306,8 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                         : "N/A"}
                     </div>
                   </div>
-                  <div className="bg-black/20 rounded-lg p-3">
-                    <div className="text-xs text-indigo-200/60 mb-1">
+                  <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
+                    <div className="text-xs text-white/40 mb-1">
                       Min Withdraw Risk
                     </div>
                     <div className="text-sm font-semibold text-white">
@@ -312,11 +318,11 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                         : "N/A"}
                     </div>
                   </div>
-                  <div className="bg-black/20 rounded-lg p-3">
-                    <div className="text-xs text-indigo-200/60 mb-1">
+                  <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
+                    <div className="text-xs text-white/40 mb-1">
                       Target Liquidation
                     </div>
-                    <div className="text-sm font-semibold text-green-300">
+                    <div className="text-sm font-semibold text-emerald-400">
                       {config?.risk_ratios?.target_liquidation_risk_ratio
                         ? formatRiskRatio(
                             config.risk_ratios.target_liquidation_risk_ratio
@@ -328,22 +334,22 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
               </div>
 
               {/* Liquidation Rewards */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-black/20 rounded-lg p-3">
-                  <div className="text-xs text-indigo-200/60 mb-1">
+              <div className="grid grid-cols-2 gap-2 md:gap-3">
+                <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
+                  <div className="text-xs text-white/40 mb-1">
                     Pool Liquidation Reward
                   </div>
-                  <div className="text-sm font-semibold text-cyan-300">
+                  <div className="text-sm font-semibold text-cyan-400">
                     {config?.pool_liquidation_reward
                       ? formatRiskRatio(config.pool_liquidation_reward)
                       : "N/A"}
                   </div>
                 </div>
-                <div className="bg-black/20 rounded-lg p-3">
-                  <div className="text-xs text-indigo-200/60 mb-1">
+                <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
+                  <div className="text-xs text-white/40 mb-1">
                     User Liquidation Reward
                   </div>
-                  <div className="text-sm font-semibold text-cyan-300">
+                  <div className="text-sm font-semibold text-cyan-400">
                     {config?.user_liquidation_reward
                       ? formatRiskRatio(config.user_liquidation_reward)
                       : "N/A"}
@@ -354,17 +360,17 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
               {/* Margin Pool IDs */}
               {config?.base_margin_pool_id && config?.quote_margin_pool_id && (
                 <div className="mt-4 pt-4 border-t border-white/5">
-                  <div className="text-xs text-indigo-200/60 mb-2">
+                  <div className="text-xs text-white/40 mb-2">
                     Associated Margin Pools
                   </div>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                     <div>
-                      <div className="text-indigo-200/60 mb-1">Base</div>
+                      <div className="text-white/40 mb-1">Base</div>
                       <a
                         href={`https://suivision.xyz/object/${config.base_margin_pool_id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-purple-300 hover:text-purple-100 transition-colors font-mono flex items-center gap-1"
+                        className="text-cyan-400 hover:text-cyan-300 transition-colors font-mono flex items-center gap-1"
                       >
                         {formatAddress(config.base_margin_pool_id)}
                         <svg
@@ -383,12 +389,12 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                       </a>
                     </div>
                     <div>
-                      <div className="text-indigo-200/60 mb-1">Quote</div>
+                      <div className="text-white/40 mb-1">Quote</div>
                       <a
                         href={`https://suivision.xyz/object/${config.quote_margin_pool_id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-purple-300 hover:text-purple-100 transition-colors font-mono flex items-center gap-1"
+                        className="text-cyan-400 hover:text-cyan-300 transition-colors font-mono flex items-center gap-1"
                       >
                         {formatAddress(config.quote_margin_pool_id)}
                         <svg

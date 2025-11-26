@@ -19,16 +19,16 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
 }) => {
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <span className="text-xs text-cyan-100/80">Range</span>
-      <div className="rounded-xl bg-white/10 border border-cyan-300/30 overflow-hidden">
+      <span className="text-xs text-white/60">Range</span>
+      <div className="rounded-lg bg-white/5 border border-white/10 overflow-hidden flex">
         {options.map((option) => (
           <button
             key={option}
             onClick={() => onChange(option)}
-            className={`px-3 py-1 transition-all ${
+            className={`px-3 py-1.5 text-sm transition-all ${
               value === option
-                ? 'bg-gradient-to-r from-cyan-400/20 to-blue-600/20 text-white border-l border-cyan-300/30'
-                : 'text-cyan-100/80 hover:text-white'
+                ? 'bg-amber-400 text-slate-900 font-medium'
+                : 'text-white/60 hover:text-white hover:bg-white/10'
             }`}
           >
             {option}

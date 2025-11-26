@@ -94,9 +94,9 @@ export const PoolCards: FC<Props> = ({
             key={pool.id}
             onClick={() => onSelectPool?.(pool.id)}
             className={`
-              relative rounded-3xl p-6 border transition-all duration-300 cursor-pointer group
+              relative rounded-2xl p-6 border transition-all duration-200 cursor-pointer group
               ${isSelected 
-                ? "bg-white/10 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]" 
+                ? "bg-white/10 border-amber-400/50" 
                 : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
               }
             `}
@@ -111,7 +111,7 @@ export const PoolCards: FC<Props> = ({
                     className="w-10 h-10 rounded-full"
                   />
                   {isSelected && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-cyan-400 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-slate-900 flex items-center justify-center">
                       <svg className="w-2.5 h-2.5 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
@@ -203,10 +203,10 @@ export const PoolCards: FC<Props> = ({
                   onDepositClick?.(pool.id);
                 }}
                 className={`
-                  w-full px-4 py-2 rounded-lg text-sm font-bold transition-all
+                  w-full px-4 py-2.5 rounded-lg text-sm font-bold transition-all
                   ${isSelected 
-                    ? "bg-cyan-400 text-slate-900 hover:bg-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.4)]" 
-                    : "bg-white/10 text-white hover:bg-white/20"
+                    ? "bg-amber-400 text-slate-900 hover:bg-amber-300" 
+                    : "bg-white/10 text-white hover:bg-white/15"
                   }
                 `}
               >

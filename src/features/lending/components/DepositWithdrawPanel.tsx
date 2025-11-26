@@ -93,7 +93,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
   }, [inputAmount, apy]);
 
   return (
-    <div className="w-full card-surface card-ring glow-amber glow-cyan animate-pulse-glow p-6 flex flex-col relative min-h-[500px]">
+    <div className="w-full card-surface p-6 flex flex-col relative min-h-[500px]">
       <div className="mb-4">
         <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 mb-1 flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse shadow-[0_0_20px_4px_rgba(251,191,36,0.6)]"></span>
@@ -105,22 +105,22 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
       </div>
       <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-4"></div>
 
-      <div className="flex items-center gap-3 justify-center mb-6">
+      <div className="flex items-center gap-2 justify-center mb-6">
         <button
-          className={`pill px-8 py-3.5 text-lg flex-1 max-w-[280px] ${
+          className={`px-6 py-3 rounded-lg text-base flex-1 max-w-[200px] transition-all ${
             tab === "deposit"
-              ? "ring-2 ring-cyan-300 bg-gradient-to-r from-cyan-300/20 to-indigo-500/20 text-white font-bold"
-              : "text-indigo-100/80"
+              ? "bg-amber-400 text-slate-900 font-semibold"
+              : "bg-white/10 text-white/70 hover:bg-white/15"
           }`}
           onClick={() => setTab("deposit")}
         >
           Deposit
         </button>
         <button
-          className={`pill px-8 py-3.5 text-lg flex-1 max-w-[280px] ${
+          className={`px-6 py-3 rounded-lg text-base flex-1 max-w-[200px] transition-all ${
             tab === "withdraw"
-              ? "ring-2 ring-cyan-300 bg-gradient-to-r from-cyan-300/20 to-indigo-500/20 text-white font-bold"
-              : "text-indigo-100/80"
+              ? "bg-amber-400 text-slate-900 font-semibold"
+              : "bg-white/10 text-white/70 hover:bg-white/15"
           }`}
           onClick={() => setTab("withdraw")}
         >

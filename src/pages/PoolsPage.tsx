@@ -433,7 +433,7 @@ export function PoolsPage() {
   return (
     <div className="max-w-[1920px] mx-auto px-4 lg:px-12 xl:px-20 2xl:px-32 text-white space-y-8 pb-12">
       <div className="mb-6">
-        <h1 className="text-4xl font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 drop-shadow-lg">
+        <h1 className="text-3xl font-bold text-white">
           DeepBook Margin Dashboard
         </h1>
         {isLoading && (

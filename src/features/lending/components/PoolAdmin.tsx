@@ -8,7 +8,7 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
   if (!data) return null;
 
   return (
-    <div className="relative card-surface card-ring glow-amber glow-cyan text-white">
+    <div className="relative card-surface text-white">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
           Admin Config Change Log

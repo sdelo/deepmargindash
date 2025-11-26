@@ -279,10 +279,10 @@ export const PoolCarousel: FC<Props> = ({
           </button>
         )}
 
-        {/* Cards Grid: 2/3 Margin Pool + 1/3 DeepBook Pool */}
-        <div className="grid grid-cols-3 gap-4">
-          {/* Margin Pool Card - Takes 2/3 of the space */}
-          <div className="col-span-2">
+        {/* Cards Grid: Stacked on mobile, 2/3 + 1/3 on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Margin Pool Card - Full width on mobile, 2/3 on desktop */}
+          <div className="lg:col-span-2">
             <div
               className="relative rounded-3xl p-6 border transition-all duration-300 bg-white/10 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)] h-full"
             >
@@ -295,7 +295,7 @@ export const PoolCarousel: FC<Props> = ({
                   alt={`${currentPool.asset} logo`}
                   className="w-12 h-12 rounded-full"
                 />
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-cyan-400 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-slate-900 flex items-center justify-center">
                   <svg
                     className="w-2.5 h-2.5 text-slate-900"
                     fill="none"
@@ -497,7 +497,7 @@ export const PoolCarousel: FC<Props> = ({
                 e.stopPropagation();
                 onDepositClick?.(currentPool.id);
               }}
-              className="w-full px-4 py-2 rounded-lg text-sm font-bold transition-all bg-cyan-400 text-slate-900 hover:bg-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+              className="w-full px-4 py-3 rounded-xl text-sm font-bold transition-all bg-amber-400 text-slate-900 hover:bg-amber-300"
             >
               Deposit Now
             </button>
@@ -505,8 +505,8 @@ export const PoolCarousel: FC<Props> = ({
             </div>
           </div>
 
-          {/* DeepBook Pool Card - Takes 1/3 of the space */}
-          <div className="col-span-1">
+          {/* DeepBook Pool Card - Full width on mobile, 1/3 on desktop */}
+          <div className="lg:col-span-1">
             <DeepBookPoolCard
               poolIds={deepbookPoolIds}
               onHistoryClick={onDeepbookPoolHistoryClick}

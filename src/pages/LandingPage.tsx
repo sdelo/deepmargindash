@@ -1,47 +1,34 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  ChartBarIcon,
-  CurrencyDollarIcon,
-  ClockIcon,
-  ShieldCheckIcon,
-  ArrowRightIcon,
-  ArrowTrendingUpIcon,
-  UsersIcon,
-  BanknotesIcon,
-  CogIcon,
-} from "@heroicons/react/24/outline";
 import { LandingNavBar } from "../components/LandingNavBar";
-import { GlobalMetricsPanel } from "../features/lending/components/GlobalMetricsPanel";
 import { LandingPoolCard } from "../components/LandingPoolCard";
-import { OceanIcon } from "../components/OceanIcon";
-import { AnimatedSection } from "../components/AnimatedSection";
+import { GlobalMetricsPanel } from "../features/lending/components/GlobalMetricsPanel";
+import { HowItWorks } from "../components/HowItWorks";
+import { TransparencySection } from "../components/TransparencySection";
+import { Footer } from "../components/Footer";
 import { usePoolData } from "../hooks/usePoolData";
 import { useNetworkContracts } from "../hooks/useNetworkContracts";
 import { syntheticPools } from "../data/synthetic/pools";
-import "../styles/landing.css";
+import HelmetIcon from "../assets/helmet-v2-minimal.svg";
 
 export function LandingPage() {
   const contracts = useNetworkContracts();
-  // Fetch live pool data
   const suiPoolData = usePoolData(contracts.SUI_MARGIN_POOL_ID);
   const dbusdcPoolData = usePoolData(contracts.DBUSDC_MARGIN_POOL_ID);
 
-  // Create pools array with live data, fallback to synthetic if loading/error
+  // Get pools data with fallback
   const pools = React.useMemo(() => {
     const livePools = [];
 
     if (suiPoolData.data) {
       livePools.push(suiPoolData.data);
     } else if (!suiPoolData.isLoading && !suiPoolData.error) {
-      // Fallback to synthetic data if no real data available
       livePools.push(syntheticPools.find((p) => p.asset === "SUI")!);
     }
 
     if (dbusdcPoolData.data) {
       livePools.push(dbusdcPoolData.data);
     } else if (!dbusdcPoolData.isLoading && !dbusdcPoolData.error) {
-      // Fallback to synthetic data if no real data available
       livePools.push(syntheticPools.find((p) => p.asset === "DBUSDC")!);
     }
 
@@ -55,356 +42,116 @@ export function LandingPage() {
     dbusdcPoolData.error,
   ]);
 
+  // Calculate highest APY for hero
+  const highestApy = React.useMemo(() => {
+    if (pools.length === 0) return "0.00";
+    const max = Math.max(...pools.map(p => Number(p.ui.aprSupplyPct)));
+    return max.toFixed(2);
+  }, [pools]);
+
   const isLoading = suiPoolData.isLoading || dbusdcPoolData.isLoading;
-  const hasError = suiPoolData.error || dbusdcPoolData.error;
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen">
       <LandingNavBar />
 
-      {/* Hero Section with Live Pool Cards */}
-      <section className="relative pt-24 pb-16 px-4">
-        <div className="max-w-7xl mx-auto">
-          {/* Hero Title */}
-          <AnimatedSection
-            animation="slide-in-top"
-            className="text-center mb-12"
-          >
-            <h1 className="text-5xl md:text-7xl font-extrabold gradient-text mb-4">
-              Leviathan
-            </h1>
-            <p className="text-2xl md:text-3xl text-cyan-300 mb-4">
-              Margin Dashboard
-            </p>
-            <p className="text-lg text-indigo-200/90 max-w-2xl mx-auto">
-              Earn competitive yields on Sui's DeepBook Margin Protocol. Supply
-              liquidity to margin pools and start earning today.
-            </p>
-            {isLoading && (
-              <div className="text-sm text-cyan-100/80 mt-4">
-                Loading live pool data from blockchain...
-              </div>
-            )}
-            {hasError && (
-              <div className="text-sm text-red-400 mt-4">
-                Error loading pool data:{" "}
-                {suiPoolData.error?.message || dbusdcPoolData.error?.message}
-              </div>
-            )}
-          </AnimatedSection>
+      {/* Hero Section */}
+      <section className="pt-28 pb-16 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Logo and Name */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <img src={HelmetIcon} alt="Leviathan" className="w-14 h-14" />
+            <h1 className="text-4xl font-bold text-white">Leviathan</h1>
+          </div>
 
-          {/* Live Pool Cards */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-16">
-            {pools.map((pool, index) => (
-              <AnimatedSection
-                key={pool.id}
-                animation={index === 0 ? "slide-in-left" : "slide-in-right"}
-                delay={index * 0.2}
-              >
-                <LandingPoolCard pool={pool} />
-              </AnimatedSection>
+          {/* Main Headline */}
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+            Earn yield with confidence
+          </h2>
+
+          {/* Subline */}
+          <p className="text-xl text-white/70 max-w-2xl mx-auto mb-8">
+            Lend your crypto to margin traders on DeepBook — Sui's premier liquidity layer. 
+            They pay interest, you keep the returns. Withdraw anytime.
+          </p>
+
+          {/* APY Highlight */}
+          <div className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/10 mb-8">
+            <span className="text-white/60">Earn up to</span>
+            <span className="text-2xl font-bold text-amber-400">
+              {isLoading ? "..." : `${highestApy}%`}
+            </span>
+            <span className="text-white/60">APY</span>
+          </div>
+
+          {/* Primary CTA */}
+          <div>
+            <Link
+              to="/pools"
+              className="btn-primary inline-flex items-center gap-2 text-lg"
+            >
+              Explore Pools
+              <ArrowRightIcon />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Pool Cards Section */}
+      <section className="py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-6">
+            {pools.map((pool) => (
+              <LandingPoolCard key={pool.id} pool={pool} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Protocol Overview Section */}
-      <section className="py-4 px-4">
-        <div className="max-w-7xl mx-auto">
-           <GlobalMetricsPanel />
+      {/* Protocol Overview */}
+      <section className="py-8 px-4">
+        <div className="max-w-6xl mx-auto">
+          <GlobalMetricsPanel />
         </div>
       </section>
 
-      {/* Quick Start Guide */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <AnimatedSection animation="fade-in-up" className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-6">
-              Start Earning in Under 2 Minutes
+      {/* How It Works */}
+      <HowItWorks />
+
+      {/* Transparency */}
+      <TransparencySection />
+
+      {/* Bottom CTA */}
+      <section className="py-20 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="card-surface-elevated p-10">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Built for the DeepBook Community
             </h2>
-            <p className="text-xl text-indigo-200/90 max-w-3xl mx-auto">
-              Get started with DeepBook Margin in just a few simple steps.
+            <p className="text-white/60 mb-8">
+              An open dashboard for exploring and participating in DeepBook Margin pools on Sui.
             </p>
-          </AnimatedSection>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <AnimatedSection animation="slide-in-left" delay={0.1}>
-              <div className="card-surface card-ring glow-amber glow-cyan text-center p-8">
-                <div className="w-16 h-16 bg-gradient-to-r from-cyan-300 to-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <OceanIcon name="anchor" size="lg" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  Connect Wallet
-                </h3>
-                <p className="text-indigo-200/90">
-                  Connect your Sui wallet to access the dashboard and view your
-                  positions across all pools.
-                </p>
-              </div>
-            </AnimatedSection>
-
-            <AnimatedSection animation="fade-in-up" delay={0.2}>
-              <div className="card-surface card-ring glow-amber glow-cyan text-center p-8">
-                <div className="w-16 h-16 bg-gradient-to-r from-cyan-300 to-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <OceanIcon name="wave" size="lg" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  Choose Pool
-                </h3>
-                <p className="text-indigo-200/90">
-                  Select from available pools (DBUSDC, SUI) and review current
-                  yields, utilization, and risk parameters.
-                </p>
-              </div>
-            </AnimatedSection>
-
-            <AnimatedSection animation="slide-in-right" delay={0.3}>
-              <div className="card-surface card-ring glow-amber glow-cyan text-center p-8">
-                <div className="w-16 h-16 bg-gradient-to-r from-cyan-300 to-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <OceanIcon name="treasure-chest" size="lg" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  Start Earning
-                </h3>
-                <p className="text-indigo-200/90">
-                  Deposit your assets and start earning competitive yields while
-                  monitoring your positions in real-time.
-                </p>
-              </div>
-            </AnimatedSection>
+            <Link
+              to="/pools"
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              Start Earning
+              <ArrowRightIcon />
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* What is DeepBook Margin? */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <AnimatedSection animation="fade-in-up" className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-6">
-              What is DeepBook Margin?
-            </h2>
-            <p className="text-xl text-indigo-200/90 max-w-3xl mx-auto">
-              DeepBook Margin is a sophisticated lending protocol built on Sui
-              blockchain that enables users to earn yield by providing liquidity
-              to margin trading pools.
-            </p>
-          </AnimatedSection>
-
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <AnimatedSection animation="slide-in-left" delay={0.1}>
-              <div className="card-surface card-ring glow-amber glow-cyan p-8">
-                <h3 className="text-2xl font-semibold text-cyan-300 mb-6">
-                  How It Works
-                </h3>
-                <div className="space-y-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-cyan-300 to-indigo-400 rounded-full flex items-center justify-center text-white font-bold">
-                      <OceanIcon name="wave" size="sm" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-2">
-                        Liquidity Provision
-                      </h4>
-                      <p className="text-indigo-200/90">
-                        Users deposit assets (DBUSDC, SUI) into margin pools to
-                        provide liquidity for traders.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-cyan-300 to-indigo-400 rounded-full flex items-center justify-center text-white font-bold">
-                      <OceanIcon name="treasure-chest" size="sm" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-2">
-                        Interest Generation
-                      </h4>
-                      <p className="text-indigo-200/90">
-                        Traders pay interest on borrowed funds, which is
-                        distributed to liquidity providers as yield.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-cyan-300 to-indigo-400 rounded-full flex items-center justify-center text-white font-bold">
-                      <OceanIcon name="anchor" size="sm" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-2">
-                        Risk Management
-                      </h4>
-                      <p className="text-indigo-200/90">
-                        Advanced risk parameters ensure pool stability and
-                        protect depositor funds.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </AnimatedSection>
-
-            <AnimatedSection animation="slide-in-right" delay={0.2}>
-              <div className="card-surface card-ring glow-amber glow-cyan p-8">
-                <h4 className="text-xl font-semibold text-white mb-6">
-                  Key Benefits
-                </h4>
-                <ul className="space-y-4">
-                  <li className="flex items-center text-indigo-200/90">
-                    <ArrowTrendingUpIcon className="h-5 w-5 text-cyan-300 mr-3" />
-                    Competitive yields on idle assets
-                  </li>
-                  <li className="flex items-center text-indigo-200/90">
-                    <ShieldCheckIcon className="h-5 w-5 text-cyan-300 mr-3" />
-                    Over-collateralized lending model
-                  </li>
-                  <li className="flex items-center text-indigo-200/90">
-                    <ClockIcon className="h-5 w-5 text-cyan-300 mr-3" />
-                    Real-time interest rate adjustments
-                  </li>
-                  <li className="flex items-center text-indigo-200/90">
-                    <UsersIcon className="h-5 w-5 text-cyan-300 mr-3" />
-                    Decentralized and permissionless
-                  </li>
-                </ul>
-                <div className="mt-6">
-                  <a
-                    href="https://docs.sui.io/guides/developer/deepbook"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-cyan-300 hover:text-amber-300 underline decoration-cyan-400/40 hover:decoration-amber-400/40 transition-all duration-300"
-                  >
-                    Learn more about DeepBook Protocol →
-                  </a>
-                </div>
-              </div>
-            </AnimatedSection>
-          </div>
-        </div>
-      </section>
-
-      {/* Dashboard Features Preview */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <AnimatedSection animation="fade-in-up" className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-6">
-              Dashboard Features
-            </h2>
-            <p className="text-xl text-indigo-200/90 max-w-3xl mx-auto">
-              Monitor your positions and track pool health with comprehensive
-              analytics.
-            </p>
-          </AnimatedSection>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <AnimatedSection animation="scale-in" delay={0.1}>
-              <div className="card-surface card-ring glow-amber glow-cyan p-6 hover:scale-105 transition-all duration-300">
-                <OceanIcon name="submarine" className="mb-4" size="lg" />
-                <h3 className="text-xl font-semibold text-white mb-3">
-                  Track Your Positions
-                </h3>
-                <p className="text-indigo-200/90 mb-4">
-                  Monitor your deposits, earnings, and portfolio performance in
-                  real-time.
-                </p>
-                <div className="text-sm text-cyan-300">
-                  View your current positions
-                </div>
-              </div>
-            </AnimatedSection>
-
-            <AnimatedSection animation="scale-in" delay={0.2}>
-              <div className="card-surface card-ring glow-amber glow-cyan p-6 hover:scale-105 transition-all duration-300">
-                <OceanIcon name="depth-gauge" className="mb-4" size="lg" />
-                <h3 className="text-xl font-semibold text-white mb-3">
-                  Monitor Pool Health
-                </h3>
-                <p className="text-indigo-200/90 mb-4">
-                  Track utilization rates, risk metrics, and pool stability
-                  indicators.
-                </p>
-                <div className="text-sm text-cyan-300">
-                  0 liquidations in last 30 days
-                </div>
-              </div>
-            </AnimatedSection>
-
-            <AnimatedSection animation="scale-in" delay={0.3}>
-              <div className="card-surface card-ring glow-amber glow-cyan p-6 hover:scale-105 transition-all duration-300">
-                <OceanIcon name="sonar" className="mb-4" size="lg" />
-                <h3 className="text-xl font-semibold text-white mb-3">
-                  View Historical Data
-                </h3>
-                <p className="text-indigo-200/90 mb-4">
-                  Analyze past performance, yield trends, and market conditions.
-                </p>
-                <div className="text-sm text-cyan-300">
-                  Monitor $0 bad debt historically
-                </div>
-              </div>
-            </AnimatedSection>
-
-            <AnimatedSection animation="scale-in" delay={0.4}>
-              <div className="card-surface card-ring glow-amber glow-cyan p-6 hover:scale-105 transition-all duration-300">
-                <OceanIcon name="wave" className="mb-4" size="lg" />
-                <h3 className="text-xl font-semibold text-white mb-3">
-                  Community Insights
-                </h3>
-                <p className="text-indigo-200/90 mb-4">
-                  See depositor distribution and community activity patterns.
-                </p>
-                <div className="text-sm text-cyan-300">
-                  See concentration of 500 lenders
-                </div>
-              </div>
-            </AnimatedSection>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust & Transparency */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <AnimatedSection animation="scale-in" delay={0.1}>
-            <div className="card-surface card-ring glow-amber glow-cyan p-12">
-              <h2 className="text-4xl font-bold text-white mb-6">
-                Powered by DeepBook Protocol
-              </h2>
-              <p className="text-xl text-indigo-200/90 mb-8 max-w-2xl mx-auto">
-                Built on Sui's native DeepBook protocol for maximum security and
-                transparency. All pool operations are verifiable on-chain.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-                <Link
-                  to="/pools"
-                  className="btn-primary inline-flex items-center px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  <CurrencyDollarIcon className="mr-2 h-5 w-5" />
-                  Start Earning Now
-                  <ArrowRightIcon className="ml-2 h-5 w-5" />
-                </Link>
-              </div>
-
-              <div className="text-center">
-                <p className="text-indigo-200/80 mb-4">
-                  Trusted by the Sui ecosystem
-                </p>
-                <div className="flex justify-center items-center space-x-8 opacity-60">
-                  <div className="text-cyan-300 font-semibold">
-                    Sui Foundation
-                  </div>
-                  <div className="text-cyan-300 font-semibold">
-                    DeepBook Protocol
-                  </div>
-                  <div className="text-cyan-300 font-semibold">
-                    Community Driven
-                  </div>
-                </div>
-              </div>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
+      {/* Footer */}
+      <Footer />
     </div>
+  );
+}
+
+function ArrowRightIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M5 12h14M12 5l7 7-7 7" />
+    </svg>
   );
 }

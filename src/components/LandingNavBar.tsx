@@ -5,7 +5,7 @@ import {
   useCurrentAccount,
   useDisconnectWallet,
 } from "@mysten/dapp-kit";
-import DivingHelmetIcon from "../assets/diving-helment.svg";
+import HelmetIcon from "../assets/helmet-v2-minimal.svg";
 import { NetworkSwitcher } from "./NetworkSwitcher";
 import { IndexerSwitcher } from "./IndexerSwitcher";
 
@@ -22,64 +22,61 @@ export function LandingNavBar() {
   }
 
   return (
-    <nav className="w-full fixed top-0 z-50 backdrop-blur bg-black/20 border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between text-white">
-        <div className="flex items-center gap-6">
-          <Link
-            to="/"
-            className="flex items-center gap-2 font-extrabold tracking-wide text-cyan-200 text-xl hover:opacity-80 transition-opacity"
-          >
-            <img
-              src={DivingHelmetIcon}
-              alt="Diving Helmet"
-              className="w-6 h-6"
-            />
-            Leviathan
-          </Link>
-        </div>
+    <nav className="w-full fixed top-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        {/* Left - Brand */}
+        <Link
+          to="/"
+          className="flex items-center gap-2 font-bold text-white text-lg hover:opacity-80 transition-opacity"
+        >
+          <img
+            src={HelmetIcon}
+            alt="Leviathan"
+            className="w-7 h-7"
+          />
+          <span>Leviathan</span>
+        </Link>
 
-        <div className="flex items-center gap-4">
-          <NetworkSwitcher />
-          <IndexerSwitcher />
+        {/* Right - Controls */}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3">
+            <NetworkSwitcher />
+            <IndexerSwitcher />
+          </div>
+          
           {currentAccount ? (
-            <>
-              <span className="px-3 py-1 rounded bg-white/10 border border-white/20 font-mono text-sm text-indigo-100">
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 font-mono text-sm text-white/80">
                 {getShortAddress(currentAccount.address)}
               </span>
               <button
                 onClick={() => disconnectWallet()}
-                className="px-4 py-2 rounded-md bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 text-rose-100 text-sm"
+                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm transition-colors"
               >
                 Disconnect
               </button>
               <Link
                 to="/pools"
-                className="btn-primary px-4 py-2 text-white font-semibold rounded-xl transition-all duration-300"
+                className="btn-primary py-2 text-sm"
               >
-                Go to Dashboard
+                Dashboard
               </Link>
-            </>
+            </div>
           ) : (
-            <>
+            <div className="flex items-center gap-3">
               <ConnectModal
                 open={open}
                 onOpenChange={setOpen}
                 trigger={
                   <button
                     onClick={() => setOpen(true)}
-                    className="pill px-4 py-2 text-cyan-200 text-sm hover:bg-cyan-300/20 hover:text-white transition-all duration-300"
+                    className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white text-sm transition-colors"
                   >
                     Connect Wallet
                   </button>
                 }
               />
-              <Link
-                to="/pools"
-                className="btn-primary px-4 py-2 text-white font-semibold rounded-xl transition-all duration-300"
-              >
-                Explore Dashboard
-              </Link>
-            </>
+            </div>
           )}
         </div>
       </div>

@@ -118,11 +118,11 @@ export function DashboardNav({
                     key={pool.id}
                     onClick={() => onSelectPool(pool.id)}
                     className={`
-                      w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 border-2
+                      w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 border
                       ${
                         selectedPoolId === pool.id
-                          ? "bg-gradient-to-r from-cyan-500/30 to-blue-500/30 border-cyan-400 text-cyan-100 shadow-lg"
-                          : "bg-white/5 border-white/20 text-indigo-100/80 hover:text-white hover:bg-white/10 hover:border-cyan-300/50"
+                          ? "bg-amber-400/20 border-amber-400/50 text-white"
+                          : "bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/10"
                       }
                     `}
                   >
@@ -149,11 +149,11 @@ export function DashboardNav({
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
                 className={`
-                  nav-button w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 min-h-[48px]
+                  w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 min-h-[48px]
                   ${
                     activeSection === item.id
-                      ? "bg-gradient-to-r from-cyan-500/40 to-indigo-500/40 text-cyan-100 border-2 border-cyan-400/60 shadow-lg shadow-cyan-500/30"
-                      : "text-indigo-200/80 hover:text-white hover:bg-white/15 hover:border border-white/30 hover:shadow-md"
+                      ? "bg-amber-400 text-slate-900"
+                      : "text-white/60 hover:text-white hover:bg-white/10"
                   }
                 `}
               >
@@ -182,11 +182,11 @@ export function DashboardNav({
                     key={pool.id}
                     onClick={() => onSelectPool(pool.id)}
                     className={`
-                      flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-300 min-h-[44px] border-2
+                      flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 min-h-[44px] border
                       ${
                         selectedPoolId === pool.id
-                          ? "bg-gradient-to-r from-cyan-500/30 to-blue-500/30 border-cyan-400 text-cyan-100 shadow-lg"
-                          : "bg-white/5 border-white/20 text-indigo-100/80 hover:text-white hover:bg-white/10 hover:border-cyan-300/50"
+                          ? "bg-amber-400/20 border-amber-400/50 text-white"
+                          : "bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/10"
                       }
                     `}
                   >
@@ -214,11 +214,11 @@ export function DashboardNav({
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
                 className={`
-                  nav-button flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-300 min-h-[40px]
+                  flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 min-h-[40px]
                   ${
                     activeSection === item.id
-                      ? "bg-gradient-to-r from-cyan-500/40 to-indigo-500/40 text-cyan-100 border border-cyan-400/60 shadow-lg"
-                      : "text-indigo-200/80 hover:text-white hover:bg-white/15"
+                      ? "bg-amber-400 text-slate-900"
+                      : "text-white/60 hover:text-white hover:bg-white/10"
                   }
                 `}
               >
