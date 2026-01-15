@@ -1,8 +1,9 @@
 /**************************************************************
  * THIS FILE IS GENERATED AND SHOULD NOT BE MANUALLY MODIFIED *
  **************************************************************/
-import { MoveStruct } from '../utils/index.js';
+import { MoveStruct, normalizeMoveArguments, type RawTransactionArgument } from '../utils/index.js';
 import { bcs } from '@mysten/sui/bcs';
+import { type Transaction } from '@mysten/sui/transactions';
 import * as table from './deps/sui/table.js';
 import * as vec_map from './deps/sui/vec_map.js';
 import * as object from './deps/sui/object.js';
@@ -36,3 +37,118 @@ export const ReferralFeesClaimedEvent = new MoveStruct({ name: `${$moduleName}::
         owner: bcs.Address,
         fees: bcs.u64()
     } });
+export interface MaintainerFeesArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface MaintainerFeesOptions {
+    package?: string;
+    arguments: MaintainerFeesArguments | [
+        self: RawTransactionArgument<string>
+    ];
+}
+/** Get the maintainer fees. */
+export function maintainerFees(options: MaintainerFeesOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::protocol_fees::ProtocolFees`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'protocol_fees',
+        function: 'maintainer_fees',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface ProtocolFeesArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface ProtocolFeesOptions {
+    package?: string;
+    arguments: ProtocolFeesArguments | [
+        self: RawTransactionArgument<string>
+    ];
+}
+/** Get the protocol fees. */
+export function protocolFees(options: ProtocolFeesOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::protocol_fees::ProtocolFees`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'protocol_fees',
+        function: 'protocol_fees',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface ReferralTrackerArguments {
+    self: RawTransactionArgument<string>;
+    referral: RawTransactionArgument<string>;
+}
+export interface ReferralTrackerOptions {
+    package?: string;
+    arguments: ReferralTrackerArguments | [
+        self: RawTransactionArgument<string>,
+        referral: RawTransactionArgument<string>
+    ];
+}
+export function referralTracker(options: ReferralTrackerOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::protocol_fees::ProtocolFees`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
+    ] satisfies string[];
+    const parameterNames = ["self", "referral"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'protocol_fees',
+        function: 'referral_tracker',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface TotalSharesArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface TotalSharesOptions {
+    package?: string;
+    arguments: TotalSharesArguments | [
+        self: RawTransactionArgument<string>
+    ];
+}
+export function totalShares(options: TotalSharesOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::protocol_fees::ProtocolFees`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'protocol_fees',
+        function: 'total_shares',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface FeesPerShareArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface FeesPerShareOptions {
+    package?: string;
+    arguments: FeesPerShareArguments | [
+        self: RawTransactionArgument<string>
+    ];
+}
+export function feesPerShare(options: FeesPerShareOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::protocol_fees::ProtocolFees`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'protocol_fees',
+        function: 'fees_per_share',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}

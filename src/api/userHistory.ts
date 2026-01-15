@@ -85,8 +85,12 @@ export async function fetchUserOriginalValue(
     let totalSharesAcquired = 0n;
     
     for (const event of userSupplies) {
-      const shares = BigInt((event as any).supply_shares || (event as any).shares || 0);
-      const amount = BigInt((event as any).supply_amount || event.amount || 0);
+      // Get shares and amount, converting strings to BigInt safely
+      const sharesRaw = (event as any).supply_shares ?? (event as any).shares ?? '0';
+      const amountRaw = (event as any).supply_amount ?? event.amount ?? '0';
+      
+      const shares = BigInt(String(sharesRaw));
+      const amount = BigInt(String(amountRaw));
       
       totalSharesAcquired += shares;
       totalCost += amount; // Total amount deposited
@@ -101,7 +105,8 @@ export async function fetchUserOriginalValue(
     let netCost = totalCost;
     
     for (const event of userWithdrawals) {
-      const sharesWithdrawn = BigInt((event as any).withdraw_shares || (event as any).shares || 0);
+      const sharesWithdrawnRaw = (event as any).withdraw_shares ?? (event as any).shares ?? '0';
+      const sharesWithdrawn = BigInt(String(sharesWithdrawnRaw));
       
       if (netShares > 0n) {
         // Calculate average cost per share, then multiply by shares withdrawn

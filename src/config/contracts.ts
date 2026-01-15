@@ -1,28 +1,29 @@
 export const CONTRACTS = {
   testnet: {
-    MARGIN_PACKAGE_ID: "0xb388009b59b09cd5d219dae79dd3e5d08a5734884363e59a37f3cbe6ef613424",
+    // Published package - from pool object type
+    MARGIN_PACKAGE_ID: "0xb8620c24c9ea1a4a41e79613d2b3d1d93648d1bb6f6b789a7c8f261c94110e4b",
 
-    // Registry Object
-    MARGIN_REGISTRY_ID: "0x7615a4c5be6a162736299b7c09ea7e3676096df49daddcd0e3a856f1885efb6d",
+    // Registry Object (shared object from package init)
+    MARGIN_REGISTRY_ID: "0x48d7640dfae2c6e9ceeada197a7a1643984b5a24c55a0c6c023dac77e0339f75",
     
     // Coins
     DEEP_ID: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8",
     SUI_ID: "0x0000000000000000000000000000000000000000000000000000000000000002",
     DBUSDC_ID: "0xf7152c05930480cd740d7311b5b8b45c6f488e3a53a11c3f74a6fac36a52e0d7",
     
-    // Margin Pools
-    SUI_MARGIN_POOL_ID: "0x42c7802724c659264bfe5880080e74911308fc3067a2fce19dc6dcb9820d0ea3",
+    // Margin Pools - Updated from indexer /margin_pool_created endpoint
+    SUI_MARGIN_POOL_ID: "0xcdbbe6a72e639b647296788e2e4b1cac5cea4246028ba388ba1332ff9a382eea",
     SUI_MARGIN_POOL_TYPE: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
-    DBUSDC_MARGIN_POOL_ID: "0x086d154c472c942e1881cab261d7a0168a5665a589c1eeb7ddf4940157f43ce9",
+    DBUSDC_MARGIN_POOL_ID: "0xf08568da93834e1ee04f09902ac7b1e78d3fdf113ab4d2106c7265e95318b14d",
     DBUSDC_MARGIN_POOL_TYPE: "0xf7152c05930480cd740d7311b5b8b45c6f488e3a53a11c3f74a6fac36a52e0d7::DBUSDC::DBUSDC",
 
-    // Generated Referrals
-    SUI_MARGIN_POOL_REFERRAL: "0x6d0e4e06b6e703f3e79f86ffd0921c513da23a8c237fe6a983b2e99605643246",
-    DBUSDC_MARGIN_POOL_REFERRAL: "0xe1eab90ca7d505222b8909c59daf05be6b1e586ad81690df97c7715ef53bf561",
+    // Referrals - set to undefined until new referrals are created for current pools
+    // (Old referral IDs were from a different package version)
+    SUI_MARGIN_POOL_REFERRAL: undefined,
+    DBUSDC_MARGIN_POOL_REFERRAL: undefined,
   },
-  // TODO: Update with real Mainnet addresses
   mainnet: {
-    MARGIN_PACKAGE_ID: "0x442d21fd044b90274934614c3c41416c83582f42eaa8feb4fecea301aa6bdd54",
+    MARGIN_PACKAGE_ID: "0x97d9473771b01f77b0940c589484184b49f6444627ec121314fae6a6d36fb86b",
 
     // Registry Object
     MARGIN_REGISTRY_ID: "0x851e63bd0a3e25a12f02df82f0a1683064ee7ed0b1297dcd18707aa22b382ad3",
@@ -51,3 +52,9 @@ export const DEEPBOOK_MARGIN_PACKAGE_IDS = {
 } as const;
 
 export const DEEPBOOK_MARGIN_PACKAGE_NAME = "@local-pkg/deepbook-margin" as const;
+
+// Helper to get contracts for a specific network
+export type NetworkType = "testnet" | "mainnet";
+export function getContracts(network: NetworkType) {
+  return CONTRACTS[network];
+}

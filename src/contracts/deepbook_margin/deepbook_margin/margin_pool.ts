@@ -11,6 +11,7 @@ import * as protocol_config from './protocol_config.js';
 import * as protocol_fees from './protocol_fees.js';
 import * as position_manager from './position_manager.js';
 import * as vec_set from './deps/sui/vec_set.js';
+import * as rate_limiter from './rate_limiter.js';
 import * as vec_map from './deps/sui/vec_map.js';
 import * as type_name from './deps/std/type_name.js';
 const $moduleName = '@local-pkg/deepbook-margin::margin_pool';
@@ -22,6 +23,7 @@ export const MarginPool = new MoveStruct({ name: `${$moduleName}::MarginPool`, f
         protocol_fees: protocol_fees.ProtocolFees,
         positions: position_manager.PositionManager,
         allowed_deepbook_pools: vec_set.VecSet(bcs.Address),
+        rate_limiter: rate_limiter.RateLimiter,
         extra_fields: vec_map.VecMap(bcs.string(), bcs.u64())
     } });
 export const SupplierCap = new MoveStruct({ name: `${$moduleName}::SupplierCap`, fields: {
@@ -1110,6 +1112,115 @@ export function userSupplyAmount(options: UserSupplyAmountOptions) {
         package: packageAddress,
         module: 'margin_pool',
         function: 'user_supply_amount',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface GetAvailableWithdrawalArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface GetAvailableWithdrawalOptions {
+    package?: string;
+    arguments: GetAvailableWithdrawalArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Returns the maximum amount that can be withdrawn without hitting rate limits */
+export function getAvailableWithdrawal(options: GetAvailableWithdrawalOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'get_available_withdrawal',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface IsRateLimitEnabledArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface IsRateLimitEnabledOptions {
+    package?: string;
+    arguments: IsRateLimitEnabledArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Returns whether rate limiting is enabled */
+export function isRateLimitEnabled(options: IsRateLimitEnabledOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'is_rate_limit_enabled',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface RateLimitCapacityArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface RateLimitCapacityOptions {
+    package?: string;
+    arguments: RateLimitCapacityArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Returns the rate limit capacity (max bucket size) */
+export function rateLimitCapacity(options: RateLimitCapacityOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'rate_limit_capacity',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface RateLimitRefillRatePerMsArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface RateLimitRefillRatePerMsOptions {
+    package?: string;
+    arguments: RateLimitRefillRatePerMsArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** Returns the rate limit refill rate per millisecond */
+export function rateLimitRefillRatePerMs(options: RateLimitRefillRatePerMsOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_pool',
+        function: 'rate_limit_refill_rate_per_ms',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });

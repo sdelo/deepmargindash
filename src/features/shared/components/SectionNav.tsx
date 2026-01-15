@@ -1,18 +1,12 @@
 import React from "react";
 import {
   OverviewIcon,
-  LendingIcon,
-  BorrowingIcon,
   LiquidationIcon,
-  AdminIcon,
 } from "../../../components/ThemedIcons";
 
 export type DashboardSection =
-  | "overview"
-  | "lending"
-  | "borrowing"
-  | "liquidations"
-  | "admin";
+  | "pools"
+  | "liquidations";
 
 interface SectionNavProps {
   selectedSection: DashboardSection;
@@ -26,8 +20,8 @@ const sections: {
   description: string;
 }[] = [
   {
-    id: "overview",
-    label: "Overview",
+    id: "pools",
+    label: "Pools",
     icon: OverviewIcon,
     description: "Protocol metrics and pool analytics",
   },
@@ -35,25 +29,7 @@ const sections: {
     id: "liquidations",
     label: "Liquidations",
     icon: LiquidationIcon,
-    description: "Liquidation history and opportunities",
-  },
-  {
-    id: "lending",
-    label: "Lending",
-    icon: LendingIcon,
-    description: "Supply positions and supplier analytics",
-  },
-  {
-    id: "borrowing",
-    label: "Borrowing",
-    icon: BorrowingIcon,
-    description: "Margin managers and borrow activity",
-  },
-  {
-    id: "admin",
-    label: "Admin",
-    icon: AdminIcon,
-    description: "Fee withdrawals and config changes",
+    description: "Live risk monitor and liquidation opportunities",
   },
 ];
 

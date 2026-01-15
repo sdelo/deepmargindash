@@ -184,3 +184,29 @@ export function maxEwmaDifferenceBps(options: MaxEwmaDifferenceBpsOptions = {}) 
         function: 'max_ewma_difference_bps',
     });
 }
+export interface MaxConditionalOrdersOptions {
+    package?: string;
+    arguments?: [
+    ];
+}
+export function maxConditionalOrders(options: MaxConditionalOrdersOptions = {}) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_constants',
+        function: 'max_conditional_orders',
+    });
+}
+export interface DayMsOptions {
+    package?: string;
+    arguments?: [
+    ];
+}
+export function dayMs(options: DayMsOptions = {}) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_constants',
+        function: 'day_ms',
+    });
+}

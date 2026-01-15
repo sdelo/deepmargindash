@@ -4,6 +4,7 @@ import { LandingNavBar } from "../components/LandingNavBar";
 import { LandingPoolCard } from "../components/LandingPoolCard";
 import { GlobalMetricsPanel } from "../features/lending/components/GlobalMetricsPanel";
 import { HowItWorks } from "../components/HowItWorks";
+import { DashboardFeatures } from "../components/DashboardFeatures";
 import { TransparencySection } from "../components/TransparencySection";
 import { Footer } from "../components/Footer";
 import { usePoolData } from "../hooks/usePoolData";
@@ -117,6 +118,9 @@ export function LandingPage() {
 
       {/* How It Works */}
       <HowItWorks />
+
+      {/* Dashboard Features */}
+      <DashboardFeatures />
 
       {/* Transparency */}
       <TransparencySection />

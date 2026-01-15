@@ -1,6 +1,6 @@
 import { SuiClient } from '@mysten/sui/client';
 import { MarginPool } from '../contracts/deepbook_margin/deepbook_margin/margin_pool';
-import { CONTRACTS } from '../config/contracts';
+import { getContracts, type NetworkType } from '../config/contracts';
 import type { UserPosition, PoolAssetSymbol } from '../features/lending/types';
 
 /**
@@ -209,15 +209,19 @@ export async function fetchUserPositionFromPool(
  */
 export async function fetchUserPositions(
   suiClient: SuiClient,
-  userAddress: string
+  userAddress: string,
+  network: NetworkType = 'mainnet'
 ): Promise<UserPosition[]> {
   if (!userAddress) {
     return [];
   }
 
+  // Get network-specific contracts
+  const contracts = getContracts(network);
+
   // Get package ID from one of the pools (both pools use the same package)
   const suiPoolResponse = await suiClient.getObject({
-    id: CONTRACTS.testnet.SUI_MARGIN_POOL_ID,
+    id: contracts.SUI_MARGIN_POOL_ID,
     options: { showType: true },
   });
 
@@ -255,7 +259,7 @@ export async function fetchUserPositions(
     positionPromises.push(
       fetchUserPositionFromPool(
         suiClient,
-        CONTRACTS.testnet.SUI_MARGIN_POOL_ID,
+        contracts.SUI_MARGIN_POOL_ID,
         userAddress,
         'SUI',
         9,
@@ -267,7 +271,7 @@ export async function fetchUserPositions(
     positionPromises.push(
       fetchUserPositionFromPool(
         suiClient,
-        CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID,
+        contracts.DBUSDC_MARGIN_POOL_ID,
         userAddress,
         'DBUSDC',
         6,

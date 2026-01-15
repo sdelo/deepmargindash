@@ -2,7 +2,8 @@ import React from 'react';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { fetchUserCurrentSupply } from '../api/onChainReads';
 import { fetchUserOriginalValue } from '../api/userHistory';
-import { CONTRACTS } from '../config/contracts';
+import { getContracts } from '../config/contracts';
+import { useAppNetwork } from '../context/AppNetworkContext';
 import type { UserPosition, PoolOverview } from '../features/lending/types';
 
 export type EnrichedUserPosition = UserPosition & {
@@ -13,72 +14,86 @@ export type EnrichedUserPosition = UserPosition & {
   error: Error | null;
 };
 
+type EnrichedDataEntry = {
+  currentValue: bigint | null;
+  originalValue: bigint | null;
+  isLoading: boolean;
+  error: Error | null;
+  shares: number;  // Track shares to detect when position changes
+};
+
 /**
  * Hook to enrich user positions with live on-chain data and event-based cost basis.
- * 
- * METHODOLOGY:
- * ============
- * The Move contract uses a share-based system where:
- * - User shares remain constant
- * - The share-to-amount ratio increases over time as interest accrues
- * 
- * To calculate interest earned:
- * 1. Current Value: Call user_supply_amount() view function (shares × current_ratio)
- * 2. Original Value: Calculate weighted average cost from AssetSupplied/AssetWithdrawn events
- * 3. Interest Earned: Current Value - Original Value
- * 
- * The AssetSupplied events contain both supply_amount and supply_shares, giving us
- * the exact ratio at deposit time, which is required to calculate the cost basis.
  */
 export function useEnrichedUserPositions(
   positions: UserPosition[],
   pools: PoolOverview[]
 ): EnrichedUserPosition[] {
   const suiClient = useSuiClient();
-  const [enrichedData, setEnrichedData] = React.useState<Map<string, {
-    currentValue: bigint | null;
-    originalValue: bigint | null;
-    isLoading: boolean;
-    error: Error | null;
-  }>>(new Map());
+  const { network } = useAppNetwork();
+  const [enrichedData, setEnrichedData] = React.useState<Map<string, EnrichedDataEntry>>(new Map());
+  
+  // Use ref to track in-flight requests to avoid duplicate fetching
+  const inFlightRef = React.useRef<Set<string>>(new Set());
+  
+  // Use ref to access current enrichedData without adding it to dependencies
+  const enrichedDataRef = React.useRef(enrichedData);
+  enrichedDataRef.current = enrichedData;
 
   React.useEffect(() => {
-    async function enrichPositions() {
-      const newEnrichedData = new Map();
+    // Create a unique run ID for debugging
+    const runId = Math.random().toString(36).slice(2, 8);
+    console.log(`[useEnrichedUserPositions][${runId}] Effect starting`, {
+      positionsCount: positions.length,
+      poolsCount: pools.length,
+    });
 
-      for (const position of positions) {
-        const key = `${position.supplierCapId}-${position.asset}`;
-        
-        // Skip if already loading or loaded
-        if (enrichedData.has(key)) {
-          newEnrichedData.set(key, enrichedData.get(key));
+    if (positions.length === 0 || pools.length === 0) {
+      console.log(`[useEnrichedUserPositions][${runId}] Skipping - no positions or pools`);
+      return;
+    }
+
+    // Process each position
+    for (const position of positions) {
+      const key = `${position.supplierCapId}-${position.asset}`;
+      
+      // Skip if already in flight
+      if (inFlightRef.current.has(key)) {
+        console.log(`[useEnrichedUserPositions][${runId}] Skipping ${key} - already in flight`);
+        continue;
+      }
+
+      // Skip if already successfully loaded AND shares haven't changed
+      const existingData = enrichedDataRef.current.get(key);
+      if (existingData && !existingData.isLoading && existingData.currentValue !== null && existingData.originalValue !== null && !existingData.error) {
+        // Check if shares changed (deposit/withdraw happened)
+        if (existingData.shares === position.shares) {
+          console.log(`[useEnrichedUserPositions][${runId}] Skipping ${key} - already loaded, shares unchanged`);
           continue;
+        } else {
+          console.log(`[useEnrichedUserPositions][${runId}] Shares changed for ${key}: ${existingData.shares} -> ${position.shares}, re-fetching`);
         }
+      }
 
-        // Mark as loading
-        newEnrichedData.set(key, {
-          currentValue: null,
-          originalValue: null,
-          isLoading: true,
-          error: null,
-        });
+      // Find the pool for this position
+      const pool = pools.find(p => p.asset === position.asset);
+      if (!pool) {
+        console.log(`[useEnrichedUserPositions][${runId}] Pool not found for ${position.asset}`);
+        continue;
+      }
 
-        // Find the pool for this position
-        const pool = pools.find(p => p.asset === position.asset);
-        if (!pool) {
-          newEnrichedData.set(key, {
-            currentValue: null,
-            originalValue: null,
-            isLoading: false,
-            error: new Error('Pool not found'),
-          });
-          continue;
-        }
+      // Mark as in-flight
+      inFlightRef.current.add(key);
 
+      console.log(`[useEnrichedUserPositions][${runId}] Fetching data for ${key}`);
+
+      // Async IIFE to handle each position
+      (async () => {
         try {
-          const packageId = CONTRACTS.testnet.MARGIN_PACKAGE_ID;
+          const contracts = getContracts(network);
+          const packageId = contracts.MARGIN_PACKAGE_ID;
 
-          // Fetch current value from chain (shares × current_ratio)
+          // Fetch current value from chain
           const currentValue = await fetchUserCurrentSupply(
             suiClient,
             pool.contracts.marginPoolId,
@@ -87,46 +102,69 @@ export function useEnrichedUserPositions(
             packageId
           );
 
-          // Calculate original value from events (weighted average cost basis)
-          // This uses AssetSupplied events which contain both supply_amount and supply_shares
+          // Calculate original value from events
+          // Ensure shares is converted to BigInt properly (handles string or number)
+          const sharesAsBigInt = typeof position.shares === 'bigint' 
+            ? position.shares 
+            : BigInt(Math.floor(Number(position.shares)));
+            
           const originalValue = await fetchUserOriginalValue(
             position.supplierCapId,
             pool.contracts.marginPoolId,
-            BigInt(position.shares)
+            sharesAsBigInt
           );
 
-          console.log(`[useEnrichedUserPositions] ${position.asset}:`, {
-            shares: position.shares,
-            currentValue: currentValue?.toString(),
-            originalValue: originalValue?.toString(),
-            interest: currentValue && originalValue 
-              ? (currentValue - originalValue).toString() 
-              : 'pending'
+          // Log results (convert to string to avoid serialization issues)
+          // Explicitly convert to BigInt to avoid "Cannot mix BigInt and other types" errors
+          let interestCalc = 'pending';
+          if (currentValue !== null && originalValue !== null) {
+            const currentBigInt = BigInt(currentValue);
+            const originalBigInt = BigInt(originalValue);
+            interestCalc = (currentBigInt - originalBigInt).toString();
+          }
+          console.log(`[useEnrichedUserPositions][${runId}] ${position.asset} result:`, {
+            currentValue: currentValue !== null ? String(currentValue) : null,
+            originalValue: originalValue !== null ? String(originalValue) : null,
+            interest: interestCalc
           });
 
-          newEnrichedData.set(key, {
-            currentValue,
-            originalValue,
-            isLoading: false,
-            error: null,
+          // Update state with functional update to avoid stale closure
+          // Ensure all values are BigInt (convert if needed)
+          const currentBigInt = currentValue !== null ? BigInt(currentValue) : null;
+          const originalBigInt = originalValue !== null ? BigInt(originalValue) : null;
+          
+          setEnrichedData(prev => {
+            const next = new Map(prev);
+            next.set(key, {
+              currentValue: currentBigInt,
+              originalValue: originalBigInt,
+              isLoading: false,
+              error: null,
+              shares: position.shares,  // Track shares to detect changes
+            });
+            return next;
           });
         } catch (error) {
-          newEnrichedData.set(key, {
-            currentValue: null,
-            originalValue: null,
-            isLoading: false,
-            error: error as Error,
+          console.error(`[useEnrichedUserPositions][${runId}] Error for ${position.asset}:`, error);
+          
+          setEnrichedData(prev => {
+            const next = new Map(prev);
+            next.set(key, {
+              currentValue: null,
+              originalValue: null,
+              isLoading: false,
+              error: error instanceof Error ? error : new Error(String(error)),
+              shares: position.shares,
+            });
+            return next;
           });
+        } finally {
+          // Remove from in-flight
+          inFlightRef.current.delete(key);
         }
-      }
-
-      setEnrichedData(newEnrichedData);
+      })();
     }
-
-    if (positions.length > 0 && pools.length > 0) {
-      enrichPositions();
-    }
-  }, [positions, pools, suiClient]);
+  }, [positions, pools, suiClient, network]);
 
   // Merge the enriched data with positions
   return positions.map(position => {
@@ -140,7 +178,7 @@ export function useEnrichedUserPositions(
         currentValueFromChain: null,
         originalValueFromEvents: null,
         interestEarned: null,
-        isLoading: false,
+        isLoading: inFlightRef.current.has(key),
         error: null,
       };
     }
@@ -158,18 +196,39 @@ export function useEnrichedUserPositions(
       : null;
 
     // Calculate interest earned
-    // If current value is available but original value is not, the indexer is behind
     let interestEarnedFormatted: string | null = null;
     
     if (enriched.currentValue !== null && enriched.originalValue !== null) {
       // Both values available - calculate interest
       const interestAmount = (Number(enriched.currentValue) - Number(enriched.originalValue)) / divisor;
-      interestEarnedFormatted = interestAmount.toLocaleString() + ` ${position.asset}`;
+      
+      // Format based on the size of the interest
+      // For very small amounts, use more decimal places
+      let formattedInterest: string;
+      if (Math.abs(interestAmount) < 0.0001) {
+        // Very small - show in scientific notation or full precision
+        formattedInterest = interestAmount.toFixed(9).replace(/\.?0+$/, '');
+        if (formattedInterest === '0' || formattedInterest === '-0') {
+          formattedInterest = interestAmount.toExponential(4);
+        }
+      } else if (Math.abs(interestAmount) < 0.01) {
+        // Small - show 6 decimals
+        formattedInterest = interestAmount.toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 6,
+        });
+      } else {
+        // Normal - show 4 decimals
+        formattedInterest = interestAmount.toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 4,
+        });
+      }
+      interestEarnedFormatted = formattedInterest + ` ${position.asset}`;
     } else if (enriched.currentValue !== null && enriched.originalValue === null) {
-      // Current value available but no event data - indexer not running or behind
+      // Current value available but no event data
       interestEarnedFormatted = '— (indexer pending)';
     } else {
-      // No data available
       interestEarnedFormatted = null;
     }
 
@@ -183,4 +242,3 @@ export function useEnrichedUserPositions(
     };
   });
 }
-

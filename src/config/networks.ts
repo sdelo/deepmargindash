@@ -14,16 +14,16 @@ export interface IndexerOption {
 // The first one in this list will be used as the default
 export const TESTNET_INDEXERS: IndexerOption[] = [
   {
+    label: "Deepbook Indexer Testnet",
+    url: "https://deepbook-indexer.testnet.mystenlabs.com",
+  },
+  {
     label: "Local Dev Server",
     url: "http://localhost:9008",
   },
   {
     label: "Dummy Data (Remote)",
     url: "https://deepmargindash.duckdns.org",
-  },
-  {
-    label: "Deepbook Indexer Testnet",
-    url: "https://deepbook-indexer.testnet.mystenlabs.com",
   },
 ];
 

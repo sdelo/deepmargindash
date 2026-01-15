@@ -17,8 +17,9 @@ type Props = {
   onWithdraw?: (amount: number) => void;
   minBorrow?: number;
   supplyCap?: number;
-  balance?: string;
-  suiBalance?: string;
+  balance?: string;  // Wallet balance (for deposit)
+  suiBalance?: string;  // SUI balance (for gas)
+  depositedBalance?: number;  // User's deposited position balance (for withdraw max)
   txStatus?: "idle" | "pending" | "success" | "error";
   txError?: string | null;
 };
@@ -41,6 +42,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
     supplyCap = 0,
     balance,
     suiBalance,
+    depositedBalance = 0,
     txStatus = "idle",
     txError,
   },
@@ -291,15 +293,64 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
             <input
               type="number"
               min={0}
-              max={assetBalanceNum}
+              max={depositedBalance}
               step="0.000001"
-              placeholder="Enter amount"
-              className="input-surface flex-1 text-lg px-5 py-4"
+              placeholder={`Enter ${asset} amount to withdraw`}
+              className={`input-surface flex-1 text-lg px-5 py-4 ${
+                Number(withdrawAmount) > depositedBalance ? 'ring-2 ring-red-400' : ''
+              }`}
               id="withdraw-amount"
               value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Allow empty or valid numbers
+                if (value === '' || !isNaN(Number(value))) {
+                  setWithdrawAmount(value);
+                }
+              }}
             />
           </div>
+
+          {/* Percentage Quick Select */}
+          <div className="flex items-center justify-between text-sm text-indigo-200/80">
+            <span>Quick %</span>
+            <div className="flex gap-3">
+              {([25, 50, 75, 100] as const).map((p) => (
+                <button
+                  key={p}
+                  className="pill px-5 py-2.5 text-base hover:scale-105 transition-transform"
+                  onClick={() => {
+                    if (depositedBalance > 0) {
+                      const amount = (depositedBalance * p) / 100;
+                      // Round down to avoid exceeding balance
+                      const roundedAmount = Math.floor(amount * 1000000) / 1000000;
+                      setWithdrawAmount(roundedAmount.toString());
+                    }
+                  }}
+                  disabled={depositedBalance <= 0}
+                >
+                  {`${p}%`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Withdrawable Balance Info (includes interest) */}
+          <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
+            Withdrawable {asset}:{" "}
+            <span className="text-amber-300 font-bold">
+              {depositedBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+            </span>
+            <span className="text-cyan-100/50 text-xs ml-2">(principal + interest)</span>
+          </p>
+
+          {/* Validation Warning */}
+          {Number(withdrawAmount) > depositedBalance && depositedBalance > 0 && (
+            <p className="text-sm text-red-300 bg-red-900/20 px-4 py-3 rounded-xl border border-red-400/30">
+              ⚠️ Amount exceeds your withdrawable balance of {depositedBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })} {asset}
+            </p>
+          )}
+
           <div className="flex gap-3">
             {account ? (
               <>
@@ -313,19 +364,25 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
                   )}
                   size="md"
                   className="p-2"
-                  disabled={!withdrawAmount || Number(withdrawAmount || 0) <= 0}
+                  disabled={!withdrawAmount || Number(withdrawAmount || 0) <= 0 || Number(withdrawAmount) > depositedBalance}
                 />
                 <button
                   className={`pill flex-1 text-base py-3 ${
-                    txStatus === "pending"
+                    txStatus === "pending" || Number(withdrawAmount) > depositedBalance
                       ? "opacity-50 cursor-not-allowed"
                       : ""
                   }`}
-                  disabled={txStatus === "pending" || suiBalanceNum < 0.01}
+                  disabled={
+                    txStatus === "pending" || 
+                    suiBalanceNum < 0.01 || 
+                    Number(withdrawAmount) > depositedBalance ||
+                    Number(withdrawAmount) <= 0
+                  }
                   onClick={() => {
                     if (txStatus === "pending") return;
                     const v = Number(withdrawAmount || 0);
                     if (!Number.isFinite(v) || v <= 0) return;
+                    if (v > depositedBalance) return;
                     onWithdraw?.(v);
                   }}
                 >
@@ -333,7 +390,9 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
                     ? "Withdrawing..."
                     : suiBalanceNum < 0.01
                       ? "Insufficient SUI for Gas"
-                      : "Withdraw"}
+                      : Number(withdrawAmount) > depositedBalance
+                        ? "Amount Exceeds Balance"
+                        : "Withdraw"}
                 </button>
               </>
             ) : (

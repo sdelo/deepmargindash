@@ -119,7 +119,7 @@ export const PoolCards: FC<Props> = ({
                   )}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">{pool.asset} Pool</h3>
+                  <h3 className="text-lg font-bold text-white">{pool.asset} Margin Pool</h3>
                   <div className="flex items-center gap-2 text-xs">
                     <span className={`${risk.color} font-medium`}>{risk.label}</span>
                     <Tooltip content="Liquidity status based on utilization rate. High utilization means higher APY but potential withdrawal delays.">

@@ -46,6 +46,7 @@ const TOOLTIPS = {
 
 interface Props {
   poolIds: string[];
+  linkedMarginPools?: string[];  // e.g., ["SUI", "DBUSDC"]
   onHistoryClick?: (poolId: string) => void;
 }
 
@@ -60,12 +61,19 @@ function formatAddress(address: string): string {
 
 function formatRiskRatio(value: number): string {
   // Risk ratios are in 9-decimal format (like config values)
+  // Display as multiplier (e.g., 2x, 1.25x) instead of percentage
+  const multiplier = value / 1_000_000_000;
+  return multiplier.toFixed(2) + "x";
+}
+
+function formatRewardPercent(value: number): string {
+  // Reward percentages are in 9-decimal format
+  // Display as percentage (e.g., 3%, 2%)
   return ((value / 1_000_000_000) * 100).toFixed(2) + "%";
 }
 
-export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
+export const DeepBookPoolCard: FC<Props> = ({ poolIds, linkedMarginPools = ["SUI", "DBUSDC"], onHistoryClick }) => {
   const { explorerUrl, serverUrl } = useAppNetwork();
-  const [currentIndex, setCurrentIndex] = React.useState(0);
   const [poolConfigs, setPoolConfigs] = React.useState<
     Record<string, PoolConfig>
   >({});
@@ -100,14 +108,6 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
     }
   }, [poolIds, serverUrl]);
 
-  const handlePrevious = () => {
-    setCurrentIndex((prev) => Math.max(0, prev - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentIndex((prev) => Math.min(poolIds.length - 1, prev + 1));
-  };
-
   if (isLoading) {
     return (
       <div className="relative rounded-2xl p-5 border bg-white/5 border-white/10 animate-pulse h-full">
@@ -125,14 +125,15 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
       <div className="relative rounded-2xl p-5 border bg-white/5 border-white/10 h-full flex items-center justify-center">
         <div className="text-center">
           <p className="text-sm text-white/50">
-            No DeepBook pools configured
+            No linked trading pools
           </p>
         </div>
       </div>
     );
   }
 
-  const currentPoolId = poolIds[currentIndex];
+  // Use the first pool's configuration (all pools in a trading pair share the same config)
+  const currentPoolId = poolIds[0];
   const currentConfig = poolConfigs[currentPoolId];
 
   if (!currentConfig || !currentConfig.config_json) {
@@ -162,10 +163,11 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
             <svg className="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            DeepBook Pool
+            {linkedMarginPools.join("/")} Trading Pool
           </h3>
+          {/* Linked Margin Pools */}
           <p className="text-xs text-white/50 mt-1">
-            {poolIds.length} pool{poolIds.length !== 1 ? "s" : ""} configured
+            Linked Margin Pools: <span className="text-cyan-400 font-medium">{linkedMarginPools.join(", ")}</span>
           </p>
         </div>
         <div
@@ -175,83 +177,22 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
               : "bg-red-500/20 text-red-300"
           }`}
         >
-          {enabled ? "Enabled" : "Disabled"}
+          {enabled ? "Margin Enabled" : "Margin Disabled"}
         </div>
       </div>
 
-      {/* Carousel Navigation */}
-      {poolIds.length > 1 && (
-        <div className="flex items-center gap-2 mb-4">
-          <button
-            onClick={handlePrevious}
-            disabled={currentIndex === 0}
-            className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <svg
-              className="w-3 h-3 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          <div className="flex-1 text-center">
-            <span className="text-xs text-white/60">
-              {currentIndex + 1} / {poolIds.length}
-            </span>
-          </div>
-
-          <button
-            onClick={handleNext}
-            disabled={currentIndex === poolIds.length - 1}
-            className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <svg
-              className="w-3 h-3 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        </div>
-      )}
-
-      {/* Pool ID */}
-      <div className="mb-4">
-        <div className="text-xs text-white/50 mb-1">Pool ID</div>
+      {/* Pool ID - Inline compact */}
+      <div className="flex items-center gap-1.5 mb-3 text-xs text-white/50">
+        <span>Pool</span>
         <a
           href={`${explorerUrl}/object/${currentPoolId}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-mono flex items-center gap-1"
+          className="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
         >
           {formatAddress(currentPoolId)}
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            />
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
         </a>
       </div>
@@ -323,7 +264,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
             </div>
             <div className="text-xs font-semibold text-cyan-400">
               {config?.pool_liquidation_reward
-                ? formatRiskRatio(config.pool_liquidation_reward)
+                ? formatRewardPercent(config.pool_liquidation_reward)
                 : "N/A"}
             </div>
           </div>
@@ -335,7 +276,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, onHistoryClick }) => {
             </div>
             <div className="text-xs font-semibold text-cyan-400">
               {config?.user_liquidation_reward
-                ? formatRiskRatio(config.user_liquidation_reward)
+                ? formatRewardPercent(config.user_liquidation_reward)
                 : "N/A"}
             </div>
           </div>

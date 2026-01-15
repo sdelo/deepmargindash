@@ -710,6 +710,34 @@ export function getMarginManagerIds(options: GetMarginManagerIdsOptions) {
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
     });
 }
+export interface CanLiquidateArguments {
+    self: RawTransactionArgument<string>;
+    deepbookPoolId: RawTransactionArgument<string>;
+    riskRatio: RawTransactionArgument<number | bigint>;
+}
+export interface CanLiquidateOptions {
+    package?: string;
+    arguments: CanLiquidateArguments | [
+        self: RawTransactionArgument<string>,
+        deepbookPoolId: RawTransactionArgument<string>,
+        riskRatio: RawTransactionArgument<number | bigint>
+    ];
+}
+export function canLiquidate(options: CanLiquidateOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID',
+        'u64'
+    ] satisfies string[];
+    const parameterNames = ["self", "deepbookPoolId", "riskRatio"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_registry',
+        function: 'can_liquidate',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
 export interface BaseMarginPoolIdArguments {
     self: RawTransactionArgument<string>;
     deepbookPoolId: RawTransactionArgument<string>;

@@ -210,38 +210,33 @@ export const PoolCarousel: FC<Props> = ({
 
   return (
     <div className="relative">
-      {/* Pool Navigation Indicators */}
-      <div className="flex justify-center gap-3 mb-4">
-        {pools.map((pool) => {
-          const isActive = pool.id === selectedPoolId;
-          return (
-            <button
-              key={pool.id}
-              onClick={() => onSelectPool?.(pool.id)}
-              className={`
-                flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300
-                ${
+      {/* Pool Navigation - Container bar matching right side tabs */}
+      <div className="flex justify-center mb-4">
+        <div className="inline-flex gap-1 p-1.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
+          {pools.map((pool) => {
+            const isActive = pool.id === selectedPoolId;
+            return (
+              <button
+                key={pool.id}
+                onClick={() => onSelectPool?.(pool.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
                   isActive
-                    ? "bg-cyan-500/20 border border-cyan-400/50 shadow-[0_0_10px_rgba(34,211,238,0.2)]"
-                    : "bg-white/5 border border-white/10 hover:bg-white/10"
-                }
-              `}
-            >
-              <img
-                src={getIcon(pool.asset)}
-                alt={`${pool.asset} logo`}
-                className="w-5 h-5 rounded-full"
-              />
-              <span
-                className={`text-xs font-semibold ${
-                  isActive ? "text-cyan-300" : "text-white/60"
+                    ? "bg-amber-400 text-slate-900"
+                    : "text-slate-400 hover:text-white hover:bg-slate-700/50"
                 }`}
               >
-                {pool.asset}
-              </span>
-            </button>
-          );
-        })}
+                <img
+                  src={getIcon(pool.asset)}
+                  alt={`${pool.asset} logo`}
+                  className="w-4 h-4 rounded-full"
+                />
+                <span className="text-sm font-medium">
+                  {pool.asset}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Carousel Container */}
@@ -322,7 +317,7 @@ export const PoolCarousel: FC<Props> = ({
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white">
-                      {currentPool.asset} Pool
+                      {currentPool.asset} Margin Pool
                     </h3>
                     <div className="flex items-center gap-2 text-xs">
                       <span className={`${risk.color} font-medium`}>
@@ -528,6 +523,7 @@ export const PoolCarousel: FC<Props> = ({
           <div className="lg:col-span-1">
             <DeepBookPoolCard
               poolIds={deepbookPoolIds}
+              linkedMarginPools={pools.map(p => p.asset)}
               onHistoryClick={onDeepbookPoolHistoryClick}
             />
           </div>

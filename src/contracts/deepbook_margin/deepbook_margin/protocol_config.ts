@@ -10,7 +10,10 @@ export const MarginPoolConfig = new MoveStruct({ name: `${$moduleName}::MarginPo
         supply_cap: bcs.u64(),
         max_utilization_rate: bcs.u64(),
         protocol_spread: bcs.u64(),
-        min_borrow: bcs.u64()
+        min_borrow: bcs.u64(),
+        rate_limit_capacity: bcs.u64(),
+        rate_limit_refill_rate_per_ms: bcs.u64(),
+        rate_limit_enabled: bcs.bool()
     } });
 export const InterestConfig = new MoveStruct({ name: `${$moduleName}::InterestConfig`, fields: {
         base_rate: bcs.u64(),
@@ -76,6 +79,46 @@ export function newMarginPoolConfig(options: NewMarginPoolConfigOptions) {
         package: packageAddress,
         module: 'protocol_config',
         function: 'new_margin_pool_config',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
+export interface NewMarginPoolConfigWithRateLimitArguments {
+    supplyCap: RawTransactionArgument<number | bigint>;
+    maxUtilizationRate: RawTransactionArgument<number | bigint>;
+    protocolSpread: RawTransactionArgument<number | bigint>;
+    minBorrow: RawTransactionArgument<number | bigint>;
+    rateLimitCapacity: RawTransactionArgument<number | bigint>;
+    rateLimitRefillRatePerMs: RawTransactionArgument<number | bigint>;
+    rateLimitEnabled: RawTransactionArgument<boolean>;
+}
+export interface NewMarginPoolConfigWithRateLimitOptions {
+    package?: string;
+    arguments: NewMarginPoolConfigWithRateLimitArguments | [
+        supplyCap: RawTransactionArgument<number | bigint>,
+        maxUtilizationRate: RawTransactionArgument<number | bigint>,
+        protocolSpread: RawTransactionArgument<number | bigint>,
+        minBorrow: RawTransactionArgument<number | bigint>,
+        rateLimitCapacity: RawTransactionArgument<number | bigint>,
+        rateLimitRefillRatePerMs: RawTransactionArgument<number | bigint>,
+        rateLimitEnabled: RawTransactionArgument<boolean>
+    ];
+}
+export function newMarginPoolConfigWithRateLimit(options: NewMarginPoolConfigWithRateLimitOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        'u64',
+        'u64',
+        'u64',
+        'u64',
+        'u64',
+        'u64',
+        'bool'
+    ] satisfies string[];
+    const parameterNames = ["supplyCap", "maxUtilizationRate", "protocolSpread", "minBorrow", "rateLimitCapacity", "rateLimitRefillRatePerMs", "rateLimitEnabled"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'protocol_config',
+        function: 'new_margin_pool_config_with_rate_limit',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
     });
 }

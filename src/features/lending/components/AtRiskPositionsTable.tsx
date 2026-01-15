@@ -4,7 +4,6 @@ import { TransactionDetailsModal } from '../../../components/TransactionButton/T
 import { PositionHistoryModal } from './PositionHistoryModal';
 import { CONTRACTS } from '../../../config/contracts';
 import { useSuiClientContext } from '@mysten/dapp-kit';
-import { HarpoonIcon, HealthyAnchorIcon, BoltIcon } from '../../../components/ThemedIcons';
 
 interface AtRiskPositionsTableProps {
   positions: AtRiskPosition[];
@@ -140,17 +139,16 @@ export function AtRiskPositionsTable({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <HarpoonIcon size={22} />
+          <h3 className="text-base font-semibold text-slate-200 flex items-center gap-2">
             At-Risk Positions
             {positions.filter(p => p.isLiquidatable).length > 0 && (
-              <span className="px-2 py-0.5 text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded-full animate-pulse">
-                {positions.filter(p => p.isLiquidatable).length} LIQUIDATABLE
+              <span className="px-2 py-0.5 text-xs font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-full">
+                {positions.filter(p => p.isLiquidatable).length} liquidatable
               </span>
             )}
           </h3>
-          <p className="text-sm text-white/60 mt-1">
-            Positions sorted by proximity to liquidation threshold
+          <p className="text-xs text-slate-500 mt-0.5">
+            Sorted by proximity to liquidation threshold
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -186,46 +184,43 @@ export function AtRiskPositionsTable({
       <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
         {isLoading && positions.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="animate-spin h-8 w-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-3" />
-            <p className="text-white/60">Loading at-risk positions...</p>
+            <div className="animate-spin h-6 w-6 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-3" />
+            <p className="text-slate-400 text-sm">Loading positions...</p>
           </div>
         ) : positions.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="mb-3 flex justify-center">
-              <HealthyAnchorIcon size={48} />
-            </div>
-            <p className="text-lg font-semibold text-white">No At-Risk Positions</p>
-            <p className="text-sm text-white/60 mt-2">
-              All positions are healthy with comfortable margins
+            <p className="text-base font-medium text-slate-300">No At-Risk Positions</p>
+            <p className="text-sm text-slate-500 mt-1">
+              All positions are healthy
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10 bg-white/5">
-                  <th className="text-left py-3 px-4 text-white/60 font-semibold">Status</th>
-                  <th className="text-left py-3 px-4 text-white/60 font-semibold">Manager ID</th>
+                <tr className="border-b border-slate-700/50">
+                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
+                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Manager ID</th>
                   <th 
-                    className="text-right py-3 px-4 text-white/60 font-semibold cursor-pointer hover:text-white transition-colors"
+                    className="text-right py-3 px-4 text-slate-400 font-medium cursor-pointer hover:text-slate-200 transition-colors"
                     onClick={() => handleSort('riskRatio')}
                   >
                     Risk Ratio <SortIndicator field="riskRatio" />
                   </th>
                   <th 
-                    className="text-right py-3 px-4 text-white/60 font-semibold cursor-pointer hover:text-white transition-colors"
+                    className="text-right py-3 px-4 text-slate-400 font-medium cursor-pointer hover:text-slate-200 transition-colors"
                     onClick={() => handleSort('distanceToLiquidation')}
                   >
                     Distance to Liq <SortIndicator field="distanceToLiquidation" />
                   </th>
                   <th 
-                    className="text-right py-3 px-4 text-white/60 font-semibold cursor-pointer hover:text-white transition-colors"
+                    className="text-right py-3 px-4 text-slate-400 font-medium cursor-pointer hover:text-slate-200 transition-colors"
                     onClick={() => handleSort('totalDebtUsd')}
                   >
                     Total Debt <SortIndicator field="totalDebtUsd" />
                   </th>
-                  <th className="text-right py-3 px-4 text-white/60 font-semibold">Est. Reward</th>
-                  <th className="text-center py-3 px-4 text-white/60 font-semibold">Action</th>
+                  <th className="text-right py-3 px-4 text-slate-400 font-medium">Est. Reward</th>
+                  <th className="text-center py-3 px-4 text-slate-400 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -235,7 +230,7 @@ export function AtRiskPositionsTable({
                     <tr
                       key={position.marginManagerId}
                       onClick={() => handleRowClick(position)}
-                      className={`group border-b border-white/5 hover:bg-amber-500/5 hover:border-l-2 hover:border-l-amber-500 transition-all cursor-pointer ${
+                      className={`group border-b border-slate-700/30 hover:bg-slate-700/30 transition-all cursor-pointer ${
                         position.isLiquidatable ? 'bg-rose-500/5' : ''
                       }`}
                     >
@@ -311,22 +306,17 @@ export function AtRiskPositionsTable({
                       <td className="py-3 px-4 text-center">
                         <button
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent row click
+                            e.stopPropagation();
                             handleLiquidateClick(position);
                           }}
                           disabled={!position.isLiquidatable}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                             position.isLiquidatable
-                              ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40'
-                              : 'bg-white/10 text-white/40 cursor-not-allowed'
+                              ? 'bg-rose-500 hover:bg-rose-400 text-white'
+                              : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
                           }`}
                         >
-                          {position.isLiquidatable ? (
-                            <>
-                              <BoltIcon size={14} />
-                              LIQUIDATE
-                            </>
-                          ) : 'Not Yet'}
+                          {position.isLiquidatable ? 'Liquidate' : 'Not Yet'}
                         </button>
                       </td>
                     </tr>
@@ -339,31 +329,28 @@ export function AtRiskPositionsTable({
       </div>
 
       {/* Legend */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/60">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
         <div className="flex items-center gap-4 flex-wrap justify-center">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-rose-500/50" />
-            <span>Liquidatable (&lt;1.05)</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-rose-500" />
+            <span>Liquidatable</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-amber-500/50" />
-            <span>Critical (&lt;5%)</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>Critical</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-amber-400/40" />
-            <span>Warning (&lt;15%)</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span>Warning</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-cyan-500/50" />
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-cyan-500" />
             <span>Watch</span>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-300">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-          </svg>
-          <span>Click any row to view full history</span>
-        </div>
+        <span className="text-slate-500">
+          Click row to view history
+        </span>
       </div>
 
       {/* Transaction Modal */}

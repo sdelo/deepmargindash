@@ -6,6 +6,7 @@ import { bcs } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 import * as object from './deps/sui/object.js';
 import * as balance_manager from './deps/deepbook/balance_manager.js';
+import * as tpsl from './tpsl.js';
 import * as vec_map from './deps/sui/vec_map.js';
 import * as type_name from './deps/std/type_name.js';
 const $moduleName = '@local-pkg/deepbook-margin::margin_manager';
@@ -23,6 +24,7 @@ export const MarginManager = new MoveStruct({ name: `${$moduleName}::MarginManag
         trade_cap: balance_manager.TradeCap,
         borrowed_base_shares: bcs.u64(),
         borrowed_quote_shares: bcs.u64(),
+        take_profit_stop_loss: tpsl.TakeProfitStopLoss,
         extra_fields: vec_map.VecMap(bcs.string(), bcs.u64())
     } });
 export const ManagerInitializer = new MoveStruct({ name: `${$moduleName}::ManagerInitializer`, fields: {
@@ -32,12 +34,6 @@ export const MarginManagerCreatedEvent = new MoveStruct({ name: `${$moduleName}:
         margin_manager_id: bcs.Address,
         balance_manager_id: bcs.Address,
         deepbook_pool_id: bcs.Address,
-        owner: bcs.Address,
-        timestamp: bcs.u64()
-    } });
-export const MarginManagerEvent = new MoveStruct({ name: `${$moduleName}::MarginManagerEvent`, fields: {
-        margin_manager_id: bcs.Address,
-        balance_manager_id: bcs.Address,
         owner: bcs.Address,
         timestamp: bcs.u64()
     } });
@@ -95,6 +91,167 @@ export const WithdrawCollateralEvent = new MoveStruct({ name: `${$moduleName}::W
         quote_pyth_decimals: bcs.u8(),
         timestamp: bcs.u64()
     } });
+export interface AddConditionalOrderArguments {
+    self: RawTransactionArgument<string>;
+    pool: RawTransactionArgument<string>;
+    basePriceInfoObject: RawTransactionArgument<string>;
+    quotePriceInfoObject: RawTransactionArgument<string>;
+    registry: RawTransactionArgument<string>;
+    conditionalOrderId: RawTransactionArgument<number | bigint>;
+    condition: RawTransactionArgument<string>;
+    pendingOrder: RawTransactionArgument<string>;
+}
+export interface AddConditionalOrderOptions {
+    package?: string;
+    arguments: AddConditionalOrderArguments | [
+        self: RawTransactionArgument<string>,
+        pool: RawTransactionArgument<string>,
+        basePriceInfoObject: RawTransactionArgument<string>,
+        quotePriceInfoObject: RawTransactionArgument<string>,
+        registry: RawTransactionArgument<string>,
+        conditionalOrderId: RawTransactionArgument<number | bigint>,
+        condition: RawTransactionArgument<string>,
+        pendingOrder: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+/**
+ * Add a conditional order. Specifies the conditions under which the order is
+ * triggered and the pending order to be placed.
+ */
+export function addConditionalOrder(options: AddConditionalOrderOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        'u64',
+        `${packageAddress}::tpsl::Condition`,
+        `${packageAddress}::tpsl::PendingOrder`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self", "pool", "basePriceInfoObject", "quotePriceInfoObject", "registry", "conditionalOrderId", "condition", "pendingOrder"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'add_conditional_order',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface CancelAllConditionalOrdersArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface CancelAllConditionalOrdersOptions {
+    package?: string;
+    arguments: CancelAllConditionalOrdersArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+/** Cancel all conditional orders. */
+export function cancelAllConditionalOrders(options: CancelAllConditionalOrdersOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'cancel_all_conditional_orders',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface CancelConditionalOrderArguments {
+    self: RawTransactionArgument<string>;
+    conditionalOrderId: RawTransactionArgument<number | bigint>;
+}
+export interface CancelConditionalOrderOptions {
+    package?: string;
+    arguments: CancelConditionalOrderArguments | [
+        self: RawTransactionArgument<string>,
+        conditionalOrderId: RawTransactionArgument<number | bigint>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+/** Cancel a conditional order. */
+export function cancelConditionalOrder(options: CancelConditionalOrderOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        'u64',
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self", "conditionalOrderId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'cancel_conditional_order',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface ExecuteConditionalOrdersArguments {
+    self: RawTransactionArgument<string>;
+    pool: RawTransactionArgument<string>;
+    basePriceInfoObject: RawTransactionArgument<string>;
+    quotePriceInfoObject: RawTransactionArgument<string>;
+    registry: RawTransactionArgument<string>;
+    maxOrdersToExecute: RawTransactionArgument<number | bigint>;
+}
+export interface ExecuteConditionalOrdersOptions {
+    package?: string;
+    arguments: ExecuteConditionalOrdersArguments | [
+        self: RawTransactionArgument<string>,
+        pool: RawTransactionArgument<string>,
+        basePriceInfoObject: RawTransactionArgument<string>,
+        quotePriceInfoObject: RawTransactionArgument<string>,
+        registry: RawTransactionArgument<string>,
+        maxOrdersToExecute: RawTransactionArgument<number | bigint>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+/**
+ * Execute conditional orders and return the order infos. This is a permissionless
+ * function that can be called by anyone.
+ */
+export function executeConditionalOrders(options: ExecuteConditionalOrdersOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        `${packageAddress}::margin_registry::MarginRegistry`,
+        'u64',
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["self", "pool", "basePriceInfoObject", "quotePriceInfoObject", "registry", "maxOrdersToExecute"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'execute_conditional_orders',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
 export interface NewArguments {
     pool: RawTransactionArgument<string>;
     deepbookRegistry: RawTransactionArgument<string>;
@@ -199,13 +356,44 @@ export function share(options: ShareOptions) {
         typeArguments: options.typeArguments
     });
 }
-export interface SetReferralArguments {
+export interface UnregisterMarginManagerArguments {
+    self: RawTransactionArgument<string>;
+    marginRegistry: RawTransactionArgument<string>;
+}
+export interface UnregisterMarginManagerOptions {
+    package?: string;
+    arguments: UnregisterMarginManagerArguments | [
+        self: RawTransactionArgument<string>,
+        marginRegistry: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+/** Unregister the margin manager from the margin registry. */
+export function unregisterMarginManager(options: UnregisterMarginManagerOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        `${packageAddress}::margin_registry::MarginRegistry`
+    ] satisfies string[];
+    const parameterNames = ["self", "marginRegistry"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'unregister_margin_manager',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface SetMarginManagerReferralArguments {
     self: RawTransactionArgument<string>;
     referralCap: RawTransactionArgument<string>;
 }
-export interface SetReferralOptions {
+export interface SetMarginManagerReferralOptions {
     package?: string;
-    arguments: SetReferralArguments | [
+    arguments: SetMarginManagerReferralArguments | [
         self: RawTransactionArgument<string>,
         referralCap: RawTransactionArgument<string>
     ];
@@ -215,28 +403,30 @@ export interface SetReferralOptions {
     ];
 }
 /** Set the referral for the margin manager. */
-export function setReferral(options: SetReferralOptions) {
+export function setMarginManagerReferral(options: SetMarginManagerReferralOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
-        `${packageAddress}::balance_manager::DeepBookReferral`
+        `${packageAddress}::balance_manager::DeepBookPoolReferral`
     ] satisfies string[];
     const parameterNames = ["self", "referralCap"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_manager',
-        function: 'set_referral',
+        function: 'set_margin_manager_referral',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
 }
-export interface UnsetReferralArguments {
+export interface UnsetMarginManagerReferralArguments {
     self: RawTransactionArgument<string>;
+    poolId: RawTransactionArgument<string>;
 }
-export interface UnsetReferralOptions {
+export interface UnsetMarginManagerReferralOptions {
     package?: string;
-    arguments: UnsetReferralArguments | [
-        self: RawTransactionArgument<string>
+    arguments: UnsetMarginManagerReferralArguments | [
+        self: RawTransactionArgument<string>,
+        poolId: RawTransactionArgument<string>
     ];
     typeArguments: [
         string,
@@ -244,16 +434,17 @@ export interface UnsetReferralOptions {
     ];
 }
 /** Unset the referral for the margin manager. */
-export function unsetReferral(options: UnsetReferralOptions) {
+export function unsetMarginManagerReferral(options: UnsetMarginManagerReferralOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
-        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        '0x0000000000000000000000000000000000000000000000000000000000000002::object::ID'
     ] satisfies string[];
-    const parameterNames = ["self"];
+    const parameterNames = ["self", "poolId"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'margin_manager',
-        function: 'unset_referral',
+        function: 'unset_margin_manager_referral',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
@@ -289,8 +480,8 @@ export function deposit(options: DepositOptions) {
     const argumentsTypes = [
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `${packageAddress}::margin_registry::MarginRegistry`,
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
         `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${options.typeArguments[2]}>`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
@@ -343,8 +534,8 @@ export function withdraw(options: WithdrawOptions) {
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[1]}>`,
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         'u64',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
@@ -390,8 +581,8 @@ export function borrowBase(options: BorrowBaseOptions) {
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         'u64',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
@@ -437,8 +628,8 @@ export function borrowQuote(options: BorrowQuoteOptions) {
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `${packageAddress}::margin_registry::MarginRegistry`,
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[1]}>`,
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         'u64',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
@@ -565,8 +756,8 @@ export function liquidate(options: LiquidateOptions) {
     const argumentsTypes = [
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `${packageAddress}::margin_registry::MarginRegistry`,
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[2]}>`,
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${options.typeArguments[2]}>`,
@@ -611,8 +802,8 @@ export function riskRatio(options: RiskRatioOptions) {
     const argumentsTypes = [
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `${packageAddress}::margin_registry::MarginRegistry`,
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[1]}>`,
@@ -827,15 +1018,16 @@ export interface ManagerStateOptions {
  * Returns comprehensive state information for a margin manager. Returns
  * (manager_id, deepbook_pool_id, risk_ratio, base_asset, quote_asset, base_debt,
  * quote_debt, base_pyth_price, base_pyth_decimals, quote_pyth_price,
- * quote_pyth_decimals)
+ * quote_pyth_decimals, current_price, lowest_trigger_above_price,
+ * highest_trigger_below_price)
  */
 export function managerState(options: ManagerStateOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
         `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `${packageAddress}::margin_registry::MarginRegistry`,
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
-        '0x00b53b0f4174108627fbee72e2498b58d6a2714cded53fac537034c220d26302::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
+        '0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e::price_info::PriceInfoObject',
         `${packageAddress}::pool::Pool<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[0]}>`,
         `${packageAddress}::margin_pool::MarginPool<${options.typeArguments[1]}>`,
@@ -1062,6 +1254,125 @@ export function hasBaseDebt(options: HasBaseDebtOptions) {
         package: packageAddress,
         module: 'margin_manager',
         function: 'has_base_debt',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface ConditionalOrderIdsArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface ConditionalOrderIdsOptions {
+    package?: string;
+    arguments: ConditionalOrderIdsArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+export function conditionalOrderIds(options: ConditionalOrderIdsOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'conditional_order_ids',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface ConditionalOrderArguments {
+    self: RawTransactionArgument<string>;
+    conditionalOrderId: RawTransactionArgument<number | bigint>;
+}
+export interface ConditionalOrderOptions {
+    package?: string;
+    arguments: ConditionalOrderArguments | [
+        self: RawTransactionArgument<string>,
+        conditionalOrderId: RawTransactionArgument<number | bigint>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+export function conditionalOrder(options: ConditionalOrderOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
+        'u64'
+    ] satisfies string[];
+    const parameterNames = ["self", "conditionalOrderId"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'conditional_order',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface LowestTriggerAbovePriceArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface LowestTriggerAbovePriceOptions {
+    package?: string;
+    arguments: LowestTriggerAbovePriceArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+/**
+ * Returns the lowest trigger price for trigger_above orders Returns
+ * constants::max_u64() if there are no trigger_above orders
+ */
+export function lowestTriggerAbovePrice(options: LowestTriggerAbovePriceOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'lowest_trigger_above_price',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface HighestTriggerBelowPriceArguments {
+    self: RawTransactionArgument<string>;
+}
+export interface HighestTriggerBelowPriceOptions {
+    package?: string;
+    arguments: HighestTriggerBelowPriceArguments | [
+        self: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string,
+        string
+    ];
+}
+/**
+ * Returns the highest trigger price for trigger_below orders Returns 0 if there
+ * are no trigger_below orders
+ */
+export function highestTriggerBelowPrice(options: HighestTriggerBelowPriceOptions) {
+    const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
+    const argumentsTypes = [
+        `${packageAddress}::margin_manager::MarginManager<${options.typeArguments[0]}, ${options.typeArguments[1]}>`
+    ] satisfies string[];
+    const parameterNames = ["self"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'margin_manager',
+        function: 'highest_trigger_below_price',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });

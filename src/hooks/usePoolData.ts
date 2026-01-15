@@ -1,8 +1,9 @@
 import React from 'react';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { useSuiClient, useSuiClientContext } from '@mysten/dapp-kit';
 import { fetchMarginPool } from '../api/poolData';
 import { fetchUserPositions } from '../api/userPositions';
 import type { PoolOverview, UserPosition } from '../features/lending/types';
+import type { NetworkType } from '../config/contracts';
 
 export type PoolDataResult = {
   data: PoolOverview | null;
@@ -14,6 +15,7 @@ export type PoolDataResult = {
 
 export function usePoolData(poolId: string, userAddress?: string): PoolDataResult {
   const suiClient = useSuiClient();
+  const { network } = useSuiClientContext();
   const [data, setData] = React.useState<PoolOverview | null>(null);
   const [userPosition, setUserPosition] = React.useState<UserPosition | null>(null);
   const [error, setError] = React.useState<Error | null>(null);
@@ -30,14 +32,14 @@ export function usePoolData(poolId: string, userAddress?: string): PoolDataResul
       setError(null);
       
       // Fetch pool data
-      const poolResult = await fetchMarginPool(suiClient, poolId);
+      const poolResult = await fetchMarginPool(suiClient, poolId, network as NetworkType);
       setData(poolResult);
       
       // Fetch user position if user address is provided
       if (userAddress && poolResult) {
         // Instead of fetchUserPositionFromPool, use fetchUserPositions
         // and find the one matching this pool/asset
-        const positions = await fetchUserPositions(suiClient, userAddress);
+        const positions = await fetchUserPositions(suiClient, userAddress, network as NetworkType);
         const matchingPosition = positions.find(p => p.asset === poolResult.asset);
         setUserPosition(matchingPosition || null);
       } else {
@@ -54,7 +56,7 @@ export function usePoolData(poolId: string, userAddress?: string): PoolDataResul
     } finally {
       setIsLoading(false);
     }
-  }, [suiClient, poolId, userAddress]);
+  }, [suiClient, poolId, userAddress, network]);
 
   // Initial fetch
   React.useEffect(() => {

@@ -5,6 +5,7 @@ import {
   useSuiClient,
   useSuiClientContext,
 } from "@mysten/dapp-kit";
+import { useQueryClient } from "@tanstack/react-query";
 import PoolCarousel from "../features/lending/components/PoolCarousel";
 import DepositWithdrawPanel, {
   type DepositWithdrawPanelHandle,
@@ -13,11 +14,7 @@ import PersonalPositions from "../features/lending/components/PersonalPositions"
 import YieldCurve from "../features/lending/components/YieldCurve";
 import SlidePanel from "../features/shared/components/SlidePanel";
 import DepositHistory from "../features/lending/components/DepositHistory";
-import { EnhancedPoolAnalytics } from "../features/lending/components/EnhancedPoolAnalytics";
-import { SupplierAnalytics } from "../features/lending/components/SupplierAnalytics";
-import { BorrowerOverview } from "../features/lending/components/BorrowerOverview";
 import { LiquidationDashboard } from "../features/lending/components/LiquidationDashboard";
-import { AdministrativePanel } from "../features/lending/components/AdministrativePanel";
 import { APYHistory } from "../features/lending/components/APYHistory";
 import { PoolActivity } from "../features/lending/components/PoolActivity";
 import { LiquidationWall } from "../features/lending/components/LiquidationWall";
@@ -30,16 +27,10 @@ import {
   SectionNav,
   type DashboardSection,
 } from "../features/shared/components/SectionNav";
-import {
-  YieldIcon,
-  HistoryIcon,
-  PoolActivityIcon,
-  ConcentrationIcon,
-  LockIcon,
-} from "../components/ThemedIcons";
+import { LockIcon } from "../components/ThemedIcons";
 import { useCoinBalance } from "../hooks/useCoinBalance";
 import { usePoolData } from "../hooks/usePoolData";
-import { CONTRACTS } from "../config/contracts";
+import { getContracts, type NetworkType } from "../config/contracts";
 import {
   ONE_BILLION,
   GAS_AMOUNT_MIST,
@@ -56,13 +47,14 @@ export function PoolsPage() {
   const account = useCurrentAccount();
   const suiClient = useSuiClient();
   const { network } = useSuiClientContext();
+  const queryClient = useQueryClient();
 
   // Ref for deposit panel
   const depositPanelRef = React.useRef<DepositWithdrawPanelHandle>(null);
 
   // State for section navigation
   const [selectedSection, setSelectedSection] =
-    React.useState<DashboardSection>("overview");
+    React.useState<DashboardSection>("pools");
 
   const [isHelpVisible, setIsHelpVisible] = React.useState(false);
 
@@ -75,13 +67,16 @@ export function PoolsPage() {
     | "calculator"
   >("yield");
 
+  // Get contracts for the current network
+  const contracts = getContracts(network as NetworkType);
+
   // Fetch real pool data
   const suiPoolData = usePoolData(
-    CONTRACTS.testnet.SUI_MARGIN_POOL_ID,
+    contracts.SUI_MARGIN_POOL_ID,
     account?.address
   );
   const dbusdcPoolData = usePoolData(
-    CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID,
+    contracts.DBUSDC_MARGIN_POOL_ID,
     account?.address
   );
 
@@ -109,6 +104,16 @@ export function PoolsPage() {
     return positions;
   }, [suiPoolData.userPosition, dbusdcPoolData.userPosition]);
 
+  // Extract unique SupplierCap IDs for history filtering
+  const userSupplierCapIds: string[] = React.useMemo(() => {
+    const capIds = new Set(
+      userPositions
+        .map((pos) => pos.supplierCapId)
+        .filter((id): id is string => !!id)
+    );
+    return Array.from(capIds);
+  }, [userPositions]);
+
   const [selectedPoolId, setSelectedPoolId] = React.useState<string | null>(
     null
   );
@@ -118,6 +123,21 @@ export function PoolsPage() {
     if (pools.length === 0) return null;
     return pools.find((p) => p.id === selectedPoolId) ?? pools[0];
   }, [pools, selectedPoolId]);
+
+  // Get the user's current withdrawable balance for the selected pool (includes interest)
+  // This value comes from the on-chain user_supply_amount view function when available
+  const selectedPoolDepositedBalance = React.useMemo(() => {
+    if (!selectedPool || userPositions.length === 0) return 0;
+    const position = userPositions.find((p) => p.asset === selectedPool.asset);
+    if (!position) return 0;
+    // Parse the balance from balanceFormatted (e.g., "2 SUI" -> 2)
+    // This already includes interest since it's computed from shares * (total_supply/supply_shares)
+    const match = position.balanceFormatted.match(/^([\d.,]+)/);
+    if (match) {
+      return parseFloat(match[1].replace(/,/g, '')) || 0;
+    }
+    return 0;
+  }, [selectedPool, userPositions]);
 
   // Set default selected pool when pools are loaded
   React.useEffect(() => {
@@ -274,13 +294,20 @@ export function PoolsPage() {
         setTxStatus("success");
         console.log("Deposit successful:", result.digest);
 
-        // Refresh data
+        // Refresh all data
         await Promise.all([
           suiPoolData.refetch(),
           dbusdcPoolData.refetch(),
           coinBalance.refetch(),
           suiBalance.refetch(),
         ]);
+        
+        // Invalidate React Query caches for history and positions
+        // Wait a bit for the indexer to process the transaction before refetching
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['assetSupplied'] });
+          queryClient.invalidateQueries({ queryKey: ['assetWithdrawn'] });
+        }, 3000); // 3 second delay for indexer
       } catch (error) {
         setTxStatus("error");
         setTxError(
@@ -297,6 +324,7 @@ export function PoolsPage() {
       network,
       suiBalance,
       coinBalance,
+      queryClient,
     ]
   );
 
@@ -357,13 +385,20 @@ export function PoolsPage() {
         setTxStatus("success");
         console.log("Withdraw successful:", result.digest);
 
-        // Refresh data
+        // Refresh all data
         await Promise.all([
           suiPoolData.refetch(),
           dbusdcPoolData.refetch(),
           coinBalance.refetch(),
           suiBalance.refetch(),
         ]);
+        
+        // Invalidate React Query caches for history and positions
+        // Wait a bit for the indexer to process the transaction before refetching
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['assetSupplied'] });
+          queryClient.invalidateQueries({ queryKey: ['assetWithdrawn'] });
+        }, 3000); // 3 second delay for indexer
       } catch (error) {
         setTxStatus("error");
         setTxError(
@@ -372,7 +407,7 @@ export function PoolsPage() {
         console.error("Withdraw failed:", error);
       }
     },
-    [account, selectedPool, signAndExecute, network, suiBalance, suiClient]
+    [account, selectedPool, signAndExecute, network, suiBalance, suiClient, queryClient]
   );
 
   const handleWithdrawAll = React.useCallback(async () => {
@@ -426,135 +461,112 @@ export function PoolsPage() {
       setTxStatus("success");
       console.log("Withdraw all successful:", result.digest);
 
-      // Refresh data
+      // Refresh all data
       await Promise.all([
         suiPoolData.refetch(),
         dbusdcPoolData.refetch(),
         coinBalance.refetch(),
         suiBalance.refetch(),
       ]);
+      
+      // Invalidate React Query caches for history and positions
+      // Wait a bit for the indexer to process the transaction before refetching
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['assetSupplied'] });
+        queryClient.invalidateQueries({ queryKey: ['assetWithdrawn'] });
+      }, 3000); // 3 second delay for indexer
     } catch (error) {
       setTxStatus("error");
       setTxError(error instanceof Error ? error.message : "Transaction failed");
       console.error("Withdraw all failed:", error);
     }
-  }, [account, selectedPool, signAndExecute, network, suiBalance, suiClient]);
+  }, [account, selectedPool, signAndExecute, network, suiBalance, suiClient, queryClient]);
 
   const isLoading = suiPoolData.isLoading || dbusdcPoolData.isLoading;
   const hasError = suiPoolData.error || dbusdcPoolData.error;
 
   return (
-    <div className="max-w-[1920px] mx-auto px-4 lg:px-12 xl:px-20 2xl:px-32 text-white space-y-8 pb-12">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white">
-          DeepBook Margin Dashboard
-        </h1>
-        {isLoading && (
-          <div className="text-sm text-cyan-100/80 mt-2">
-            Loading live pool data from blockchain...
-          </div>
-        )}
-        {hasError && (
-          <div className="text-sm text-red-400 mt-2">
-            Error loading pool data:{" "}
-            {suiPoolData.error?.message || dbusdcPoolData.error?.message}
-          </div>
-        )}
-      </div>
-
+    <div className="max-w-[1920px] mx-auto px-4 lg:px-8 xl:px-16 2xl:px-24 text-white pb-12">
       {/* Section Navigation */}
       <SectionNav
         selectedSection={selectedSection}
         onSelectSection={setSelectedSection}
       />
 
-      {/* Overview Section */}
-      {selectedSection === "overview" && (
-        <div className="space-y-6">
-          {/* System Context */}
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-cyan-200 flex items-center gap-2">
-              <span className="text-xl">💡</span> How DeepBook Margin Works
-            </h3>
+      {/* Status Messages */}
+      {(isLoading || hasError) && (
+        <div className="mb-6">
+          {isLoading && (
+            <div className="text-sm text-cyan-100/60 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              Loading pool data...
+            </div>
+          )}
+          {hasError && (
+            <div className="text-sm text-red-400">
+              Error: {suiPoolData.error?.message || dbusdcPoolData.error?.message}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pools Section */}
+      {selectedSection === "pools" && (
+        <div className="space-y-8">
+          {/* Collapsible Help Banner */}
+          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
             <button
               onClick={() => setIsHelpVisible(!isHelpVisible)}
-              className="text-sm text-cyan-300 hover:text-cyan-100 transition-colors flex items-center gap-1"
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-700/30 transition-colors"
             >
-              {isHelpVisible ? "Hide Guide" : "Show Guide"}
+              <span className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                <span className="text-base">💡</span> How DeepBook Margin Works
+              </span>
               <svg
-                className={`w-4 h-4 transition-transform ${
-                  isHelpVisible ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 text-slate-400 transition-transform ${isHelpVisible ? "rotate-180" : ""}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-          </div>
-
-          {isHelpVisible && (
-            <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-2xl p-6 backdrop-blur-sm relative overflow-hidden transition-all duration-300 ease-in-out">
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-cyan-500/10 rounded-full blur-2xl"></div>
-              <div className="grid md:grid-cols-3 gap-6 text-sm text-indigo-100/80 relative z-10">
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-300 font-bold shrink-0">
-                    1
+            {isHelpVisible && (
+              <div className="px-4 pb-4 border-t border-slate-700/50">
+                <div className="grid md:grid-cols-3 gap-4 pt-4 text-sm text-slate-400">
+                  <div className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs font-bold shrink-0">1</div>
+                    <div>
+                      <p className="font-medium text-slate-200">Supply Assets</p>
+                      <p className="text-xs mt-0.5">Deposit to provide liquidity for traders</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-white mb-1">
-                      Supply Assets
-                    </p>
-                    <p>
-                      Deposit assets into the pool to provide liquidity for
-                      DeepBook traders.
-                    </p>
+                  <div className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 text-xs font-bold shrink-0">2</div>
+                    <div>
+                      <p className="font-medium text-slate-200">Earn Yield</p>
+                      <p className="text-xs mt-0.5">Interest from borrowers, APY varies with utilization</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-300 font-bold shrink-0">
-                    2
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white mb-1">Earn Yield</p>
-                    <p>
-                      Earn interest paid by borrowers. APY changes based on pool
-                      utilization.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 font-bold shrink-0">
-                    3
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white mb-1">Manage Risk</p>
-                    <p>
-                      Monitor utilization rates. High utilization means higher
-                      APY but lower withdrawal liquidity.
-                    </p>
+                  <div className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs font-bold shrink-0">3</div>
+                    <div>
+                      <p className="font-medium text-slate-200">Manage Risk</p>
+                      <p className="text-xs mt-0.5">Higher utilization = higher APY but less liquidity</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+
+          </div>
 
           {selectedPool ? (
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
               {/* Left Column: Pool Selection + Core Actions */}
-              <div className="xl:col-span-7 space-y-6">
-                {/* Pool Selection Carousel with margins and centering */}
-                <div className="max-w-3xl mx-auto">
-                  <h2 className="text-xl font-bold text-cyan-200 mb-4">
-                    Pool Selection
-                  </h2>
-                  <PoolCarousel
+              <div className="xl:col-span-8 space-y-4">
+                {/* Pool Selection Carousel */}
+                <PoolCarousel
                     pools={pools}
                     selectedPoolId={selectedPoolId}
                     onSelectPool={setSelectedPoolId}
@@ -572,20 +584,14 @@ export function PoolsPage() {
                       setDeepbookPoolHistoryPoolId(id);
                       setDeepbookPoolHistoryOpen(true);
                     }}
-                    isLoading={isLoading}
-                  />
-                </div>
+                  isLoading={isLoading}
+                />
 
-                {/* Core Actions */}
-                <div>
-                  <h2 className="text-xl font-bold text-cyan-200 mb-4">
-                    Core Actions
-                  </h2>
-                  {/* Three panels in a grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Deposit/Withdraw Panel */}
-                    <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
-                      <DepositWithdrawPanel
+                {/* Action Panels */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {/* Deposit/Withdraw Panel */}
+                  <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+                    <DepositWithdrawPanel
                         ref={depositPanelRef}
                         asset={selectedPool.asset}
                         apy={selectedPool.ui.aprSupplyPct}
@@ -599,261 +605,72 @@ export function PoolsPage() {
                         )}
                         balance={coinBalance?.formatted}
                         suiBalance={suiBalance?.formatted}
+                        depositedBalance={selectedPoolDepositedBalance}
                         onDeposit={handleDeposit}
                         onWithdraw={handleWithdraw}
                         onWithdrawAll={handleWithdrawAll}
                         txStatus={txStatus}
                         txError={txError}
                       />
-                    </div>
+                  </div>
 
-                    {/* Your Positions Panel */}
-                    <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
-                      <h3 className="text-lg font-bold text-indigo-300 flex items-center gap-2 mb-3">
-                        <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-                        Your Positions
-                      </h3>
-                      {account ? (
-                        <PersonalPositions
-                          userAddress={account.address}
-                          pools={pools}
-                          positions={userPositions}
-                          onShowHistory={() => setHistoryOpen(true)}
-                        />
-                      ) : (
-                        <div className="card-surface text-center py-6 border border-white/10 text-cyan-100/80 rounded-2xl bg-white/5">
-                          <div className="mb-2 flex justify-center">
-                            <LockIcon size={32} />
-                          </div>
-                          <div className="text-sm font-semibold mb-1">
-                            Connect Your Wallet
-                          </div>
-                          <div className="text-xs text-indigo-200/60">
-                            View and manage your positions
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                  {/* Your Positions Panel */}
+                  <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+                    <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2 mb-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Your Positions
+                    </h3>
+                    {account ? (
+                      <PersonalPositions
+                        userAddress={account.address}
+                        pools={pools}
+                        positions={userPositions}
+                        onShowHistory={() => setHistoryOpen(true)}
+                      />
+                    ) : (
+                      <div className="text-center py-8 text-slate-400">
+                        <LockIcon size={28} className="mx-auto mb-2 opacity-50" />
+                        <div className="text-sm font-medium">Connect Wallet</div>
+                        <div className="text-xs text-slate-500 mt-1">to view positions</div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Data Panels (Tabbed View) */}
-              <div className="xl:col-span-5 space-y-6">
-                <div className="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/10 overflow-x-auto">
-                  <div className="flex gap-2 w-full">
+              {/* Right Column: Analytics */}
+              <div className="xl:col-span-4 space-y-4">
+                {/* Tab Navigation - Aligned with pool toggle height */}
+                <div className="flex gap-1 p-1.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
+                  {[
+                    { key: "yield", label: "Yield Curve" },
+                    { key: "history", label: "APY History" },
+                    { key: "activity", label: "Activity" },
+                    { key: "liquidations", label: "Risk" },
+                    { key: "concentration", label: "Whales" },
+                    { key: "calculator", label: "Calculator" },
+                  ].map((tab) => (
                     <button
-                      onClick={() => setOverviewTab("yield")}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                        overviewTab === "yield"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
-                          : "text-gray-400 hover:text-white hover:bg-white/5"
+                      key={tab.key}
+                      onClick={() => setOverviewTab(tab.key as typeof overviewTab)}
+                      className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+                        overviewTab === tab.key
+                          ? "bg-amber-400 text-slate-900"
+                          : "text-slate-400 hover:text-white hover:bg-slate-700/50"
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-2">
-                        <YieldIcon
-                          size={28}
-                          className={
-                            overviewTab === "yield"
-                              ? "opacity-100"
-                              : "opacity-60"
-                          }
-                        />
-                        <div className="flex flex-col items-start">
-                          <span>Yield</span>
-                          <span className="text-[10px] text-white/50">
-                            Rate Model
-                          </span>
-                        </div>
-                      </div>
+                      {tab.label}
                     </button>
-                    <button
-                      onClick={() => setOverviewTab("history")}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                        overviewTab === "history"
-                          ? "bg-violet-500/20 text-violet-300 border border-violet-500/50 shadow-lg shadow-violet-500/10"
-                          : "text-gray-400 hover:text-white hover:bg-white/5"
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <HistoryIcon
-                          size={28}
-                          className={
-                            overviewTab === "history"
-                              ? "opacity-100"
-                              : "opacity-60"
-                          }
-                        />
-                        <div className="flex flex-col items-start">
-                          <span>History</span>
-                          <span className="text-[10px] text-white/50">
-                            APY Over Time
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => setOverviewTab("activity")}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                        overviewTab === "activity"
-                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-lg shadow-emerald-500/10"
-                          : "text-gray-400 hover:text-white hover:bg-white/5"
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <PoolActivityIcon
-                          size={28}
-                          className={
-                            overviewTab === "activity"
-                              ? "opacity-100"
-                              : "opacity-60"
-                          }
-                        />
-                        <div className="flex flex-col items-start">
-                          <span>Activity</span>
-                          <span className="text-[10px] text-white/50">
-                            TVL & Flows
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => setOverviewTab("liquidations")}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                        overviewTab === "liquidations"
-                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-lg shadow-amber-500/10"
-                          : "text-gray-400 hover:text-white hover:bg-white/5"
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          className={
-                            overviewTab === "liquidations"
-                              ? "opacity-100"
-                              : "opacity-60"
-                          }
-                        >
-                          <path
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            fill="#fbbf24"
-                          />
-                        </svg>
-                        <div className="flex flex-col items-start">
-                          <span>Liquidations</span>
-                          <span className="text-[10px] text-white/50">
-                            Risk Events
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => setOverviewTab("concentration")}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                        overviewTab === "concentration"
-                          ? "bg-orange-500/20 text-orange-300 border border-orange-500/50 shadow-lg shadow-orange-500/10"
-                          : "text-gray-400 hover:text-white hover:bg-white/5"
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <ConcentrationIcon
-                          size={28}
-                          className={
-                            overviewTab === "concentration"
-                              ? "opacity-100"
-                              : "opacity-60"
-                          }
-                        />
-                        <div className="flex flex-col items-start">
-                          <span>Concentration</span>
-                          <span className="text-[10px] text-white/50">
-                            Top Positions
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => setOverviewTab("calculator")}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                        overviewTab === "calculator"
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-500/10"
-                          : "text-gray-400 hover:text-white hover:bg-white/5"
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          className={
-                            overviewTab === "calculator"
-                              ? "opacity-100"
-                              : "opacity-60"
-                          }
-                        >
-                          <rect
-                            x="4"
-                            y="2"
-                            width="16"
-                            height="20"
-                            rx="2"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            fill="#22d3ee"
-                            fillOpacity="0.15"
-                          />
-                          <rect
-                            x="7"
-                            y="5"
-                            width="10"
-                            height="3"
-                            rx="1"
-                            fill="#22d3ee"
-                            fillOpacity="0.5"
-                          />
-                          <circle cx="8" cy="11" r="1" fill="currentColor" />
-                          <circle cx="12" cy="11" r="1" fill="currentColor" />
-                          <circle cx="16" cy="11" r="1" fill="currentColor" />
-                          <circle cx="8" cy="14" r="1" fill="currentColor" />
-                          <circle cx="12" cy="14" r="1" fill="currentColor" />
-                          <circle cx="16" cy="14" r="1" fill="currentColor" />
-                          <circle cx="8" cy="17" r="1" fill="currentColor" />
-                          <rect
-                            x="11"
-                            y="16"
-                            width="6"
-                            height="2"
-                            rx="0.5"
-                            fill="#22d3ee"
-                          />
-                        </svg>
-                        <div className="flex flex-col items-start">
-                          <span>Calculator</span>
-                          <span className="text-[10px] text-white/50">
-                            Estimate
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
+                  ))}
                 </div>
 
-                <div className="min-h-[500px] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Content Panel */}
+                <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 min-h-[460px]">
                   {overviewTab === "yield" && (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-bold text-cyan-200">
-                          Interest Rate Model
-                        </h3>
-                        <span className="text-xs text-indigo-300/60">
-                          Yield vs Utilization
-                        </span>
+                        <h3 className="text-base font-semibold text-slate-200">Interest Rate Model</h3>
+                        <span className="text-xs text-slate-500">Supply vs Borrow APR</span>
                       </div>
                       <YieldCurve
                         pool={selectedPool}
@@ -895,44 +712,20 @@ export function PoolsPage() {
               </div>
             </div>
           ) : (
-            <div className="mt-12 space-y-6">
+            <div className="py-16 text-center">
               {isLoading ? (
-                <>
-                  <div className="h-96 bg-white/5 rounded-3xl animate-pulse border border-white/10" />
-                  <div className="h-64 bg-white/5 rounded-3xl animate-pulse border border-white/10" />
-                </>
+                <div className="space-y-4">
+                  <div className="h-64 bg-slate-800/40 rounded-2xl animate-pulse border border-slate-700/50" />
+                  <div className="h-48 bg-slate-800/40 rounded-2xl animate-pulse border border-slate-700/50" />
+                </div>
               ) : (
-                <div className="p-12 text-center bg-white/5 rounded-3xl border border-white/10">
-                  <h3 className="text-xl font-bold text-cyan-200 mb-2">
-                    No Pools Available
-                  </h3>
-                  <p className="text-indigo-200/60">
-                    Please check your network connection or try again later.
-                  </p>
+                <div className="bg-slate-800/40 rounded-2xl p-12 border border-slate-700/50">
+                  <h3 className="text-lg font-semibold text-slate-300 mb-2">No Pools Available</h3>
+                  <p className="text-sm text-slate-500">Check network connection or try again later.</p>
                 </div>
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Lending Section */}
-      {selectedSection === "lending" && (
-        <div className="space-y-8">
-          {selectedPool ? (
-            <SupplierAnalytics poolId={selectedPool.contracts?.marginPoolId} />
-          ) : (
-            <div className="text-center text-indigo-200/60 py-12">
-              Select a pool to view lending analytics
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Borrowing Section */}
-      {selectedSection === "borrowing" && (
-        <div className="space-y-8">
-          <BorrowerOverview />
         </div>
       )}
 
@@ -943,21 +736,6 @@ export function PoolsPage() {
         </div>
       )}
 
-      {/* Admin Section */}
-      {selectedSection === "admin" && (
-        <div className="space-y-8">
-          {selectedPool ? (
-            <AdministrativePanel
-              poolId={selectedPool.contracts?.marginPoolId}
-            />
-          ) : (
-            <div className="text-center text-indigo-200/60 py-12">
-              Select a pool to view admin panel
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Slide Panels */}
       <SlidePanel
         open={historyOpen}
@@ -965,7 +743,10 @@ export function PoolsPage() {
         title="Deposit / Withdraw History"
         width={"50vw"}
       >
-        <DepositHistory address={account?.address} />
+        <DepositHistory 
+          address={account?.address} 
+          supplierCapIds={userSupplierCapIds}
+        />
       </SlidePanel>
 
       <SlidePanel

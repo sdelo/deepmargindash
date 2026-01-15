@@ -1,3 +1,5 @@
+import { NETWORK_CONFIGS, DEFAULT_NETWORK } from './networks';
+
 /**
  * API Configuration
  * 
@@ -11,17 +13,9 @@ function getApiBaseUrlFromEnv(): string {
     return process.env.API_URL;
   }
 
-  // Default based on current hostname
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  
-  // Development defaults
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:9008'; // Default API port
-  }
-
-  // Production/staging - use same hostname with port 8080
-  // This can be overridden with API_URL
-  return `http://${hostname}:9008`;
+  // Use the default network's indexer URL
+  // This ensures we don't try to hit localhost:9008 unless explicitly configured
+  return NETWORK_CONFIGS[DEFAULT_NETWORK].serverUrl;
 }
 
 export const API_CONFIG = {

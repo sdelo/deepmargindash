@@ -1,6 +1,6 @@
 import { MarginPool } from '../contracts/deepbook_margin/deepbook_margin/margin_pool';
 import { calculatePoolRates } from './interestRates';
-import { CONTRACTS } from '../config/contracts';
+import { getContracts, type NetworkType } from '../config/contracts';
 import type { PoolOverview } from '../features/lending/types';
 
 /**
@@ -27,7 +27,8 @@ function nineDecimalToPercent(nineDecimal: string | number | bigint): number {
 export function transformMarginPoolData(
   marginPool: typeof MarginPool["$inferInput"], // The parsed MarginPool object from BCS
   poolId: string,
-  assetType: string
+  assetType: string,
+  network: NetworkType = 'mainnet'
 ): PoolOverview {
   // Determine asset type
   const isSui = assetType.includes('0x2::sui::SUI');
@@ -36,6 +37,8 @@ export function transformMarginPoolData(
   // Get the appropriate decimal places for this asset
   const decimals = isSui ? 9 : 6; // SUI has 9 decimals, DBUSDC has 6 decimals
 
+  // Get network-specific contracts
+  const networkContracts = getContracts(network);
   
   // Access the parsed MarginPool object fields
   const state = {
@@ -67,22 +70,22 @@ export function transformMarginPoolData(
   // Get contract metadata based on asset type
   const contracts = isSui 
     ? {
-        registryId: CONTRACTS.testnet.MARGIN_REGISTRY_ID,
-        marginPoolId: CONTRACTS.testnet.SUI_MARGIN_POOL_ID,
-        marginPoolType: CONTRACTS.testnet.SUI_MARGIN_POOL_TYPE,
-        referralId: CONTRACTS.testnet.SUI_MARGIN_POOL_REFERRAL,
-        coinType: CONTRACTS.testnet.SUI_MARGIN_POOL_TYPE,
+        registryId: networkContracts.MARGIN_REGISTRY_ID,
+        marginPoolId: networkContracts.SUI_MARGIN_POOL_ID,
+        marginPoolType: networkContracts.SUI_MARGIN_POOL_TYPE,
+        referralId: networkContracts.SUI_MARGIN_POOL_REFERRAL,
+        coinType: networkContracts.SUI_MARGIN_POOL_TYPE,
         coinDecimals: 9,
-        coinDepositSourceId: CONTRACTS.testnet.SUI_ID,
+        coinDepositSourceId: networkContracts.SUI_ID,
       }
     : {
-        registryId: CONTRACTS.testnet.MARGIN_REGISTRY_ID,
-        marginPoolId: CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID,
-        marginPoolType: CONTRACTS.testnet.DBUSDC_MARGIN_POOL_TYPE,
-        referralId: CONTRACTS.testnet.DBUSDC_MARGIN_POOL_REFERRAL,
-        coinType: CONTRACTS.testnet.DBUSDC_MARGIN_POOL_TYPE,
+        registryId: networkContracts.MARGIN_REGISTRY_ID,
+        marginPoolId: networkContracts.DBUSDC_MARGIN_POOL_ID,
+        marginPoolType: networkContracts.DBUSDC_MARGIN_POOL_TYPE,
+        referralId: networkContracts.DBUSDC_MARGIN_POOL_REFERRAL,
+        coinType: networkContracts.DBUSDC_MARGIN_POOL_TYPE,
         coinDecimals: 6,
-        coinDepositSourceId: CONTRACTS.testnet.DBUSDC_ID,
+        coinDepositSourceId: networkContracts.DBUSDC_ID,
       };
 
   // Create temporary pool object for rate calculations

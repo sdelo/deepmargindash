@@ -3,13 +3,15 @@ import { MarginPool } from '../contracts/deepbook_margin/deepbook_margin/margin_
 import { transformMarginPoolData } from '../utils/poolDataTransform';
 import type { PoolOverview } from '../features/lending/types';
 import { fetchMarginPoolCreated } from '../features/lending/api/events';
+import type { NetworkType } from '../config/contracts';
 
 /**
  * Fetches a MarginPool object from the Sui blockchain and transforms it into PoolOverview format
  */
 export async function fetchMarginPool(
   suiClient: SuiClient,
-  poolId: string
+  poolId: string,
+  network: NetworkType = 'mainnet'
 ): Promise<PoolOverview | null> {
   try {
     const response = await suiClient.getObject({
@@ -38,7 +40,7 @@ export async function fetchMarginPool(
     
     // Transform the data using shared utility function
     const assetType = response.data.type || '';
-    const poolOverview = transformMarginPoolData(marginPool, poolId, assetType);
+    const poolOverview = transformMarginPoolData(marginPool, poolId, assetType, network);
     
     // Fetch maintainer cap ID from MarginPoolCreated events
     try {

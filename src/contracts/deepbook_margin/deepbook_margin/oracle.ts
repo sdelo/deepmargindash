@@ -28,16 +28,16 @@ export const ConversionConfig = new MoveStruct({ name: `${$moduleName}::Conversi
         pyth_price: bcs.u64(),
         pyth_decimals: bcs.u8()
     } });
-export interface NewCoinTypeDataArguments {
-    coinMetadata: RawTransactionArgument<string>;
+export interface NewCoinTypeDataFromCurrencyArguments {
+    currency: RawTransactionArgument<string>;
     priceFeedId: RawTransactionArgument<number[]>;
     maxConfBps: RawTransactionArgument<number | bigint>;
     maxEwmaDifferenceBps: RawTransactionArgument<number | bigint>;
 }
-export interface NewCoinTypeDataOptions {
+export interface NewCoinTypeDataFromCurrencyOptions {
     package?: string;
-    arguments: NewCoinTypeDataArguments | [
-        coinMetadata: RawTransactionArgument<string>,
+    arguments: NewCoinTypeDataFromCurrencyArguments | [
+        currency: RawTransactionArgument<string>,
         priceFeedId: RawTransactionArgument<number[]>,
         maxConfBps: RawTransactionArgument<number | bigint>,
         maxEwmaDifferenceBps: RawTransactionArgument<number | bigint>
@@ -47,22 +47,22 @@ export interface NewCoinTypeDataOptions {
     ];
 }
 /**
- * Creates a new CoinTypeData struct of type T. Uses CoinMetadata to avoid any
- * errors in decimals.
+ * Creates a new CoinTypeData struct of type T. Uses Currency to avoid any errors
+ * in decimals.
  */
-export function newCoinTypeData(options: NewCoinTypeDataOptions) {
+export function newCoinTypeDataFromCurrency(options: NewCoinTypeDataFromCurrencyOptions) {
     const packageAddress = options.package ?? '@local-pkg/deepbook-margin';
     const argumentsTypes = [
-        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::CoinMetadata<${options.typeArguments[0]}>`,
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin_registry::Currency<${options.typeArguments[0]}>`,
         'vector<u8>',
         'u64',
         'u64'
     ] satisfies string[];
-    const parameterNames = ["coinMetadata", "priceFeedId", "maxConfBps", "maxEwmaDifferenceBps"];
+    const parameterNames = ["currency", "priceFeedId", "maxConfBps", "maxEwmaDifferenceBps"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'oracle',
-        function: 'new_coin_type_data',
+        function: 'new_coin_type_data_from_currency',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
