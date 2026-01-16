@@ -35,7 +35,7 @@ export const DepositHistory: FC<Props> = ({ address, poolId, supplierCapIds }) =
     return (
       <div className="p-4 md:p-6">
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
           <span className="text-slate-300 text-sm">Loading transaction history...</span>
         </div>
       </div>
@@ -123,7 +123,7 @@ export const DepositHistory: FC<Props> = ({ address, poolId, supplierCapIds }) =
           <div key={tx.id} className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <span className={`text-sm font-semibold capitalize ${
-                tx.type === 'supply' ? 'text-emerald-400' : 'text-amber-400'
+                tx.type === 'supply' ? 'text-emerald-400' : 'text-teal-400'
               }`}>
                 {tx.type}
               </span>
@@ -184,7 +184,7 @@ export const DepositHistory: FC<Props> = ({ address, poolId, supplierCapIds }) =
                 </td>
                 <td className="py-3 px-4">
                   <span className={`capitalize font-medium ${
-                    tx.type === 'supply' ? 'text-emerald-400' : 'text-amber-400'
+                    tx.type === 'supply' ? 'text-emerald-400' : 'text-teal-400'
                   }`}>
                     {tx.type}
                   </span>

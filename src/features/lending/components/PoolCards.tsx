@@ -35,7 +35,7 @@ export const PoolCards: FC<Props> = ({
 
   const getRiskLevel = (utilization: number) => {
     if (utilization >= 80) return { label: "Low Liquidity", color: "text-red-400", barColor: "bg-red-500" };
-    if (utilization >= 50) return { label: "Optimal", color: "text-amber-400", barColor: "bg-amber-500" };
+    if (utilization >= 50) return { label: "Optimal", color: "text-teal-400", barColor: "bg-amber-500" };
     return { label: "High Liquidity", color: "text-emerald-400", barColor: "bg-emerald-500" };
   };
 
@@ -96,7 +96,7 @@ export const PoolCards: FC<Props> = ({
             className={`
               relative rounded-2xl p-6 border transition-all duration-200 cursor-pointer group
               ${isSelected 
-                ? "bg-white/10 border-amber-400/50" 
+                ? "bg-white/10 border-teal-400/50" 
                 : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
               }
             `}
@@ -111,7 +111,7 @@ export const PoolCards: FC<Props> = ({
                     className="w-10 h-10 rounded-full"
                   />
                   {isSelected && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-teal-400 rounded-full border-2 border-slate-900 flex items-center justify-center">
                       <svg className="w-2.5 h-2.5 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
@@ -191,7 +191,7 @@ export const PoolCards: FC<Props> = ({
                     e.stopPropagation();
                     onAdminAuditClick?.(pool.id);
                   }}
-                  className="text-xs text-amber-300 hover:text-amber-100 transition-colors flex items-center gap-1"
+                  className="text-xs text-teal-300 hover:text-amber-100 transition-colors flex items-center gap-1"
                 >
                   <span>⚙️ Admin History</span>
                 </button>
@@ -205,7 +205,7 @@ export const PoolCards: FC<Props> = ({
                 className={`
                   w-full px-4 py-2.5 rounded-lg text-sm font-bold transition-all
                   ${isSelected 
-                    ? "bg-amber-400 text-slate-900 hover:bg-amber-300" 
+                    ? "bg-teal-400 text-slate-900 hover:bg-amber-300" 
                     : "bg-white/10 text-white hover:bg-white/15"
                   }
                 `}

@@ -108,11 +108,11 @@ function FlowStep({ number, title, description, icon, horizontal }: FlowStepProp
   if (horizontal) {
     return (
       <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
+        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-teal-400/10 border border-teal-400/30 flex items-center justify-center text-teal-400">
           {icon}
         </div>
         <div>
-          <div className="text-sm text-amber-400 font-medium">Step {number}</div>
+          <div className="text-sm text-teal-400 font-medium">Step {number}</div>
           <div className="text-white font-semibold">{title}</div>
           <div className="text-white/60 text-sm">{description}</div>
         </div>
@@ -122,10 +122,10 @@ function FlowStep({ number, title, description, icon, horizontal }: FlowStepProp
 
   return (
     <div className="flex-1 text-center p-4 rounded-xl bg-white/5 border border-white/10">
-      <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
+      <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-teal-400/10 border border-teal-400/30 flex items-center justify-center text-teal-400">
         {icon}
       </div>
-      <div className="text-xs text-amber-400 font-medium mb-1">Step {number}</div>
+      <div className="text-xs text-teal-400 font-medium mb-1">Step {number}</div>
       <div className="text-white font-semibold mb-1">{title}</div>
       <div className="text-white/60 text-sm">{description}</div>
     </div>

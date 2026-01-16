@@ -10,13 +10,13 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
   return (
     <div className="relative card-surface text-white">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+        <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
           Admin Config Change Log
         </h2>
         <span className="text-xs text-cyan-100/80">
-          From <span className="text-amber-300">MarginPoolConfigUpdated</span>,{" "}
-          <span className="text-amber-300">InterestParamsUpdated</span>,{" "}
-          <span className="text-amber-300">DeepbookPoolUpdated</span>
+          From <span className="text-teal-300">MarginPoolConfigUpdated</span>,{" "}
+          <span className="text-teal-300">InterestParamsUpdated</span>,{" "}
+          <span className="text-teal-300">DeepbookPoolUpdated</span>
         </span>
       </div>
       <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-6"></div>
@@ -117,7 +117,7 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
                         {it.before.base_rate}
                       </span>{" "}
                       →{" "}
-                      <span className="text-amber-300 font-semibold">
+                      <span className="text-teal-300 font-semibold">
                         {it.after.base_rate}
                       </span>
                     </div>
@@ -129,7 +129,7 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
                         {it.before.base_slope}
                       </span>{" "}
                       →{" "}
-                      <span className="text-amber-300 font-semibold">
+                      <span className="text-teal-300 font-semibold">
                         {it.after.base_slope}
                       </span>
                     </div>
@@ -141,7 +141,7 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
                         {it.before.optimal_u}
                       </span>{" "}
                       →{" "}
-                      <span className="text-amber-300 font-semibold">
+                      <span className="text-teal-300 font-semibold">
                         {it.after.optimal_u}
                       </span>
                     </div>
@@ -153,7 +153,7 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
                         {it.before.excess_slope}
                       </span>{" "}
                       →{" "}
-                      <span className="text-amber-300 font-semibold">
+                      <span className="text-teal-300 font-semibold">
                         {it.after.excess_slope}
                       </span>
                     </div>
@@ -194,7 +194,7 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
                         {pc.before.supply_cap}
                       </span>{" "}
                       →{" "}
-                      <span className="text-amber-300 font-semibold">
+                      <span className="text-teal-300 font-semibold">
                         {pc.after.supply_cap}
                       </span>
                     </div>
@@ -206,7 +206,7 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
                         {pc.before.max_util}
                       </span>{" "}
                       →{" "}
-                      <span className="text-amber-300 font-semibold">
+                      <span className="text-teal-300 font-semibold">
                         {pc.after.max_util}
                       </span>
                     </div>
@@ -218,7 +218,7 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
                         {pc.before.protocol_spread}
                       </span>{" "}
                       →{" "}
-                      <span className="text-amber-300 font-semibold">
+                      <span className="text-teal-300 font-semibold">
                         {pc.after.protocol_spread}
                       </span>
                     </div>
@@ -230,7 +230,7 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
                         {pc.before.min_borrow}
                       </span>{" "}
                       →{" "}
-                      <span className="text-amber-300 font-semibold">
+                      <span className="text-teal-300 font-semibold">
                         {pc.after.min_borrow}
                       </span>
                     </div>
@@ -266,13 +266,13 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-white/5 rounded-lg p-2 border border-blue-300/20">
                     <div className="text-cyan-100/70">deepbook_pool_id</div>
-                    <div className="text-amber-300 font-semibold">
+                    <div className="text-teal-300 font-semibold">
                       {db.deepbook_pool_id}
                     </div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-2 border border-blue-300/20">
                     <div className="text-cyan-100/70">pool_cap_id</div>
-                    <div className="text-amber-300 font-semibold">
+                    <div className="text-teal-300 font-semibold">
                       {db.pool_cap_id}
                     </div>
                   </div>
@@ -293,11 +293,11 @@ export const PoolAdmin: FC<Props> = ({ poolId }) => {
 
       <div className="mt-6 text-[11px] text-cyan-100/70 leading-relaxed">
         Bind directly to events:{" "}
-        <span className="text-amber-300">InterestParamsUpdated</span> (kinked
+        <span className="text-teal-300">InterestParamsUpdated</span> (kinked
         curve params),{" "}
-        <span className="text-amber-300">MarginPoolConfigUpdated</span> (caps,
+        <span className="text-teal-300">MarginPoolConfigUpdated</span> (caps,
         spread, min borrow), and{" "}
-        <span className="text-amber-300">DeepbookPoolUpdated</span> (allowed
+        <span className="text-teal-300">DeepbookPoolUpdated</span> (allowed
         pool links). Group by{" "}
         <span className="text-cyan-200">margin_pool_id</span>, sort desc by
         timestamp, and add deep links to pool detail.

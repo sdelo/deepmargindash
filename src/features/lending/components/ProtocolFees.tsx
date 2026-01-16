@@ -45,7 +45,7 @@ export const ProtocolFees: FC<Props> = ({ poolId }) => {
   return (
     <div className="relative card-surface border border-white/10 text-white">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+        <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
           Protocol Fees & Liquidations
         </h2>
         <span className="text-xs text-cyan-100/80">Synthetic</span>
@@ -222,7 +222,7 @@ export const ProtocolFees: FC<Props> = ({ poolId }) => {
           }}
         >
           <div className="text-xs text-cyan-100/80 mb-1">Spread Fees</div>
-          <div className="text-xl font-bold text-amber-300">
+          <div className="text-xl font-bold text-teal-300">
             <span>{f.spread.toLocaleString()}</span>
           </div>
           <div className="text-[10px] text-cyan-100/60">
@@ -239,7 +239,7 @@ export const ProtocolFees: FC<Props> = ({ poolId }) => {
           <div className="text-xs text-cyan-100/80 mb-1">
             Liquidation Fees (Pool Reward)
           </div>
-          <div className="text-xl font-bold text-amber-300">
+          <div className="text-xl font-bold text-teal-300">
             <span>{f.liq_pool_reward.toLocaleString()}</span>
           </div>
           <div className="text-[10px] text-cyan-100/60">sum of pool_reward</div>

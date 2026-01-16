@@ -11,9 +11,10 @@ import {
   ReferenceLine,
   ReferenceDot,
 } from "recharts";
-import { ClockIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import type { PoolOverview } from "../types";
 import { calculatePoolRates } from "../../../utils/interestRates";
+import { InfoTooltip } from "../../../components/InfoTooltip";
 
 type Props = { 
   pool: PoolOverview;
@@ -30,15 +31,10 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
     !pool?.state
   ) {
     return (
-      <div className="relative card-surface border border-white/10 text-white">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
-            Yield & Interest
-          </h2>
-        </div>
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent my-4"></div>
-        <div className="text-center py-8 text-red-400">
-          Error: Invalid pool data structure
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-teal-300">Yield & Interest</h2>
+        <div className="bg-slate-800/50 rounded-lg p-6 text-center">
+          <div className="text-red-400 text-sm">Error: Invalid pool data structure</div>
         </div>
       </div>
     );
@@ -85,235 +81,129 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
   });
 
   return (
-    <div className="relative card-surface border border-white/10 text-white">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
-          Yield & Interest
-        </h2>
-        <div className="flex items-center space-x-4">
+        <h2 className="text-lg font-semibold text-teal-300">Yield & Interest</h2>
+        <div className="flex items-center gap-3">
           {onShowHistory && (
             <button
               onClick={onShowHistory}
-              className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-400/30 hover:bg-amber-500/30 hover:border-amber-400/50 transition-all text-xs font-medium text-amber-300"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-teal-400/30 hover:bg-amber-500/30 transition-all text-xs font-medium text-teal-300"
             >
-              <ClockIcon className="w-4 h-4" />
+              <ClockIcon className="w-3.5 h-3.5" />
               <span>Rate History</span>
             </button>
           )}
-          <div className="text-xs text-cyan-100/80">
-            From <span className="text-amber-300">InterestConfig</span> &{" "}
-            <span className="text-amber-300">State</span>
-          </div>
-        </div>
-      </div>
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent my-4"></div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <div
-          className="rounded-2xl p-4 bg-white/5 border"
-          style={{
-            borderColor:
-              "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
-          }}
-        >
-          <div className="text-sm text-cyan-100/80">Supply APR</div>
-          <div className="text-3xl font-extrabold">
-            {supplyApr < 0.1 ? supplyApr.toFixed(2) : supplyApr.toFixed(1)}
-            <span className="text-xl">%</span>
-          </div>
-          <div className="text-[11px] text-cyan-100/60">
-            what suppliers earn
-          </div>
-        </div>
-        <div
-          className="rounded-2xl p-4 bg-white/5 border"
-          style={{
-            borderColor:
-              "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
-          }}
-        >
-          <div className="text-sm text-cyan-100/80">Borrow APR</div>
-          <div className="text-3xl font-extrabold">
-            {borrowApr < 0.1 ? borrowApr.toFixed(2) : borrowApr.toFixed(1)}
-            <span className="text-xl">%</span>
-          </div>
-          <div className="text-[11px] text-cyan-100/60">what borrowers pay</div>
-        </div>
-        <div
-          className="rounded-2xl p-4 bg-white/5 border"
-          style={{
-            borderColor:
-              "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
-          }}
-        >
-          <div className="text-sm text-cyan-100/80">Utilization</div>
-          <div className="text-3xl font-extrabold">
-            {utilPct.toFixed(1)}
-            <span className="text-xl">%</span>
-          </div>
-          <div className="text-[11px] text-cyan-100/60">borrow / supply</div>
+          <span className="text-[10px] text-white/40">From InterestConfig & State</span>
         </div>
       </div>
 
-      {/* Curve */}
-      <div
-        className="rounded-2xl p-5 bg-white/5 border relative overflow-hidden"
-        style={{
-          borderColor:
-            "color-mix(in oklab, var(--color-amber-400) 30%, transparent)",
-        }}
-      >
-        <div className="text-cyan-100/80 mb-3">Utilization Curve</div>
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart
-            data={curveData}
-            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(255,255,255,0.15)"
-            />
+      {/* KPIs - Compact */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-lg p-3 bg-white/5 border border-white/10">
+          <div className="text-xs text-white/60 flex items-center gap-1">
+            Supply APY <InfoTooltip tooltip="supplyAPY" />
+          </div>
+          <div className="text-xl font-bold text-cyan-300 mt-1">
+            {supplyApr.toFixed(2)}%
+          </div>
+          <div className="text-[10px] text-white/40">what suppliers earn</div>
+        </div>
+        <div className="rounded-lg p-3 bg-white/5 border border-white/10">
+          <div className="text-xs text-white/60 flex items-center gap-1">
+            Borrow APY <InfoTooltip tooltip="borrowAPR" />
+          </div>
+          <div className="text-xl font-bold text-teal-300 mt-1">
+            {borrowApr.toFixed(2)}%
+          </div>
+          <div className="text-[10px] text-white/40">what borrowers pay</div>
+        </div>
+        <div className="rounded-lg p-3 bg-white/5 border border-white/10">
+          <div className="text-xs text-white/60 flex items-center gap-1">
+            Utilization <InfoTooltip tooltip="utilizationRate" />
+          </div>
+          <div className="text-xl font-bold text-white mt-1">
+            {utilPct.toFixed(1)}%
+          </div>
+          <div className="text-[10px] text-white/40">borrow / supply</div>
+        </div>
+      </div>
+
+      {/* Utilization Curve - Always visible */}
+      <div className="rounded-lg p-3 bg-white/5 border border-white/10">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs text-white/60">Utilization Curve</div>
+          <div className="text-[10px] text-white/40">
+            <span className="text-teal-400 font-medium">Higher utilization = higher rates</span>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={180}>
+          <LineChart data={curveData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis
               dataKey="u"
               type="number"
               domain={[0, 100]}
               tickFormatter={(v) => `${v}%`}
-              tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+              tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               tickFormatter={(v) => `${Math.round(v)}%`}
-              tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+              tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }}
               axisLine={false}
               tickLine={false}
+              width={35}
             />
             <Tooltip
-              formatter={(value) => [`${(value as number).toFixed(2)}%`, "APR"]}
+              formatter={(value) => [`${(value as number).toFixed(2)}%`, "APY"]}
               labelFormatter={(label) => `Utilization ${label}%`}
               contentStyle={{
-                backgroundColor: "rgba(0,0,0,0.8)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: "8px",
-                color: "white",
+                backgroundColor: "rgba(15,23,42,0.95)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "6px",
+                fontSize: "11px",
               }}
             />
-            <ReferenceLine
-              x={Math.round(optimalU * 100)}
-              stroke="var(--color-amber-300)"
-              strokeWidth={2}
-            />
-            <Line
-              type="monotone"
-              dataKey="apr"
-              stroke="var(--color-cyan-300)"
-              strokeWidth={2.5}
-              dot={false}
-            />
-            <ReferenceLine
-              x={Math.round(u * 100)}
-              stroke="var(--color-cyan-200)"
-              strokeDasharray="4 4"
-            />
-            <ReferenceDot
-              x={Math.round(u * 100)}
-              y={borrowApr}
-              r={4}
-              fill="var(--color-cyan-300)"
-            />
+            <ReferenceLine x={Math.round(optimalU * 100)} stroke="#fbbf24" strokeWidth={1.5} />
+            <Line type="monotone" dataKey="apr" stroke="#22d3ee" strokeWidth={2} dot={false} />
+            <ReferenceLine x={Math.round(u * 100)} stroke="#67e8f9" strokeDasharray="3 3" />
+            <ReferenceDot x={Math.round(u * 100)} y={borrowApr} r={4} fill="#22d3ee" />
           </LineChart>
         </ResponsiveContainer>
-        <div className="text-[11px] text-cyan-100/60 mt-2">
-          Base Rate, Base Slope →{" "}
-          <span className="text-amber-300">Optimal Utilization</span> →
-          Excess Slope
+        <div className="text-[10px] text-white/40 mt-1">
+          Current: <span className="text-cyan-400">{utilPct.toFixed(1)}%</span> utilization
+          {utilPct > optimalUPct && <span className="text-teal-300 ml-2">↑ Above optimal — rates elevated</span>}
         </div>
       </div>
 
-      {/* Params */}
-      <div className="grid grid-cols-4 gap-3 mt-4">
-        <div
-          className="rounded-xl p-3 bg-white/5 border"
-          style={{
-            borderColor:
-              "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
-          }}
-        >
-          <div className="text-xs text-cyan-100/80 mb-1">Base Rate</div>
-          <div className="text-lg font-bold text-amber-300">
-            {baseRatePct.toFixed(1)}%
+      {/* Rate Model Parameters - Collapsible for advanced users */}
+      <details className="group">
+        <summary className="flex items-center justify-between px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg cursor-pointer transition-colors list-none">
+          <span className="text-xs text-white/50 font-medium">Rate model parameters</span>
+          <ChevronDownIcon className="w-4 h-4 text-white/40 group-open:rotate-180 transition-transform" />
+        </summary>
+        <div className="grid grid-cols-4 gap-1.5 mt-2 animate-fade-in">
+          <div className="rounded-lg p-2 bg-white/5 border border-white/10 text-center">
+            <div className="text-[9px] text-white/40">Base Rate</div>
+            <div className="text-xs font-semibold text-teal-400">{baseRatePct.toFixed(1)}%</div>
+          </div>
+          <div className="rounded-lg p-2 bg-white/5 border border-white/10 text-center">
+            <div className="text-[9px] text-white/40">Base Slope</div>
+            <div className="text-xs font-semibold text-teal-400">{baseSlopePct.toFixed(1)}%</div>
+          </div>
+          <div className="rounded-lg p-2 bg-white/5 border border-white/10 text-center">
+            <div className="text-[9px] text-white/40">Optimal</div>
+            <div className="text-xs font-semibold text-teal-400">{optimalUPct.toFixed(0)}%</div>
+          </div>
+          <div className="rounded-lg p-2 bg-white/5 border border-white/10 text-center">
+            <div className="text-[9px] text-white/40">Excess Slope</div>
+            <div className="text-xs font-semibold text-teal-400">{excessSlopePct.toFixed(1)}%</div>
           </div>
         </div>
-        <div
-          className="rounded-xl p-3 bg-white/5 border"
-          style={{
-            borderColor:
-              "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
-          }}
-        >
-          <div className="text-xs text-cyan-100/80 mb-1">Base Slope</div>
-          <div className="text-lg font-bold text-amber-300">
-            {baseSlopePct.toFixed(1)}%
-          </div>
-        </div>
-        <div
-          className="rounded-xl p-3 bg-white/5 border"
-          style={{
-            borderColor:
-              "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
-          }}
-        >
-          <div className="text-xs text-cyan-100/80 mb-1">
-            Optimal Util.
-          </div>
-          <div className="text-lg font-bold text-amber-300">
-            {optimalUPct.toFixed(0)}%
-          </div>
-        </div>
-        <div
-          className="rounded-xl p-3 bg-white/5 border"
-          style={{
-            borderColor:
-              "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
-          }}
-        >
-          <div className="text-xs text-cyan-100/80 mb-1">Excess Slope</div>
-          <div className="text-lg font-bold text-amber-300">
-            {excessSlopePct.toFixed(1)}%
-          </div>
-        </div>
-      </div>
-
-      {/* Formula - Hidden behind info icon */}
-      <div className="mt-4 flex items-center gap-2 text-[11px] text-cyan-100/40">
-        <span>Interest calculation formula</span>
-        <div className="relative group">
-          <button
-            type="button"
-            className="w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-[10px] text-white/50 hover:text-white/70 transition-all cursor-help"
-            aria-label="View formula"
-          >
-            ?
-          </button>
-          <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-[11px] text-white/90 bg-slate-900 border border-white/20 rounded-lg shadow-xl w-72 leading-relaxed opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-            <div className="font-semibold text-amber-300 mb-1">Borrow APR Formula:</div>
-            <div className="font-mono text-[10px] mb-2">
-              APR(u) = base_rate + base_slope × u
-              <span className="text-white/50"> (when u ≤ optimal)</span>
-            </div>
-            <div className="font-mono text-[10px] mb-2">
-              APR(u) = base_rate + base_slope × optimal + excess_slope × (u − optimal)
-              <span className="text-white/50"> (when u &gt; optimal)</span>
-            </div>
-            <div className="font-semibold text-amber-300 mt-2 mb-1">Supply APR:</div>
-            <div className="font-mono text-[10px]">
-              = Borrow APR × utilization × (1 − spread)
-            </div>
-            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-white/20" />
-          </div>
-        </div>
-      </div>
+      </details>
     </div>
   );
 };

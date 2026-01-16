@@ -77,7 +77,7 @@ export const BorrowingActivity: FC<Props> = ({ poolId }) => {
       <div className="relative card-surface border border-white/10 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+            <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
               Borrowing Activity
             </h2>
           </div>
@@ -93,7 +93,7 @@ export const BorrowingActivity: FC<Props> = ({ poolId }) => {
       <div className="relative card-surface border border-white/10 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+            <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
               Borrowing Activity
             </h2>
           </div>
@@ -109,7 +109,7 @@ export const BorrowingActivity: FC<Props> = ({ poolId }) => {
       <div className="relative card-surface border border-white/10 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+            <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
               Borrowing Activity
             </h2>
           </div>
@@ -128,7 +128,7 @@ export const BorrowingActivity: FC<Props> = ({ poolId }) => {
     <div className="relative card-surface border border-white/10 text-white">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+          <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
             Borrowing Activity
           </h2>
           <div className="text-xs text-cyan-100/60 mt-1">

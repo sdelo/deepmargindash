@@ -46,13 +46,13 @@ function getRiskBadge(position: AtRiskPosition): { label: string; className: str
   if (position.distanceToLiquidation < 5) {
     return {
       label: 'CRITICAL',
-      className: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      className: 'bg-amber-500/20 text-teal-300 border-amber-500/40',
     };
   }
   if (position.distanceToLiquidation < 15) {
     return {
       label: 'WARNING',
-      className: 'bg-amber-400/15 text-amber-200 border-amber-400/30',
+      className: 'bg-teal-400/15 text-amber-200 border-teal-400/30',
     };
   }
   return {
@@ -241,7 +241,7 @@ export function AtRiskPositionsTable({
                           </span>
                           {/* Click indicator */}
                           <svg 
-                            className="w-4 h-4 text-white/0 group-hover:text-amber-400 transition-colors" 
+                            className="w-4 h-4 text-white/0 group-hover:text-teal-400 transition-colors" 
                             fill="none" 
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
@@ -264,8 +264,8 @@ export function AtRiskPositionsTable({
                       <td className="py-3 px-4 text-right">
                         <span className={`font-bold ${
                           position.isLiquidatable ? 'text-rose-400' :
-                          position.distanceToLiquidation < 5 ? 'text-amber-400' :
-                          position.distanceToLiquidation < 15 ? 'text-amber-300' :
+                          position.distanceToLiquidation < 5 ? 'text-teal-400' :
+                          position.distanceToLiquidation < 15 ? 'text-teal-300' :
                           'text-white'
                         }`}>
                           {position.riskRatio.toFixed(4)}
@@ -277,8 +277,8 @@ export function AtRiskPositionsTable({
                       <td className="py-3 px-4 text-right">
                         <span className={`font-semibold ${
                           position.distanceToLiquidation < 0 ? 'text-rose-400' :
-                          position.distanceToLiquidation < 5 ? 'text-amber-400' :
-                          position.distanceToLiquidation < 15 ? 'text-amber-300' :
+                          position.distanceToLiquidation < 5 ? 'text-teal-400' :
+                          position.distanceToLiquidation < 15 ? 'text-teal-300' :
                           'text-cyan-400'
                         }`}>
                           {position.distanceToLiquidation < 0 ? '' : '+'}
@@ -340,7 +340,7 @@ export function AtRiskPositionsTable({
             <span>Critical</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span className="w-2 h-2 rounded-full bg-teal-400" />
             <span>Warning</span>
           </div>
           <div className="flex items-center gap-1.5">

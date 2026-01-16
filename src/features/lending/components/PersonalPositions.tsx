@@ -116,7 +116,7 @@ export const PersonalPositions: FC<Props> = ({
         </div>
         <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
           <div className="text-center">
-            <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
             {isLoading ? "Loading positions..." : "Calculating interest..."}
           </div>
         </div>
@@ -225,7 +225,7 @@ export const PersonalPositions: FC<Props> = ({
                       {pos.asset}
                     </span>
                     <span className="text-xs text-slate-500">|</span>
-                    <span className="text-xs text-amber-400 font-medium">
+                    <span className="text-xs text-teal-400 font-medium">
                       {currentBalance}
                     </span>
                   </div>
@@ -242,7 +242,7 @@ export const PersonalPositions: FC<Props> = ({
                       </span>
                     )}
                     {pos.isLoading && (
-                      <span className="text-[10px] text-amber-400 animate-pulse">
+                      <span className="text-[10px] text-teal-400 animate-pulse">
                         ⟳
                       </span>
                     )}
@@ -265,7 +265,7 @@ export const PersonalPositions: FC<Props> = ({
         <div className="max-h-32 overflow-y-auto pr-1">
           {historyLoading ? (
             <div className="text-center py-2 text-slate-400 text-xs">
-              <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-1" />
+              <div className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin mx-auto mb-1" />
               Loading...
             </div>
           ) : !transactions || transactions.length === 0 ? (
@@ -287,7 +287,7 @@ export const PersonalPositions: FC<Props> = ({
                       className={`text-xs font-medium ${
                         tx.type === "supply"
                           ? "text-emerald-400"
-                          : "text-amber-400"
+                          : "text-teal-400"
                       }`}
                     >
                       {tx.type === "supply" ? "↓" : "↑"}

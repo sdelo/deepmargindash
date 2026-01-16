@@ -56,7 +56,7 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
       <div className="relative card-surface border border-white/10 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+            <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
               Historical Pool Activity
             </h2>
           </div>
@@ -75,7 +75,7 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
       <div className="relative card-surface border border-white/10 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+            <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
               Historical Pool Activity
             </h2>
           </div>
@@ -94,7 +94,7 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
       <div className="relative card-surface border border-white/10 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+            <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
               Historical Pool Activity
             </h2>
           </div>
@@ -111,7 +111,7 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
     <div className="relative card-surface border border-white/10 text-white">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+          <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
             Historical Pool Activity
           </h2>
         </div>
@@ -240,10 +240,10 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
 
       <div className="mt-4 text-[11px] text-cyan-100/70 leading-relaxed">
         Supply & Borrow series aggregate{" "}
-        <span className="text-amber-300">AssetSupplied</span> and{" "}
-        <span className="text-amber-300">AssetWithdrawn</span> over time.
+        <span className="text-teal-300">AssetSupplied</span> and{" "}
+        <span className="text-teal-300">AssetWithdrawn</span> over time.
         Vertical markers denote{" "}
-        <span className="text-amber-300">InterestParamsUpdated</span> (rate
+        <span className="text-teal-300">InterestParamsUpdated</span> (rate
         config changes).
       </div>
     </div>

@@ -7,7 +7,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { NetworkSwitcher } from "../../../components/NetworkSwitcher";
 import { IndexerSwitcher } from "../../../components/IndexerSwitcher";
-import HelmetIcon from "../../../assets/helmet-v2-minimal.svg";
+import { brand } from "../../../config/brand";
 
 export default function NavBar() {
   const currentAccount = useCurrentAccount();
@@ -23,33 +23,38 @@ export default function NavBar() {
   }
 
   return (
-    <nav className="w-full sticky top-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10">
-      <div className="max-w-[1920px] mx-auto px-4 lg:px-12 xl:px-20 2xl:px-32 py-3 flex items-center justify-between text-white">
+    <nav className="w-full sticky top-0 z-50 bg-[#0c1a24]/90 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/10">
+      <div className="max-w-[1920px] mx-auto px-4 lg:px-12 xl:px-20 2xl:px-32 py-2.5 flex items-center justify-between text-white">
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2 font-bold text-white hover:opacity-80 transition-opacity">
-            <img src={HelmetIcon} alt="Leviathan" className="w-7 h-7" />
-            Leviathan
+          <Link to="/" className="flex items-center gap-2.5 font-bold text-white hover:opacity-90 transition-opacity group">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/10 p-1 border border-teal-500/20 group-hover:border-teal-500/30 transition-colors">
+              <img src={brand.logo.src} alt={brand.logo.alt} className="w-full h-full" />
+            </div>
+            <span className="text-lg tracking-tight">{brand.name}</span>
           </Link>
           {location.pathname !== "/" && (
-            <div className="hidden md:flex items-center gap-4 text-sm text-white/60">
-              <Link to="/pools" className="hover:text-white transition">
+            <div className="hidden md:flex items-center">
+              <Link 
+                to="/pools" 
+                className="px-3 py-1.5 rounded-md text-sm font-medium text-teal-300/90 hover:text-teal-200 hover:bg-teal-500/10 transition-all"
+              >
                 Pools
               </Link>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <NetworkSwitcher />
           <IndexerSwitcher />
           {currentAccount ? (
             <>
-              <span className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 font-mono text-sm text-white/80">
-                {getShortAddress(currentAccount.address)} s
+              <span className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 font-mono text-xs text-white/80">
+                {getShortAddress(currentAccount.address)}
               </span>
               <button
                 onClick={() => disconnectWallet()}
-                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white text-xs font-medium transition-all"
               >
                 Disconnect
               </button>
@@ -61,7 +66,7 @@ export default function NavBar() {
               trigger={
                 <button
                   onClick={() => setOpen(true)}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white text-sm transition-colors"
+                  className="btn-primary py-2 px-4 text-xs font-bold"
                 >
                   Connect Wallet
                 </button>

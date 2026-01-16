@@ -1,28 +1,28 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import HelmetIcon from "../assets/helmet-v2-minimal.svg";
+import { brand } from "../config/brand";
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/10 py-12 px-4 mt-12">
+    <footer className="border-t border-white/5 py-12 px-4 mt-12">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <img src={HelmetIcon} alt="Leviathan" className="w-8 h-8" />
+            <img src={brand.logo.src} alt={brand.logo.alt} className={brand.logo.sizes.md} />
             <div>
-              <div className="font-bold text-white">Leviathan</div>
-              <div className="text-sm text-white/50">DeepBook Margin Dashboard</div>
+              <div className="font-bold text-white">{brand.name}</div>
+              <div className="text-sm text-white/50">{brand.tagline}</div>
             </div>
           </div>
 
           {/* Links */}
           <div className="flex flex-wrap gap-6">
             <FooterLink href="/pools" internal>Dashboard</FooterLink>
-            <FooterLink href="https://docs.sui.io/guides/developer/deepbook">DeepBook Docs</FooterLink>
-            <FooterLink href="https://twitter.com" placeholder>Twitter</FooterLink>
-            <FooterLink href="https://discord.com" placeholder>Discord</FooterLink>
-            <FooterLink href="https://github.com" placeholder>GitHub</FooterLink>
+            <FooterLink href={brand.links.docs}>DeepBook Docs</FooterLink>
+            <FooterLink href={brand.links.twitter} placeholder>Twitter</FooterLink>
+            <FooterLink href={brand.links.discord} placeholder>Discord</FooterLink>
+            <FooterLink href={brand.links.github} placeholder>GitHub</FooterLink>
           </div>
         </div>
 
@@ -31,7 +31,7 @@ export function Footer() {
             Built for the DeepBook Community
           </div>
           <div>
-            © {new Date().getFullYear()} Leviathan. Open source.
+            {brand.copyright}. Open source.
           </div>
         </div>
       </div>
@@ -70,9 +70,3 @@ function FooterLink({ href, children, internal, placeholder }: FooterLinkProps) 
     </a>
   );
 }
-
-
-
-
-
-

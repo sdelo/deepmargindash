@@ -147,7 +147,7 @@ export const MarketActivity: FC<Props> = ({ poolId, limit = 10 }) => {
   const getEventTypeColor = (type: ActivityEvent["type"]) => {
     switch (type) {
       case "borrow":
-        return "text-amber-400";
+        return "text-teal-400";
       case "repay":
         return "text-emerald-400";
       case "liquidation":

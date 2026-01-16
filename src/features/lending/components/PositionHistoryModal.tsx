@@ -79,7 +79,7 @@ function getEventStyle(type: TimelineEventType): { icon: React.ReactNode; color:
     case 'created':
       return { icon: <AnchorIcon size={24} />, color: 'text-cyan-400', bgColor: 'bg-white/5 border-cyan-500/40' };
     case 'borrow':
-      return { icon: <BorrowingIcon size={24} />, color: 'text-amber-400', bgColor: 'bg-white/5 border-amber-500/40' };
+      return { icon: <BorrowingIcon size={24} />, color: 'text-teal-400', bgColor: 'bg-white/5 border-amber-500/40' };
     case 'repay':
       return { icon: <CheckIcon size={24} />, color: 'text-cyan-400', bgColor: 'bg-white/5 border-cyan-500/40' };
     case 'liquidation':
@@ -289,8 +289,8 @@ export function PositionHistoryModal({
               <div className="text-xs text-white/60">Risk Ratio</div>
               <div className={`text-lg font-bold ${
                 position.isLiquidatable ? 'text-rose-400' :
-                position.distanceToLiquidation < 5 ? 'text-amber-400' :
-                position.distanceToLiquidation < 15 ? 'text-amber-300' :
+                position.distanceToLiquidation < 5 ? 'text-teal-400' :
+                position.distanceToLiquidation < 15 ? 'text-teal-300' :
                 'text-cyan-400'
               }`}>
                 {position.riskRatio.toFixed(4)}
@@ -306,8 +306,8 @@ export function PositionHistoryModal({
               <div className="text-xs text-white/60">Distance to Liq</div>
               <div className={`text-lg font-bold ${
                 position.distanceToLiquidation < 0 ? 'text-rose-400' :
-                position.distanceToLiquidation < 5 ? 'text-amber-400' :
-                position.distanceToLiquidation < 15 ? 'text-amber-300' :
+                position.distanceToLiquidation < 5 ? 'text-teal-400' :
+                position.distanceToLiquidation < 15 ? 'text-teal-300' :
                 'text-cyan-400'
               }`}>
                 {position.distanceToLiquidation > 0 ? '+' : ''}{position.distanceToLiquidation.toFixed(1)}%
@@ -343,7 +343,7 @@ export function PositionHistoryModal({
                     <div className="text-xs text-white/60">Total Events</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-amber-400">
+                    <div className="text-2xl font-bold text-teal-400">
                       {timeline.filter(e => e.type === 'borrow').length}
                     </div>
                     <div className="text-xs text-white/60">Borrows</div>
@@ -367,7 +367,7 @@ export function PositionHistoryModal({
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-white/60">Total Borrowed: </span>
-                      <span className="font-semibold text-amber-400">{formatAmount(totals.totalBorrowed)}</span>
+                      <span className="font-semibold text-teal-400">{formatAmount(totals.totalBorrowed)}</span>
                     </div>
                     <div>
                       <span className="text-white/60">Total Repaid: </span>
@@ -418,7 +418,7 @@ export function PositionHistoryModal({
                       {position.baseDebt > 0 && (
                         <div className="flex justify-between">
                           <span className="text-white/70">{position.baseAssetSymbol}</span>
-                          <span className="font-semibold text-amber-400">
+                          <span className="font-semibold text-teal-400">
                             {formatAmount(position.baseDebt)} ({formatUsd(position.baseDebtUsd)})
                           </span>
                         </div>
@@ -426,7 +426,7 @@ export function PositionHistoryModal({
                       {position.quoteDebt > 0 && (
                         <div className="flex justify-between">
                           <span className="text-white/70">{position.quoteAssetSymbol}</span>
-                          <span className="font-semibold text-amber-400">
+                          <span className="font-semibold text-teal-400">
                             {formatAmount(position.quoteDebt, 6)} ({formatUsd(position.quoteDebtUsd)})
                           </span>
                         </div>

@@ -245,204 +245,87 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
       ) : (
         <>
           {/* Concentration Risk Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-3">
             {/* Supply Concentration */}
-            <div
-              className={`bg-white/5 rounded-2xl p-6 border ${
-                supplyRisk.color === "red"
-                  ? "border-red-500/50 shadow-lg shadow-red-500/10"
-                  : supplyRisk.color === "orange"
-                    ? "border-orange-500/30"
-                    : "border-white/10"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  {supplyRisk.icon} Supply Concentration
-                </h3>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    supplyRisk.color === "red"
-                      ? "bg-red-500/20 text-red-300"
-                      : supplyRisk.color === "orange"
-                        ? "bg-orange-500/20 text-orange-300"
-                        : supplyRisk.color === "yellow"
-                          ? "bg-yellow-500/20 text-yellow-300"
-                          : "bg-green-500/20 text-green-300"
-                  }`}
-                >
-                  {supplyRisk.label} Risk
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-white/80">Supply Concentration</span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                  supplyRisk.color === "red" ? "bg-red-500/20 text-red-300" :
+                  supplyRisk.color === "orange" ? "bg-amber-500/20 text-teal-300" :
+                  "bg-emerald-500/20 text-emerald-300"
+                }`}>
+                  {supplyRisk.label}
                 </span>
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-sm text-white/60">
-                      Top Supplier Share
-                    </span>
-                    <span className="text-3xl font-bold text-white">
-                      {concentration.supplyConcentration.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${
-                        supplyRisk.color === "red"
-                          ? "bg-gradient-to-r from-red-600 to-red-400"
-                          : supplyRisk.color === "orange"
-                            ? "bg-gradient-to-r from-orange-600 to-orange-400"
-                            : "bg-gradient-to-r from-cyan-500 to-blue-500"
-                      }`}
-                      style={{
-                        width: `${Math.min(concentration.supplyConcentration, 100)}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-white/10 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-white/60">Top 5 Supply:</span>
-                    <span className="text-white font-semibold">
-                      {concentration.totalSupply.toLocaleString(undefined, {
-                        maximumFractionDigits: 0,
-                      })}
-                    </span>
-                  </div>
-                </div>
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-2xl font-bold text-white">{concentration.supplyConcentration.toFixed(1)}%</span>
+                <span className="text-xs text-white/40">top supplier share</span>
+              </div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    supplyRisk.color === "red" ? "bg-red-500" :
+                    supplyRisk.color === "orange" ? "bg-amber-500" : "bg-cyan-500"
+                  }`}
+                  style={{ width: `${Math.min(concentration.supplyConcentration, 100)}%` }}
+                />
+              </div>
+              <div className="mt-2 text-xs text-white/50">
+                Top 5: {concentration.totalSupply.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
             </div>
 
             {/* Borrow Concentration */}
-            <div
-              className={`bg-white/5 rounded-2xl p-6 border ${
-                borrowRisk.color === "red"
-                  ? "border-red-500/50 shadow-lg shadow-red-500/10"
-                  : borrowRisk.color === "orange"
-                    ? "border-orange-500/30"
-                    : "border-white/10"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  {borrowRisk.icon} Borrow Concentration
-                </h3>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    borrowRisk.color === "red"
-                      ? "bg-red-500/20 text-red-300"
-                      : borrowRisk.color === "orange"
-                        ? "bg-orange-500/20 text-orange-300"
-                        : borrowRisk.color === "yellow"
-                          ? "bg-yellow-500/20 text-yellow-300"
-                          : "bg-green-500/20 text-green-300"
-                  }`}
-                >
-                  {borrowRisk.label} Risk
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-white/80">Borrow Concentration</span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                  borrowRisk.color === "red" ? "bg-red-500/20 text-red-300" :
+                  borrowRisk.color === "orange" ? "bg-amber-500/20 text-teal-300" :
+                  "bg-emerald-500/20 text-emerald-300"
+                }`}>
+                  {borrowRisk.label}
                 </span>
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-sm text-white/60">
-                      Top Borrower Share
-                    </span>
-                    <span className="text-3xl font-bold text-white">
-                      {concentration.borrowConcentration.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${
-                        borrowRisk.color === "red"
-                          ? "bg-gradient-to-r from-red-600 to-red-400"
-                          : borrowRisk.color === "orange"
-                            ? "bg-gradient-to-r from-orange-600 to-orange-400"
-                            : "bg-gradient-to-r from-amber-500 to-orange-500"
-                      }`}
-                      style={{
-                        width: `${Math.min(concentration.borrowConcentration, 100)}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-white/10 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-white/60">Top 5 Borrow:</span>
-                    <span className="text-white font-semibold">
-                      {concentration.totalBorrow.toLocaleString(undefined, {
-                        maximumFractionDigits: 0,
-                      })}
-                    </span>
-                  </div>
-                </div>
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-2xl font-bold text-white">{concentration.borrowConcentration.toFixed(1)}%</span>
+                <span className="text-xs text-white/40">top borrower share</span>
+              </div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    borrowRisk.color === "red" ? "bg-red-500" :
+                    borrowRisk.color === "orange" ? "bg-amber-500" : "bg-teal-400"
+                  }`}
+                  style={{ width: `${Math.min(concentration.borrowConcentration, 100)}%` }}
+                />
+              </div>
+              <div className="mt-2 text-xs text-white/50">
+                Top 5: {concentration.totalBorrow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
             </div>
           </div>
 
           {/* Top 5 Lists */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-3">
             {/* Top Suppliers */}
-            <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-              <h3 className="text-lg font-bold text-cyan-200 mb-4 flex items-center gap-2">
-                <DiamondIcon size={24} /> Top 5 Suppliers
-              </h3>
-
+            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+              <h4 className="text-xs font-medium text-white/60 uppercase tracking-wider mb-2">Top 5 Suppliers</h4>
               {topSuppliers.length === 0 ? (
-                <div className="text-center py-8 text-white/40">
-                  No suppliers found in this period
-                </div>
+                <div className="text-center py-4 text-white/30 text-xs">No suppliers found</div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-1.5">
                   {topSuppliers.map((supplier, idx) => (
-                    <div
-                      key={supplier.address}
-                      className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 hover:border-cyan-500/30 transition-colors"
-                    >
-                      {/* Rank */}
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                          idx === 0
-                            ? "bg-yellow-500/20 text-yellow-300"
-                            : idx === 1
-                              ? "bg-gray-400/20 text-gray-300"
-                              : idx === 2
-                                ? "bg-orange-500/20 text-orange-300"
-                                : "bg-cyan-500/20 text-cyan-300"
-                        }`}
-                      >
-                        {idx + 1}
-                      </div>
-
-                      {/* Address */}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-mono text-xs text-white/80 truncate">
-                          {formatAddress(supplier.address)}
-                        </div>
-                        <div className="text-xs text-white/40">
-                          {supplier.transactionCount} transactions
-                        </div>
-                      </div>
-
-                      {/* Amount */}
-                      <div className="text-right">
-                        <div className="font-bold text-white">
-                          {supplier.netAmount.toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                          })}
-                          {asset && <span className="text-xs text-white/60 ml-1">{asset}</span>}
-                        </div>
-                        <div className="text-xs text-cyan-300">
-                          {(
-                            (supplier.netAmount / concentration.totalSupply) *
-                            100
-                          ).toFixed(1)}
-                          %
-                        </div>
-                      </div>
+                    <div key={supplier.address} className="flex items-center gap-2 px-2 py-1.5 bg-white/[0.03] rounded border border-white/5 hover:border-cyan-500/20 transition-colors">
+                      <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold ${
+                        idx === 0 ? "bg-amber-500/20 text-teal-400" :
+                        idx === 1 ? "bg-slate-500/20 text-slate-300" :
+                        idx === 2 ? "bg-orange-500/20 text-orange-300" : "bg-white/10 text-white/50"
+                      }`}>{idx + 1}</span>
+                      <span className="font-mono text-[10px] text-white/60 truncate flex-1">{formatAddress(supplier.address)}</span>
+                      <span className="text-xs font-semibold text-white">{supplier.netAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      <span className="text-[10px] text-cyan-400">{((supplier.netAmount / concentration.totalSupply) * 100).toFixed(1)}%</span>
                     </div>
                   ))}
                 </div>
@@ -450,63 +333,22 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
             </div>
 
             {/* Top Borrowers */}
-            <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-              <h3 className="text-lg font-bold text-amber-200 mb-4 flex items-center gap-2">
-                <BorrowersIcon size={24} /> Top 5 Borrowers
-              </h3>
-
+            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+              <h4 className="text-xs font-medium text-white/60 uppercase tracking-wider mb-2">Top 5 Borrowers</h4>
               {topBorrowers.length === 0 ? (
-                <div className="text-center py-8 text-white/40">
-                  No borrowers found in this period
-                </div>
+                <div className="text-center py-4 text-white/30 text-xs">No borrowers found</div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-1.5">
                   {topBorrowers.map((borrower, idx) => (
-                    <div
-                      key={borrower.address}
-                      className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 hover:border-amber-500/30 transition-colors"
-                    >
-                      {/* Rank */}
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                          idx === 0
-                            ? "bg-yellow-500/20 text-yellow-300"
-                            : idx === 1
-                              ? "bg-gray-400/20 text-gray-300"
-                              : idx === 2
-                                ? "bg-orange-500/20 text-orange-300"
-                                : "bg-amber-500/20 text-amber-300"
-                        }`}
-                      >
-                        {idx + 1}
-                      </div>
-
-                      {/* Address */}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-mono text-xs text-white/80 truncate">
-                          {formatAddress(borrower.address)}
-                        </div>
-                        <div className="text-xs text-white/40">
-                          {borrower.transactionCount} transactions
-                        </div>
-                      </div>
-
-                      {/* Amount */}
-                      <div className="text-right">
-                        <div className="font-bold text-white">
-                          {borrower.netAmount.toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                          })}
-                          {asset && <span className="text-xs text-white/60 ml-1">{asset}</span>}
-                        </div>
-                        <div className="text-xs text-amber-300">
-                          {(
-                            (borrower.netAmount / concentration.totalBorrow) *
-                            100
-                          ).toFixed(1)}
-                          %
-                        </div>
-                      </div>
+                    <div key={borrower.address} className="flex items-center gap-2 px-2 py-1.5 bg-white/[0.03] rounded border border-white/5 hover:border-amber-500/20 transition-colors">
+                      <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold ${
+                        idx === 0 ? "bg-amber-500/20 text-teal-400" :
+                        idx === 1 ? "bg-slate-500/20 text-slate-300" :
+                        idx === 2 ? "bg-orange-500/20 text-orange-300" : "bg-white/10 text-white/50"
+                      }`}>{idx + 1}</span>
+                      <span className="font-mono text-[10px] text-white/60 truncate flex-1">{formatAddress(borrower.address)}</span>
+                      <span className="text-xs font-semibold text-white">{borrower.netAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      <span className="text-[10px] text-teal-400">{((borrower.netAmount / concentration.totalBorrow) * 100).toFixed(1)}%</span>
                     </div>
                   ))}
                 </div>
@@ -515,79 +357,36 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
           </div>
 
           {/* Risk Interpretation */}
-          <div className="bg-indigo-900/20 rounded-2xl p-6 border border-indigo-500/30">
-            <h3 className="text-lg font-bold text-indigo-300 mb-3 flex items-center gap-2">
-              <InsightIcon size={24} /> What This Means
-            </h3>
-            <div className="space-y-3 text-sm text-white/70">
-              <div className="flex gap-3">
-                <span className="shrink-0"><AlertIcon size={18} variant="warning" /></span>
-                <div>
-                  <span className="font-semibold text-white">
-                    Supply Concentration:
-                  </span>{" "}
+          <div className="bg-white/[0.02] border border-white/5 rounded-lg p-4 mt-4">
+            <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
+              What This Tells You
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-white/60">
+              <div>
+                <span className="text-white/80 font-medium">Supply Risk</span>
+                <p className="mt-1">
                   {concentration.supplyConcentration > 50 ? (
-                    <>
-                      <span className="text-orange-300 font-semibold">
-                        High risk!
-                      </span>{" "}
-                      The top supplier controls{" "}
-                      {concentration.supplyConcentration.toFixed(1)}% of tracked
-                      supply. If they withdraw, liquidity could drop
-                      significantly.
-                    </>
+                    <>Top supplier controls {concentration.supplyConcentration.toFixed(1)}%. High withdrawal risk.</>
                   ) : (
-                    <>
-                      Supply is relatively well-distributed. The top supplier
-                      has {concentration.supplyConcentration.toFixed(1)}% of
-                      tracked supply, indicating healthy diversification.
-                    </>
+                    <>Supply well-distributed ({concentration.supplyConcentration.toFixed(1)}% top share). Healthy diversification.</>
                   )}
-                </div>
+                </p>
               </div>
-
-              <div className="flex gap-3">
-                <span className="text-cyan-400 font-bold shrink-0">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </span>
-                <div>
-                  <span className="font-semibold text-white">
-                    Borrow Concentration:
-                  </span>{" "}
+              <div>
+                <span className="text-white/80 font-medium">Borrow Risk</span>
+                <p className="mt-1">
                   {concentration.borrowConcentration > 50 ? (
-                    <>
-                      <span className="text-orange-300 font-semibold">
-                        High risk!
-                      </span>{" "}
-                      The top borrower has{" "}
-                      {concentration.borrowConcentration.toFixed(1)}% of tracked
-                      debt. A default could significantly impact the pool.
-                    </>
+                    <>Top borrower has {concentration.borrowConcentration.toFixed(1)}% of debt. Default could impact pool.</>
                   ) : (
-                    <>
-                      Debt is relatively well-distributed. The top borrower has{" "}
-                      {concentration.borrowConcentration.toFixed(1)}% of tracked
-                      debt, reducing single-point-of-failure risk.
-                    </>
+                    <>Debt well-distributed ({concentration.borrowConcentration.toFixed(1)}% top share). Lower default risk.</>
                   )}
-                </div>
+                </p>
               </div>
-
-              <div className="flex gap-3">
-                <span className="text-green-400 shrink-0">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </span>
-                <div>
-                  <span className="font-semibold text-white">Note:</span> This
-                  shows net positions based on event history in the selected
-                  time range. Actual current positions may differ. Lower
-                  concentration = lower risk.
-                </div>
+              <div>
+                <span className="text-white/80 font-medium">Note</span>
+                <p className="mt-1">
+                  Based on event history in selected range. Lower concentration = lower risk.
+                </p>
               </div>
             </div>
           </div>

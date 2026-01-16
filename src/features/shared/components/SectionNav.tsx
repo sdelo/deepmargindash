@@ -50,7 +50,7 @@ export function SectionNav({
               onClick={() => onSelectSection(section.id)}
               className={`px-4 py-1.5 rounded-md transition-all duration-200 ${
                 isActive
-                  ? "bg-amber-400 text-slate-900 font-semibold"
+                  ? "bg-teal-400 text-slate-900 font-semibold"
                   : "text-white/60 hover:text-white hover:bg-white/10"
               }`}
             >

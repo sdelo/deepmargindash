@@ -114,7 +114,7 @@ export function LiquidationDashboard() {
 
         <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
           <div className="text-xs text-slate-400 mb-1">At-Risk</div>
-          <div className="text-xl font-bold text-amber-400">
+          <div className="text-xl font-bold text-teal-400">
             {positionsLoading ? (
               <div className="h-6 w-8 bg-slate-700 rounded animate-pulse" />
             ) : (
@@ -167,7 +167,7 @@ export function LiquidationDashboard() {
             onClick={() => setActiveTab(tab.key as DashboardTab)}
             className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === tab.key
-                ? 'bg-amber-400 text-slate-900'
+                ? 'bg-teal-400 text-slate-900'
                 : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
             }`}
           >
@@ -342,7 +342,7 @@ export function LiquidationDashboard() {
                                   maximumFractionDigits: 2,
                                 })}
                               </td>
-                              <td className="py-3 px-4 text-right text-amber-400">
+                              <td className="py-3 px-4 text-right text-teal-400">
                                 {(parseFloat(liq.risk_ratio) / 1e9).toFixed(3)}
                               </td>
                             </tr>

@@ -27,7 +27,7 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
             onClick={() => onChange(option)}
             className={`px-3 py-1.5 text-sm transition-all ${
               value === option
-                ? 'bg-amber-400 text-slate-900 font-medium'
+                ? 'bg-teal-400 text-slate-900 font-medium'
                 : 'text-white/60 hover:text-white hover:bg-white/10'
             }`}
           >

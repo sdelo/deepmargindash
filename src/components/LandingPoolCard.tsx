@@ -34,7 +34,7 @@ export function LandingPoolCard({ pool }: LandingPoolCardProps) {
           </div>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-bold text-amber-400">
+          <div className="text-3xl font-bold text-teal-400">
             {Number(pool.ui.aprSupplyPct).toFixed(2)}%
           </div>
           <p className="text-xs text-white/50">APY</p>

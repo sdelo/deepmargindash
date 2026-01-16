@@ -21,19 +21,19 @@ export const OverviewStrip: FC<Props> = ({ pool }) => {
       <div className="grid grid-cols-3 gap-4 text-center">
         <div>
           <p className="text-xs text-cyan-100/70">Total Supply</p>
-          <p className="text-lg font-bold text-amber-300">
+          <p className="text-lg font-bold text-teal-300">
             {Number(pool.state.supply).toLocaleString()}
           </p>
         </div>
         <div>
           <p className="text-xs text-cyan-100/70">Total Borrow</p>
-          <p className="text-lg font-bold text-amber-300">
+          <p className="text-lg font-bold text-teal-300">
             {Number(pool.state.borrow).toLocaleString()}
           </p>
         </div>
         <div>
           <p className="text-xs text-cyan-100/70">Utilization</p>
-          <p className="text-lg font-bold text-amber-300">{util}%</p>
+          <p className="text-lg font-bold text-teal-300">{util}%</p>
         </div>
       </div>
     </div>

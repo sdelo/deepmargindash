@@ -289,7 +289,7 @@ export function APYHistory({ pool }: APYHistoryProps) {
         </div>
         <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
           <div className="text-sm text-white/60 mb-1">Peak APY</div>
-          <div className="text-2xl font-bold text-amber-300">
+          <div className="text-2xl font-bold text-teal-300">
             {stats.maxAPY < 0.01 ? stats.maxAPY.toFixed(4) : stats.maxAPY.toFixed(2)}%
           </div>
         </div>
@@ -405,49 +405,32 @@ export function APYHistory({ pool }: APYHistoryProps) {
       </div>
 
       {/* Insight Box */}
-      <div className="bg-indigo-900/20 rounded-2xl p-6 border border-indigo-500/30">
-        <h3 className="text-lg font-bold text-indigo-300 mb-3 flex items-center gap-2">
-          <InsightIcon size={24} /> What This Tells You
-        </h3>
-        <div className="space-y-3 text-sm text-white/70">
-          <div className="flex gap-3">
-            <span className="text-emerald-400 font-bold shrink-0">📈</span>
-            <div>
-              <span className="font-semibold text-white">
-                Historical Performance:
-              </span>{" "}
-              This chart shows what suppliers actually earned based on pool
-              utilization. Higher utilization = higher APY, but also means less
-              liquidity for withdrawals.
-            </div>
+      <div className="bg-white/[0.02] border border-white/5 rounded-lg p-4 mt-4">
+        <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
+          What This Tells You
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-white/60">
+          <div>
+            <span className="text-white/80 font-medium">Historical Performance</span>
+            <p className="mt-1">
+              Chart shows actual supplier earnings based on utilization. Higher utilization = higher APY but lower withdrawal liquidity.
+            </p>
           </div>
-
-          <div className="flex gap-3">
-            <span className="text-cyan-400 font-bold shrink-0">⚡</span>
-            <div>
-              <span className="font-semibold text-white">APY Volatility:</span>{" "}
+          <div>
+            <span className="text-white/80 font-medium">APY Volatility</span>
+            <p className="mt-1">
               {stats.maxAPY - stats.minAPY > 5 ? (
-                <>
-                  APY has varied significantly (
-                  {(stats.maxAPY - stats.minAPY).toFixed(1)}% range). This pool
-                  experiences dynamic borrowing demand.
-                </>
+                <>Range of {(stats.maxAPY - stats.minAPY).toFixed(1)}% indicates dynamic borrowing demand.</>
               ) : (
-                <>
-                  APY has been relatively stable. This indicates consistent
-                  borrowing demand and predictable returns.
-                </>
+                <>Stable APY suggests consistent demand and predictable returns.</>
               )}
-            </div>
+            </p>
           </div>
-
-          <div className="flex gap-3">
-            <span className="text-amber-400 font-bold shrink-0">💡</span>
-            <div>
-              <span className="font-semibold text-white">Pro Tip:</span> The
-              dashed line shows average APY. Depositing when APY is above
-              average means you're timing the market well.
-            </div>
+          <div>
+            <span className="text-white/80 font-medium">Timing</span>
+            <p className="mt-1">
+              Dashed line = average APY. Depositing above this line means better-than-average entry.
+            </p>
           </div>
         </div>
       </div>

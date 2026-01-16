@@ -121,7 +121,7 @@ export function DashboardNav({
                       w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 border
                       ${
                         selectedPoolId === pool.id
-                          ? "bg-amber-400/20 border-amber-400/50 text-white"
+                          ? "bg-teal-400/20 border-teal-400/50 text-white"
                           : "bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/10"
                       }
                     `}
@@ -134,7 +134,7 @@ export function DashboardNav({
                     <span className="font-bold flex-shrink-0">
                       {pool.asset}
                     </span>
-                    <span className="text-amber-300 font-bold flex-shrink-0 ml-auto">
+                    <span className="text-teal-300 font-bold flex-shrink-0 ml-auto">
                       {Number(pool.ui.aprSupplyPct).toFixed(2)}%
                     </span>
                   </button>
@@ -152,7 +152,7 @@ export function DashboardNav({
                   w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 min-h-[48px]
                   ${
                     activeSection === item.id
-                      ? "bg-amber-400 text-slate-900"
+                      ? "bg-teal-400 text-[#0c1a24]"
                       : "text-white/60 hover:text-white hover:bg-white/10"
                   }
                 `}
@@ -185,7 +185,7 @@ export function DashboardNav({
                       flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 min-h-[44px] border
                       ${
                         selectedPoolId === pool.id
-                          ? "bg-amber-400/20 border-amber-400/50 text-white"
+                          ? "bg-teal-400/20 border-teal-400/50 text-white"
                           : "bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/10"
                       }
                     `}
@@ -198,7 +198,7 @@ export function DashboardNav({
                     <span className="font-bold text-sm flex-shrink-0">
                       {pool.asset}
                     </span>
-                    <span className="text-amber-300 font-bold text-sm flex-shrink-0">
+                    <span className="text-teal-300 font-bold text-sm flex-shrink-0">
                       {Number(pool.ui.aprSupplyPct).toFixed(2)}%
                     </span>
                   </button>
@@ -217,7 +217,7 @@ export function DashboardNav({
                   flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 min-h-[40px]
                   ${
                     activeSection === item.id
-                      ? "bg-amber-400 text-slate-900"
+                      ? "bg-teal-400 text-[#0c1a24]"
                       : "text-white/60 hover:text-white hover:bg-white/10"
                   }
                 `}

@@ -10,7 +10,7 @@ import { Footer } from "../components/Footer";
 import { usePoolData } from "../hooks/usePoolData";
 import { useNetworkContracts } from "../hooks/useNetworkContracts";
 import { syntheticPools } from "../data/synthetic/pools";
-import HelmetIcon from "../assets/helmet-v2-minimal.svg";
+import { brand } from "../config/brand";
 
 export function LandingPage() {
   const contracts = useNetworkContracts();
@@ -61,8 +61,8 @@ export function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           {/* Logo and Name */}
           <div className="flex items-center justify-center gap-3 mb-8">
-            <img src={HelmetIcon} alt="Leviathan" className="w-14 h-14" />
-            <h1 className="text-4xl font-bold text-white">Leviathan</h1>
+            <img src={brand.logo.src} alt={brand.logo.alt} className={brand.logo.sizes.xl} />
+            <h1 className="text-4xl font-bold text-white">{brand.name}</h1>
           </div>
 
           {/* Main Headline */}
@@ -79,7 +79,7 @@ export function LandingPage() {
           {/* APY Highlight */}
           <div className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/10 mb-8">
             <span className="text-white/60">Earn up to</span>
-            <span className="text-2xl font-bold text-amber-400">
+            <span className="text-2xl font-bold text-teal-400">
               {isLoading ? "..." : `${highestApy}%`}
             </span>
             <span className="text-white/60">APY</span>

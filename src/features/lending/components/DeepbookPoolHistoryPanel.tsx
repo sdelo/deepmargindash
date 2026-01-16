@@ -189,13 +189,13 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                 relative rounded-xl p-4 md:p-5 border transition-all
                 ${
                   isLatest
-                    ? "bg-amber-400/5 border-amber-400/30"
+                    ? "bg-teal-400/5 border-teal-400/30"
                     : "bg-white/5 border-white/10"
                 }
               `}
             >
               {isLatest && (
-                <div className="absolute -top-2 -right-2 bg-amber-400 text-slate-900 text-xs font-bold px-2 py-1 rounded-full">
+                <div className="absolute -top-2 -right-2 bg-teal-400 text-slate-900 text-xs font-bold px-2 py-1 rounded-full">
                   Latest
                 </div>
               )}
@@ -298,7 +298,7 @@ export const DeepbookPoolHistoryPanel: FC<Props> = ({ poolId, onClose }) => {
                     <div className="text-xs text-white/40 mb-1">
                       Liquidation Risk
                     </div>
-                    <div className="text-sm font-semibold text-amber-400">
+                    <div className="text-sm font-semibold text-teal-400">
                       {config?.risk_ratios?.liquidation_risk_ratio
                         ? formatRiskRatio(
                             config.risk_ratios.liquidation_risk_ratio

@@ -249,7 +249,7 @@ export function InterestRateHistoryPanel({
                         }
                         className={`relative rounded-xl border p-4 transition-all cursor-pointer ${
                           isSelected
-                            ? "bg-amber-500/10 border-amber-400/40"
+                            ? "bg-amber-500/10 border-teal-400/40"
                             : "bg-white/5 border-white/10 hover:bg-white/10"
                         }`}
                       >
@@ -266,7 +266,7 @@ export function InterestRateHistoryPanel({
                             </div>
                             <div>
                               <div
-                                className={`font-semibold ${isSelected ? "text-amber-400" : "text-cyan-400"}`}
+                                className={`font-semibold ${isSelected ? "text-teal-400" : "text-cyan-400"}`}
                               >
                                 Interest Rate Update
                               </div>

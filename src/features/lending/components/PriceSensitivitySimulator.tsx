@@ -178,7 +178,7 @@ export function PriceSensitivitySimulator({
               {priceChangePct > 0 ? '+' : ''}{priceChangePct}%
             </span>
             <span className="text-white/60">→</span>
-            <span className="text-lg font-bold text-amber-300">
+            <span className="text-lg font-bold text-teal-300">
               ${simulatedPrice.toFixed(2)}
             </span>
           </div>
@@ -290,7 +290,7 @@ export function PriceSensitivitySimulator({
               <span className="text-white/70">At-Risk:</span>
               <span className={`font-bold ${
                 simulatedState.newAtRiskCount > currentState.newAtRiskCount
-                  ? 'text-amber-400'
+                  ? 'text-teal-400'
                   : 'text-white'
               }`}>
                 {simulatedState.newAtRiskCount}
@@ -300,7 +300,7 @@ export function PriceSensitivitySimulator({
               <span className="text-white/70">Debt at Risk:</span>
               <span className={`font-bold ${
                 simulatedState.totalNewDebtAtRiskUsd > currentState.totalNewDebtAtRiskUsd
-                  ? 'text-amber-400'
+                  ? 'text-teal-400'
                   : 'text-white'
               }`}>
                 {formatUsd(simulatedState.totalNewDebtAtRiskUsd)}
@@ -339,14 +339,14 @@ export function PriceSensitivitySimulator({
                   />
                   {/* Count label */}
                   <div className={`absolute -top-5 left-0 right-0 text-center text-xs ${
-                    isSelected ? 'text-amber-300 font-bold' : 'text-white/40'
+                    isSelected ? 'text-teal-300 font-bold' : 'text-white/40'
                   }`}>
                     {scenario.newLiquidatableCount}
                   </div>
                 </div>
                 {/* Price change label */}
                 <div className={`text-xs ${
-                  isSelected ? 'text-amber-300 font-bold' : 'text-white/40'
+                  isSelected ? 'text-teal-300 font-bold' : 'text-white/40'
                 }`}>
                   {scenario.priceChange > 0 ? '+' : ''}{scenario.priceChange}%
                 </div>
@@ -362,13 +362,13 @@ export function PriceSensitivitySimulator({
           <div className="flex items-start gap-3">
             <BoltIcon size={28} />
             <div>
-              <div className="font-semibold text-amber-300 mb-1">Opportunity Alert</div>
+              <div className="font-semibold text-teal-300 mb-1">Opportunity Alert</div>
               <p className="text-sm text-white/80">
-                A <span className="font-bold text-amber-300">{priceChangePct}%</span> price{' '}
+                A <span className="font-bold text-teal-300">{priceChangePct}%</span> price{' '}
                 {priceChangePct < 0 ? 'drop' : 'increase'} would make{' '}
-                <span className="font-bold text-amber-300">{simulatedState.positionsAffected}</span> additional 
+                <span className="font-bold text-teal-300">{simulatedState.positionsAffected}</span> additional 
                 position{simulatedState.positionsAffected !== 1 ? 's' : ''} liquidatable, 
-                representing <span className="font-bold text-amber-300">
+                representing <span className="font-bold text-teal-300">
                   {formatUsd(simulatedState.totalNewDebtAtRiskUsd - currentState.totalNewDebtAtRiskUsd)}
                 </span> in new debt at risk.
               </p>

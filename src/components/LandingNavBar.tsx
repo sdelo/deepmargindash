@@ -1,23 +1,23 @@
 import { Link } from "react-router-dom";
-import HelmetIcon from "../assets/helmet-v2-minimal.svg";
+import { brand } from "../config/brand";
 import { NetworkSwitcher } from "./NetworkSwitcher";
 import { IndexerSwitcher } from "./IndexerSwitcher";
 
 export function LandingNavBar() {
   return (
-    <nav className="w-full fixed top-0 z-50 backdrop-blur-md bg-black/30 border-b border-white/10">
+    <nav className="w-full fixed top-0 z-50 backdrop-blur-md bg-[#0c1a24]/80 border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Left - Brand */}
         <Link
           to="/"
-          className="flex items-center gap-2 font-bold text-white text-lg hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2.5 font-bold text-white text-lg hover:opacity-80 transition-opacity"
         >
           <img
-            src={HelmetIcon}
-            alt="Leviathan"
-            className="w-7 h-7"
+            src={brand.logo.src}
+            alt={brand.logo.alt}
+            className={brand.logo.sizes.md}
           />
-          <span>Leviathan</span>
+          <span>{brand.name}</span>
         </Link>
 
         {/* Right - Controls */}

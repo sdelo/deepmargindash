@@ -125,7 +125,7 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
               })}
             </div>
             <div className="text-sm text-white/60">Total Borrowed</div>
-            <div className="text-xs text-amber-300">{pool.asset}</div>
+            <div className="text-xs text-teal-300">{pool.asset}</div>
           </div>
         </div>
 
@@ -193,7 +193,7 @@ export function EnhancedPoolAnalytics({ pool }: { pool: PoolOverview }) {
             <span className="text-2xl">📉</span>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl font-bold text-amber-400">
+            <div className="text-2xl font-bold text-teal-400">
               {analytics.borrowApr.toFixed(3)}%
             </div>
             <div className="text-sm text-white/60">Borrow APR</div>

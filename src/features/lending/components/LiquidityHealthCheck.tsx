@@ -71,7 +71,7 @@ export function LiquidityHealthCheck({ pool }: LiquidityHealthCheckProps) {
     if (utilizationPercent > 75)
       return {
         label: "High Risk",
-        color: "text-amber-400",
+        color: "text-teal-400",
         bgColor: "bg-amber-500/10",
         borderColor: "border-amber-500/20",
         icon: "⚠️",
@@ -268,7 +268,7 @@ export function LiquidityHealthCheck({ pool }: LiquidityHealthCheckProps) {
             High utilization means more assets are borrowed, which increases APY but reduces available liquidity for withdrawals. 
             Currently, <span className="text-white font-medium">{utilizationPercent.toFixed(1)}%</span> of the pool is borrowed.
             {utilizationPercent > 85 && (
-                <span className="block mt-2 text-amber-300">
+                <span className="block mt-2 text-teal-300">
                     ⚠️ Caution: Pool is approaching max utilization. Large withdrawals may need to wait for loan repayments.
                 </span>
             )}

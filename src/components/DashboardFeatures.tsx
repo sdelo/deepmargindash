@@ -5,7 +5,7 @@ export function DashboardFeatures() {
     <section className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-400 text-sm mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-400/10 border border-teal-400/30 text-teal-400 text-sm mb-6">
             <LightningIcon />
             Liquidations Center
           </div>
@@ -59,7 +59,7 @@ export function DashboardFeatures() {
         </div>
 
         {/* Liquidations Preview */}
-        <div className="mt-12 card-surface-elevated p-8 rounded-2xl border border-amber-400/20">
+        <div className="mt-12 card-surface-elevated p-8 rounded-2xl border border-teal-400/20">
           <div className="flex flex-col lg:flex-row items-center gap-8">
             <div className="flex-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-sm mb-4 animate-pulse">
@@ -124,7 +124,7 @@ interface FeatureCardProps {
 function FeatureCard({ icon, title, description, highlight }: FeatureCardProps) {
   const colorClasses = highlight === "cyan" 
     ? "bg-cyan-400/10 border-cyan-400/30 text-cyan-400"
-    : "bg-amber-400/10 border-amber-400/30 text-amber-400";
+    : "bg-teal-400/10 border-teal-400/30 text-teal-400";
 
   return (
     <div className="p-6 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all hover:bg-white/[0.07] group">
@@ -138,7 +138,7 @@ function FeatureCard({ icon, title, description, highlight }: FeatureCardProps) 
 }
 
 function MiniMetric({ label, icon, color }: { label: string; icon: React.ReactNode; color: "cyan" | "amber" }) {
-  const colorClass = color === "cyan" ? "text-cyan-400" : "text-amber-400";
+  const colorClass = color === "cyan" ? "text-cyan-400" : "text-teal-400";
   return (
     <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center gap-2">
       <div className={colorClass}>{icon}</div>

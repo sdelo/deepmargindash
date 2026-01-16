@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="neridGradient" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" style="stop-color:#5eead4"/>
+      <stop offset="100%" style="stop-color:#2dd4bf"/>
+    </linearGradient>
+  </defs>
+  <!-- Droplet body -->
+  <path 
+    d="M32 6C32 6 14 24 14 38C14 49.5 22 58 32 58C42 58 50 49.5 50 38C50 24 32 6 32 6Z" 
+    fill="url(#neridGradient)"
+  />
+  <!-- Inner wave accent -->
+  <path 
+    d="M22 40C26 36 29 40 32 36C35 32 38 36 42 32" 
+    stroke="#0c1a24" 
+    stroke-width="2.5" 
+    stroke-linecap="round" 
+    fill="none" 
+    opacity="0.4"
+  />
+  <!-- Highlight reflection -->
+  <ellipse cx="26" cy="28" rx="4" ry="6" fill="white" opacity="0.25"/>
+</svg>

@@ -148,7 +148,7 @@ export const LiquidationMonitor: FC<Props> = ({ poolId }) => {
                 event.riskRatio > 150
                   ? "text-red-400"
                   : event.riskRatio > 120
-                  ? "text-amber-400"
+                  ? "text-teal-400"
                   : "text-emerald-400";
 
               return (

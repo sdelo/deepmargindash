@@ -420,60 +420,38 @@ export function PoolActivity({ pool }: PoolActivityProps) {
       </div>
 
       {/* Insight Box */}
-      <div className="bg-indigo-900/20 rounded-2xl p-6 border border-indigo-500/30">
-        <h3 className="text-lg font-bold text-indigo-300 mb-3 flex items-center gap-2">
-          <InsightIcon size={24} /> Pool Health Signals
-        </h3>
-        <div className="space-y-3 text-sm text-white/70">
-          <div className="flex gap-3">
-            <span className="text-emerald-400 font-bold shrink-0">🌊</span>
-            <div>
-              <span className="font-semibold text-white">TVL Trend:</span>{" "}
+      <div className="bg-white/[0.02] border border-white/5 rounded-lg p-4 mt-4">
+        <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
+          What This Tells You
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-white/60">
+          <div>
+            <span className="text-white/80 font-medium">TVL Trend</span>
+            <p className="mt-1">
               {stats.netChange > 0 ? (
-                <>
-                  The pool has <span className="text-emerald-400">grown</span>{" "}
-                  by {formatNumber(Math.abs(stats.netChange))} {pool.asset} in this
-                  period. Growing TVL indicates confidence from suppliers.
-                </>
+                <>Pool grew by {formatNumber(Math.abs(stats.netChange))} {pool.asset}. Growing TVL signals supplier confidence.</>
               ) : stats.netChange < 0 ? (
-                <>
-                  The pool has <span className="text-red-400">shrunk</span> by{" "}
-                  {formatNumber(Math.abs(stats.netChange))} {pool.asset}. Monitor
-                  for sustained outflows which could signal concerns.
-                </>
+                <>Pool shrunk by {formatNumber(Math.abs(stats.netChange))} {pool.asset}. Monitor sustained outflows.</>
               ) : (
-                <>
-                  The pool has maintained stable TVL. This indicates balanced
-                  activity between deposits and withdrawals.
-                </>
+                <>Stable TVL indicates balanced deposit/withdrawal activity.</>
               )}
-            </div>
+            </p>
           </div>
-
-          <div className="flex gap-3">
-            <span className="text-cyan-400 font-bold shrink-0">📊</span>
-            <div>
-              <span className="font-semibold text-white">Activity Level:</span>{" "}
+          <div>
+            <span className="text-white/80 font-medium">Activity Level</span>
+            <p className="mt-1">
               {dailyData.length > 0 ? (
-                <>
-                  {dailyData.reduce((sum, d) => sum + d.depositCount + d.withdrawCount, 0)}{" "}
-                  transactions across {dailyData.length} active days. Active pools
-                  typically have better liquidity and tighter spreads.
-                </>
+                <>{dailyData.reduce((sum, d) => sum + d.depositCount + d.withdrawCount, 0)} txns across {dailyData.length} active days. Active pools have better liquidity.</>
               ) : (
                 <>No activity recorded in this period.</>
               )}
-            </div>
+            </p>
           </div>
-
-          <div className="flex gap-3">
-            <span className="text-amber-400 font-bold shrink-0">⚠️</span>
-            <div>
-              <span className="font-semibold text-white">Watch For:</span>{" "}
-              Large sudden withdrawals can reduce available liquidity. If you see
-              significant outflows, check the Concentration tab to see if a
-              whale is leaving.
-            </div>
+          <div>
+            <span className="text-white/80 font-medium">Risk Signals</span>
+            <p className="mt-1">
+              Large sudden withdrawals reduce liquidity. Check Concentration tab if you see significant outflows.
+            </p>
           </div>
         </div>
       </div>

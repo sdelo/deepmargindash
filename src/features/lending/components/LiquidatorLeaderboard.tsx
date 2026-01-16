@@ -141,7 +141,7 @@ export function LiquidatorLeaderboard({ className = '' }: LiquidatorLeaderboardP
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white/5 rounded-xl p-3 border border-amber-500/30">
-          <div className="text-2xl font-bold text-amber-400">
+          <div className="text-2xl font-bold text-teal-400">
             {uniqueLiquidators}
           </div>
           <div className="text-xs text-white/60">Active Liquidators</div>
@@ -244,7 +244,7 @@ export function LiquidatorLeaderboard({ className = '' }: LiquidatorLeaderboardP
                       </span>
                     </td>
                     <td className="py-3 px-3 text-right">
-                      <span className={`font-bold ${isTopThree ? 'text-amber-400' : 'text-white'}`}>
+                      <span className={`font-bold ${isTopThree ? 'text-teal-400' : 'text-white'}`}>
                         {liquidator.totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </span>
                       <span className="text-white/40 text-xs ml-1">

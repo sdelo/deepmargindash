@@ -61,7 +61,7 @@ export const DepositorDistribution: FC<Props> = ({ poolId }) => {
   return (
     <div className="relative card-surface border border-white/10 text-white">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 drop-shadow">
+        <h2 className="text-2xl font-extrabold tracking-wide text-teal-300 drop-shadow">
           Depositor Distribution
         </h2>
         <span className="text-xs text-cyan-100/80">Synthetic</span>
@@ -116,7 +116,7 @@ export const DepositorDistribution: FC<Props> = ({ poolId }) => {
             <span>Med</span>
             <span>High</span>
           </div>
-          <div className="text-[11px] text-amber-300 mt-2">
+          <div className="text-[11px] text-teal-300 mt-2">
             Gini: <span>{d.gini}</span> · HHI: <span>{d.hhi}</span>
           </div>
           <span className="pointer-events-none absolute -right-8 -bottom-8 w-28 h-28 rounded-full bg-amber-300/15 blur-2xl"></span>
@@ -193,7 +193,7 @@ export const DepositorDistribution: FC<Props> = ({ poolId }) => {
             <div className="text-center">
               <div className="text-xl text-cyan-100/90">
                 Top {pieData.length} ={" "}
-                <span className="text-amber-300 font-semibold">100%</span>
+                <span className="text-teal-300 font-semibold">100%</span>
               </div>
             </div>
           </div>
@@ -217,7 +217,7 @@ export const DepositorDistribution: FC<Props> = ({ poolId }) => {
                   className={`w-2 h-2 rounded-full ${colorToClass[s.color]}`}
                 ></div>
                 <div className="text-sm grow">{s.address}</div>
-                <div className="text-sm text-amber-300 font-semibold">
+                <div className="text-sm text-teal-300 font-semibold">
                   {s.sharePct.toFixed(1)}%
                 </div>
               </div>

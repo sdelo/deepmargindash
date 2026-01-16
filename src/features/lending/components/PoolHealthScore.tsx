@@ -29,7 +29,7 @@ const GRADE_COLORS: Record<OverallGrade, { bg: string; text: string; border: str
   "B+": { bg: "bg-teal-500/20", text: "text-teal-400", border: "border-teal-500/50", glow: "shadow-teal-500/30" },
   "B": { bg: "bg-cyan-500/15", text: "text-cyan-400", border: "border-cyan-500/40", glow: "shadow-cyan-500/20" },
   "C+": { bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/50", glow: "shadow-yellow-500/30" },
-  "C": { bg: "bg-amber-500/15", text: "text-amber-400", border: "border-amber-500/40", glow: "shadow-amber-500/20" },
+  "C": { bg: "bg-amber-500/15", text: "text-teal-400", border: "border-amber-500/40", glow: "shadow-amber-500/20" },
   "D": { bg: "bg-orange-500/20", text: "text-orange-400", border: "border-orange-500/50", glow: "shadow-orange-500/30" },
   "F": { bg: "bg-red-500/20", text: "text-red-400", border: "border-red-500/50", glow: "shadow-red-500/30" },
 };

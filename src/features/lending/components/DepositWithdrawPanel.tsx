@@ -8,6 +8,7 @@ import {
   createSupplyTransactionInfo,
   createWithdrawTransactionInfo,
 } from "../../../utils/transactionInfo";
+import { InfoTooltip } from "../../../components/InfoTooltip";
 
 type Props = {
   asset: "DBUSDC" | "SUI";
@@ -96,33 +97,32 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
 
   return (
     <div className="w-full card-surface p-6 flex flex-col relative min-h-[500px]">
-      <div className="mb-4">
-        <h2 className="text-2xl font-extrabold tracking-wide text-amber-300 mb-1 flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse shadow-[0_0_20px_4px_rgba(251,191,36,0.6)]"></span>
-          {asset} Margin Pool
-        </h2>
-        <p className="text-xs text-cyan-100/70">
-          Deposit {asset} to earn yield or withdraw your funds.
-        </p>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="stat-label mb-1">Deposit / Withdraw</div>
+          <h2 className="text-xl font-bold text-white">{asset} Pool</h2>
+        </div>
+        <span className="badge-live">Live</span>
       </div>
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent mb-4"></div>
+      <div className="section-divider mb-4"></div>
 
-      <div className="flex items-center gap-2 justify-center mb-6">
+      <div className="flex items-center gap-2 mb-6">
         <button
-          className={`px-6 py-3 rounded-lg text-base flex-1 max-w-[200px] transition-all ${
+          className={`px-5 py-2.5 rounded-lg text-sm font-medium flex-1 transition-all duration-200 ${
             tab === "deposit"
-              ? "bg-amber-400 text-slate-900 font-semibold"
-              : "bg-white/10 text-white/70 hover:bg-white/15"
+              ? "bg-teal-400 text-[#0c1a24] shadow-sm"
+              : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/8"
           }`}
           onClick={() => setTab("deposit")}
         >
           Deposit
         </button>
         <button
-          className={`px-6 py-3 rounded-lg text-base flex-1 max-w-[200px] transition-all ${
+          className={`px-5 py-2.5 rounded-lg text-sm font-medium flex-1 transition-all duration-200 ${
             tab === "withdraw"
-              ? "bg-amber-400 text-slate-900 font-semibold"
-              : "bg-white/10 text-white/70 hover:bg-white/15"
+              ? "bg-white/10 text-white border border-white/15"
+              : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/8"
           }`}
           onClick={() => setTab("withdraw")}
         >
@@ -132,7 +132,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
 
       {/* Deposit */}
       <div className={`flex-1 ${tab === "deposit" ? "block" : "hidden"}`}>
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* Input with inline MAX button */}
           <div className="relative">
             <input
@@ -142,7 +142,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
               max={assetBalanceNum}
               step="0.000001"
               placeholder={`Enter ${asset} amount`}
-              className={`input-surface w-full text-lg pl-5 pr-24 py-4 transition-all ${isFlashing ? "ring-4 ring-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.6)]" : ""}`}
+              className={`input-surface w-full text-lg pl-5 pr-24 py-5 rounded-xl transition-all ${isFlashing ? "ring-4 ring-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.6)]" : ""}`}
               value={inputAmount}
               onChange={(e) => setInputAmount(e.target.value)}
               id="deposit-amount"
@@ -151,7 +151,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
               <button
                 type="button"
                 onClick={() => setInputAmount(roundedAssetBalance)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-bold bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 hover:text-amber-200 rounded-lg border border-amber-400/30 transition-all"
+                className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-bold bg-teal-400/20 hover:bg-teal-400/30 text-teal-300 hover:text-amber-200 rounded-lg border border-teal-400/30 transition-all"
               >
                 MAX
               </button>
@@ -169,14 +169,14 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
           {inputAmount &&
             !isNaN(parseFloat(inputAmount)) &&
             parseFloat(inputAmount) > 0 && (
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <h4 className="text-xs text-indigo-200/80 uppercase tracking-wider mb-2">
+              <div className="surface-inset rounded-xl p-4">
+                <h4 className="stat-label mb-3">
                   Estimated Earnings
                 </h4>
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <div className="text-sm text-cyan-100/70">Daily</div>
-                    <div className="text-lg font-bold text-emerald-300">
+                    <div className="text-xs text-white/50 mb-1">Daily</div>
+                    <div className="stat-value-sm text-teal-400">
                       +
                       {earnings.daily.toLocaleString(undefined, {
                         minimumFractionDigits: 4,
@@ -186,10 +186,10 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-cyan-100/70">
+                    <div className="text-xs text-white/50 mb-1">
                       Yearly (APY {apy.toFixed(2)}%)
                     </div>
-                    <div className="text-lg font-bold text-emerald-300">
+                    <div className="stat-value-sm text-teal-400">
                       +
                       {earnings.yearly.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
@@ -225,9 +225,14 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
           </div>
 
 
-          <p className="text-xs text-slate-400 px-3 py-2">
-            Min Borrow: <span className="text-slate-300">{minBorrow}</span> · Supply Cap: <span className="text-slate-300">{supplyCap.toLocaleString()}</span>
-          </p>
+          <div className="text-xs text-slate-400 px-3 py-2 flex items-center gap-4">
+            <span className="flex items-center">
+              Min Borrow<InfoTooltip tooltip="minBorrow" />: <span className="text-slate-300 ml-1">{minBorrow}</span>
+            </span>
+            <span className="flex items-center">
+              Supply Cap<InfoTooltip tooltip="supplyCap" />: <span className="text-slate-300 ml-1">{supplyCap.toLocaleString()}</span>
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             {account ? (
               <>
@@ -341,7 +346,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
           {/* Withdrawable Balance Info (includes interest) */}
           <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
             Withdrawable {asset}:{" "}
-            <span className="text-amber-300 font-bold">
+            <span className="text-teal-300 font-bold">
               {depositedBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
             </span>
             <span className="text-cyan-100/50 text-xs ml-2">(principal + interest)</span>
@@ -419,7 +424,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
           {balance && (
             <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
               {asset} Balance:{" "}
-              <span className="text-amber-300 font-bold">{balance}</span>
+              <span className="text-teal-300 font-bold">{balance}</span>
             </p>
           )}
           {suiBalance && (
@@ -427,7 +432,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
               SUI Balance:{" "}
               <span
                 className={`font-bold ${
-                  suiBalanceNum < 0.01 ? "text-red-300" : "text-amber-300"
+                  suiBalanceNum < 0.01 ? "text-red-300" : "text-teal-300"
                 }`}
               >
                 {suiBalance}

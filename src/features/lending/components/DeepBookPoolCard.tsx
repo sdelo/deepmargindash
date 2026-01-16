@@ -226,7 +226,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, linkedMarginPools = ["SUI
               Liq. Risk Ratio
               <InfoTooltip tooltip={TOOLTIPS.liquidationRiskRatio} />
             </div>
-            <div className="text-xs font-semibold text-amber-400">
+            <div className="text-xs font-semibold text-teal-400">
               {config?.risk_ratios?.liquidation_risk_ratio
                 ? formatRiskRatio(config.risk_ratios.liquidation_risk_ratio)
                 : "N/A"}
@@ -292,7 +292,7 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, linkedMarginPools = ["SUI
       <div className="mt-4 pt-4 border-t border-white/5">
         <button
           onClick={() => onHistoryClick?.(currentPoolId)}
-          className="w-full px-3 py-2.5 rounded-lg text-xs font-semibold transition-all bg-amber-400 text-slate-900 hover:bg-amber-300"
+          className="w-full px-3 py-2.5 rounded-lg text-xs font-semibold transition-all bg-teal-400 text-slate-900 hover:bg-amber-300"
         >
           View Config History
         </button>

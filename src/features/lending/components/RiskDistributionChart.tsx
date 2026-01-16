@@ -68,7 +68,7 @@ export function RiskDistributionChart({ buckets, isLoading }: RiskDistributionCh
           <div className="text-xs text-white/60">Liquidatable</div>
         </div>
         <div className="bg-white/5 rounded-xl p-3 border border-amber-500/30">
-          <div className="text-2xl font-bold text-amber-400">
+          <div className="text-2xl font-bold text-teal-400">
             {(buckets[0]?.count || 0) + (buckets[1]?.count || 0)}
           </div>
           <div className="text-xs text-white/60">Critical Zone</div>
@@ -190,7 +190,7 @@ export function RiskDistributionChart({ buckets, isLoading }: RiskDistributionCh
               ) : buckets[1]?.count > 0 ? (
                 <>
                   No positions are currently liquidatable, but{' '}
-                  <span className="font-semibold text-amber-300">
+                  <span className="font-semibold text-teal-300">
                     {buckets[1].count} position{buckets[1].count !== 1 ? 's' : ''}
                   </span>{' '}
                   are in the critical zone and may become liquidatable soon.

@@ -57,7 +57,7 @@ const ChartTooltip: FC<ChartTooltipProps> = ({
               )}
               <span className="text-cyan-100/90">{entry.name}</span>
             </div>
-            <span className="text-amber-300 font-semibold">
+            <span className="text-teal-300 font-semibold">
               {valueFormatter
                 ? valueFormatter(entry.value, entry.name, entry)
                 : entry.value}

@@ -75,14 +75,42 @@ export function MarketStats({ poolName = 'SUI_DBUSDC', compact = false }: Market
     );
   }
 
+  // Check if data is truly empty or just zeros
+  const hasNoData = !summary || (summary.quote_volume === 0 && summary.last_price === 0);
+  const hasNoTrades = summary && summary.quote_volume === 0 && summary.last_price > 0;
+
   if (!summary) {
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-sm font-medium text-slate-300">Market Stats</div>
         </div>
-        <div className="text-center py-4 text-slate-500 text-xs">
-          No market data available
+        <div className="flex flex-col items-center justify-center py-6 text-slate-500">
+          <svg className="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <div className="text-xs font-medium">Market data unavailable</div>
+          <div className="text-[10px] mt-1 opacity-60">Unable to fetch trading data</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasNoData) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-medium text-slate-300">Market Stats</div>
+          <span className="text-xs px-1.5 py-0.5 bg-slate-700/50 rounded text-slate-400">
+            {poolName.replace('_', '/')}
+          </span>
+        </div>
+        <div className="flex flex-col items-center justify-center py-6 text-slate-500">
+          <svg className="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="text-xs font-medium">No trading activity yet</div>
+          <div className="text-[10px] mt-1 opacity-60">Chart will appear when trades occur</div>
         </div>
       </div>
     );

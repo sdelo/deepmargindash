@@ -9,7 +9,7 @@ export function TransparencySection() {
             Built for transparency
           </h2>
           <p className="text-lg text-white/70 max-w-2xl mx-auto">
-            Leviathan is a web3-native dashboard. Verify everything before you sign.
+            Nerid is a web3-native dashboard. Verify everything before you sign.
           </p>
         </div>
 
@@ -124,12 +124,12 @@ interface FlowItemProps {
 
 function FlowItem({ step, from, action, highlight }: FlowItemProps) {
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-lg ${highlight ? 'bg-amber-400/10 border border-amber-400/30' : 'bg-white/5'}`}>
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${highlight ? 'bg-amber-400 text-black' : 'bg-white/20 text-white'}`}>
+    <div className={`flex items-center gap-3 p-3 rounded-lg ${highlight ? 'bg-teal-400/10 border border-teal-400/30' : 'bg-white/5'}`}>
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${highlight ? 'bg-teal-400 text-[#0c1a24]' : 'bg-white/20 text-white'}`}>
         {step}
       </div>
       <div className="flex-1 min-w-0">
-        <div className={`text-sm font-medium ${highlight ? 'text-amber-400' : 'text-white/80'}`}>{from}</div>
+        <div className={`text-sm font-medium ${highlight ? 'text-teal-400' : 'text-white/80'}`}>{from}</div>
         <div className="text-xs text-white/50 truncate">{action}</div>
       </div>
     </div>
