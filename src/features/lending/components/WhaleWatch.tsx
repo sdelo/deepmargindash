@@ -26,6 +26,7 @@ import {
 interface WhaleWatchProps {
   poolId?: string;
   decimals?: number;
+  asset?: string; // e.g., "SUI", "DBUSDC"
 }
 
 interface ParticipantStats {
@@ -38,7 +39,7 @@ interface ParticipantStats {
   transactionCount: number;
 }
 
-export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
+export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps) {
   const { serverUrl } = useAppNetwork();
   const [timeRange, setTimeRange] = React.useState<TimeRange>("ALL");
   const [suppliedEvents, setSuppliedEvents] = React.useState<
@@ -432,6 +433,7 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                           {supplier.netAmount.toLocaleString(undefined, {
                             maximumFractionDigits: 0,
                           })}
+                          {asset && <span className="text-xs text-white/60 ml-1">{asset}</span>}
                         </div>
                         <div className="text-xs text-cyan-300">
                           {(
@@ -495,6 +497,7 @@ export function WhaleWatch({ poolId, decimals = 9 }: WhaleWatchProps) {
                           {borrower.netAmount.toLocaleString(undefined, {
                             maximumFractionDigits: 0,
                           })}
+                          {asset && <span className="text-xs text-white/60 ml-1">{asset}</span>}
                         </div>
                         <div className="text-xs text-amber-300">
                           {(

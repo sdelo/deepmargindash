@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { ClockIcon } from "@heroicons/react/24/outline";
 import type { PoolOverview } from "../types";
-import { utilizationPct } from "../../../data/synthetic/pools";
+import { calculatePoolRates } from "../../../utils/interestRates";
 
 type Props = { 
   pool: PoolOverview;
@@ -47,104 +47,40 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
   const ic = pool.protocolConfig.interest_config;
   const mc = pool.protocolConfig.margin_pool_config;
 
-  const utilPct = utilizationPct(pool.state.supply, pool.state.borrow); // 0..100
-  const u = utilPct / 100; // 0..1
+  // Use the shared calculation utility for consistent rates
+  const { utilizationPct: utilPct, borrowApr, supplyApr } = calculatePoolRates(pool);
+  const u = utilPct / 100; // 0..1 for chart calculations
 
-  const baseRate = ic.base_rate; // decimal (e.g., 0.02 for 2%)
-  const baseSlope = ic.base_slope; // decimal per utilization
-  const optimalU = ic.optimal_utilization; // decimal (e.g., 0.7 for 70%)
-  const excessSlope = ic.excess_slope; // decimal per utilization over optimal
-  const spreadPct = mc.protocol_spread; // decimal (e.g., 0.015 for 1.5%)
+  // Config values are in decimal format (0.15 = 15%), convert to percentages for display
+  const baseRatePct = ic.base_rate * 100;
+  const baseSlopePct = ic.base_slope * 100;
+  const optimalU = ic.optimal_utilization; // Keep as decimal for chart calculations
+  const optimalUPct = ic.optimal_utilization * 100;
+  const excessSlopePct = ic.excess_slope * 100;
+  // Note: spreadPct = mc.protocol_spread * 100 is used in supply APR calculation in interestRates.ts
 
-  // Debug logging for interest rate calculations
-  console.group(`🔍 YieldCurve Debug Info [${componentId}]`);
-  console.log("📊 Raw Config Values:");
-  console.log("  baseRate:", baseRate, "(should be decimal like 0.02 for 2%)");
-  console.log(
-    "  baseSlope:",
-    baseSlope,
-    "(should be decimal like 0.001 for 0.1%)"
-  );
-  console.log("  optimalU:", optimalU, "(should be decimal like 0.7 for 70%)");
-  console.log(
-    "  excessSlope:",
-    excessSlope,
-    "(should be decimal like 0.03 for 3%)"
-  );
-  console.log(
-    "  spreadPct:",
-    spreadPct,
-    "(should be decimal like 0.015 for 1.5%)"
-  );
-
-  console.log("📈 Utilization Values:");
-  console.log("  utilPct:", utilPct, "(utilization percentage 0-100)");
-  console.log("  u:", u, "(utilization decimal 0-1)");
-  console.log("  optimalU:", optimalU, "(optimal utilization decimal)");
-
-  console.log("🧮 Interest Rate Calculations:");
-  const isBelowOptimal = u <= optimalU;
-  console.log("  isBelowOptimal:", isBelowOptimal, "(u <= optimalU)");
-
-  const borrowApr =
-    u <= optimalU
-      ? baseRate + baseSlope * u
-      : baseRate + baseSlope * optimalU + excessSlope * (u - optimalU);
-
-  console.log("  borrowApr calculation:");
-  if (isBelowOptimal) {
-    console.log("    Using formula: baseRate + baseSlope * u");
-    console.log("    =", baseRate, "+", baseSlope, "*", u);
-    console.log("    =", baseRate, "+", baseSlope * u);
-    console.log("    =", borrowApr);
-  } else {
-    console.log(
-      "    Using formula: baseRate + baseSlope * optimalU + excessSlope * (u - optimalU)"
-    );
-    console.log(
-      "    =",
-      baseRate,
-      "+",
-      baseSlope,
-      "*",
-      optimalU,
-      "+",
-      excessSlope,
-      "*",
-      u - optimalU
-    );
-    console.log(
-      "    =",
-      baseRate,
-      "+",
-      baseSlope * optimalU,
-      "+",
-      excessSlope * (u - optimalU)
-    );
-    console.log("    =", borrowApr);
-  }
-
-  const supplyApr = borrowApr * u * (1 - spreadPct);
-  console.log("  supplyApr calculation:");
-  console.log("    = borrowApr * u * (1 - spreadPct)");
-  console.log("    =", borrowApr, "*", u, "* (1 -", spreadPct, ")");
-  console.log("    =", borrowApr, "*", u, "*", 1 - spreadPct);
-  console.log("    =", supplyApr);
-
-  console.log("📋 Final Results:");
-  console.log("  Supply APR:", supplyApr.toFixed(4) + "%");
-  console.log("  Borrow APR:", borrowApr.toFixed(4) + "%");
-  console.log("  Utilization:", utilPct.toFixed(2) + "%");
-  console.groupEnd();
+  // Debug logging
+  console.log(`[${componentId}] YieldCurve rates:`, {
+    utilPct: utilPct.toFixed(2) + "%",
+    supplyApr: supplyApr.toFixed(2) + "%",
+    borrowApr: borrowApr.toFixed(2) + "%",
+    baseRate: baseRatePct.toFixed(1) + "%",
+    baseSlope: baseSlopePct.toFixed(1) + "%",
+    optimalUtilization: optimalUPct.toFixed(0) + "%",
+    excessSlope: excessSlopePct.toFixed(1) + "%",
+  });
 
   // Build data points to draw the piecewise linear curve in Recharts
+  // APR values should be in percentage form for the chart
   const steps = 16;
   const curveData = Array.from({ length: steps + 1 }, (_, i) => {
-    const t = i / steps;
+    const t = i / steps; // utilization as decimal (0-1)
+    // Calculate borrow APR using the same formula as interestRates.ts
+    // baseRatePct, baseSlopePct, excessSlopePct are already in percentage form
     const apr =
       t <= optimalU
-        ? baseRate + baseSlope * t
-        : baseRate + baseSlope * optimalU + excessSlope * (t - optimalU);
+        ? baseRatePct + baseSlopePct * t
+        : baseRatePct + baseSlopePct * optimalU + excessSlopePct * (t - optimalU);
     return { u: Math.round(t * 100), apr };
   });
 
@@ -183,17 +119,7 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
         >
           <div className="text-sm text-cyan-100/80">Supply APR</div>
           <div className="text-3xl font-extrabold">
-            {(() => {
-              console.log(
-                `[${componentId}] Display supplyApr:`,
-                supplyApr,
-                "type:",
-                typeof supplyApr
-              );
-              return supplyApr < 0.01
-                ? supplyApr.toFixed(4)
-                : supplyApr.toFixed(1);
-            })()}
+            {supplyApr < 0.1 ? supplyApr.toFixed(2) : supplyApr.toFixed(1)}
             <span className="text-xl">%</span>
           </div>
           <div className="text-[11px] text-cyan-100/60">
@@ -209,17 +135,7 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
         >
           <div className="text-sm text-cyan-100/80">Borrow APR</div>
           <div className="text-3xl font-extrabold">
-            {(() => {
-              console.log(
-                `[${componentId}] Display borrowApr:`,
-                borrowApr,
-                "type:",
-                typeof borrowApr
-              );
-              return borrowApr < 0.01
-                ? borrowApr.toFixed(4)
-                : borrowApr.toFixed(1);
-            })()}
+            {borrowApr < 0.1 ? borrowApr.toFixed(2) : borrowApr.toFixed(1)}
             <span className="text-xl">%</span>
           </div>
           <div className="text-[11px] text-cyan-100/60">what borrowers pay</div>
@@ -268,7 +184,7 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
               tickLine={false}
             />
             <YAxis
-              tickFormatter={(v) => `${v.toFixed(1)}%`}
+              tickFormatter={(v) => `${Math.round(v)}%`}
               tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
@@ -309,70 +225,94 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
           </LineChart>
         </ResponsiveContainer>
         <div className="text-[11px] text-cyan-100/60 mt-2">
-          base_rate, base_slope →{" "}
-          <span className="text-amber-300">optimal_utilization</span> →
-          excess_slope
+          Base Rate, Base Slope →{" "}
+          <span className="text-amber-300">Optimal Utilization</span> →
+          Excess Slope
         </div>
       </div>
 
       {/* Params */}
-      <div className="grid grid-cols-4 gap-4 mt-4">
+      <div className="grid grid-cols-4 gap-3 mt-4">
         <div
-          className="rounded-2xl p-4 bg-white/5 border"
+          className="rounded-xl p-3 bg-white/5 border"
           style={{
             borderColor:
               "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
           }}
         >
-          <div className="text-xs text-cyan-100/80 mb-1">base_rate</div>
+          <div className="text-xs text-cyan-100/80 mb-1">Base Rate</div>
           <div className="text-lg font-bold text-amber-300">
-            {(baseRate * 100).toFixed(1)}%
+            {baseRatePct.toFixed(1)}%
           </div>
         </div>
         <div
-          className="rounded-2xl p-4 bg-white/5 border"
+          className="rounded-xl p-3 bg-white/5 border"
           style={{
             borderColor:
               "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
           }}
         >
-          <div className="text-xs text-cyan-100/80 mb-1">base_slope</div>
+          <div className="text-xs text-cyan-100/80 mb-1">Base Slope</div>
           <div className="text-lg font-bold text-amber-300">
-            {(baseSlope * 100).toFixed(1)}%
+            {baseSlopePct.toFixed(1)}%
           </div>
         </div>
         <div
-          className="rounded-2xl p-4 bg-white/5 border"
+          className="rounded-xl p-3 bg-white/5 border"
           style={{
             borderColor:
               "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
           }}
         >
           <div className="text-xs text-cyan-100/80 mb-1">
-            optimal_utilization
+            Optimal Util.
           </div>
           <div className="text-lg font-bold text-amber-300">
-            {(optimalU * 100).toFixed(0)}%
+            {optimalUPct.toFixed(0)}%
           </div>
         </div>
         <div
-          className="rounded-2xl p-4 bg-white/5 border"
+          className="rounded-xl p-3 bg-white/5 border"
           style={{
             borderColor:
               "color-mix(in oklab, var(--color-amber-400) 20%, transparent)",
           }}
         >
-          <div className="text-xs text-cyan-100/80 mb-1">excess_slope</div>
+          <div className="text-xs text-cyan-100/80 mb-1">Excess Slope</div>
           <div className="text-lg font-bold text-amber-300">
-            {(excessSlope * 100).toFixed(1)}%
+            {excessSlopePct.toFixed(1)}%
           </div>
         </div>
       </div>
 
-      <div className="text-[11px] text-cyan-100/60 mt-4 leading-relaxed">
-        Borrow APR(u) = base_rate + base_slope·u for u ≤ optimal; then base_rate
-        + base_slope·optimal + excess_slope·(u − optimal). Supply APR ≈ Borrow
-        APR · utilization · (1 − protocol_spread).
+      {/* Formula - Hidden behind info icon */}
+      <div className="mt-4 flex items-center gap-2 text-[11px] text-cyan-100/40">
+        <span>Interest calculation formula</span>
+        <div className="relative group">
+          <button
+            type="button"
+            className="w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-[10px] text-white/50 hover:text-white/70 transition-all cursor-help"
+            aria-label="View formula"
+          >
+            ?
+          </button>
+          <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-[11px] text-white/90 bg-slate-900 border border-white/20 rounded-lg shadow-xl w-72 leading-relaxed opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+            <div className="font-semibold text-amber-300 mb-1">Borrow APR Formula:</div>
+            <div className="font-mono text-[10px] mb-2">
+              APR(u) = base_rate + base_slope × u
+              <span className="text-white/50"> (when u ≤ optimal)</span>
+            </div>
+            <div className="font-mono text-[10px] mb-2">
+              APR(u) = base_rate + base_slope × optimal + excess_slope × (u − optimal)
+              <span className="text-white/50"> (when u &gt; optimal)</span>
+            </div>
+            <div className="font-semibold text-amber-300 mt-2 mb-1">Supply APR:</div>
+            <div className="font-mono text-[10px]">
+              = Borrow APR × utilization × (1 − spread)
+            </div>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-white/20" />
+          </div>
+        </div>
       </div>
     </div>
   );

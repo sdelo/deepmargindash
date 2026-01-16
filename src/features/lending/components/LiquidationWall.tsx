@@ -20,6 +20,7 @@ import {
 
 interface LiquidationWallProps {
   poolId?: string;
+  asset?: string; // e.g., "SUI", "DBUSDC"
 }
 
 interface DailyLiquidationData {
@@ -30,7 +31,7 @@ interface DailyLiquidationData {
   totalRewards: number;
 }
 
-export function LiquidationWall({ poolId }: LiquidationWallProps) {
+export function LiquidationWall({ poolId, asset = "" }: LiquidationWallProps) {
   const { serverUrl } = useAppNetwork();
   const [timeRange, setTimeRange] = React.useState<TimeRange>("1M");
   const [liquidations, setLiquidations] = React.useState<
@@ -167,7 +168,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
                 maximumFractionDigits: 0,
               })}
             </div>
-            <div className="text-sm text-white/60">Total Volume</div>
+            <div className="text-sm text-white/60">Total Volume{asset ? ` (${asset})` : ""}</div>
             <div className="text-xs text-orange-400">Liquidated</div>
           </div>
         </div>
@@ -264,18 +265,24 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
         ) : (
           <div className="space-y-4">
             {/* Bar Chart */}
-            <div className="h-80 flex items-end gap-1 px-2">
+            <div className="h-64 flex items-end gap-1 px-2 relative">
               {dailyData.map((day, idx) => {
-                const heightPercent = (day.liquidationAmount / maxAmount) * 100;
+                // Use logarithmic-ish scaling for better visibility when values are similar
+                const rawPercent = (day.liquidationAmount / maxAmount) * 100;
+                // Ensure minimum 15% height for non-zero values so bars are visible
+                const heightPercent = day.liquidationAmount > 0 
+                  ? Math.max(rawPercent, 15) 
+                  : 0;
                 const hasBadDebt = day.badDebt > 0;
 
                 return (
                   <div
                     key={idx}
-                    className="flex-1 flex flex-col items-center gap-2 group"
+                    className="flex-1 flex flex-col items-center group relative"
+                    style={{ height: '100%' }}
                   >
                     {/* Tooltip on hover */}
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -translate-y-full -mt-16 bg-gray-900 border border-white/20 rounded-lg p-3 text-xs z-10 pointer-events-none shadow-xl min-w-[180px]">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-2 bg-gray-900 border border-white/20 rounded-lg p-3 text-xs z-20 pointer-events-none shadow-xl min-w-[160px] left-1/2 -translate-x-1/2">
                       <div className="font-bold text-white mb-2">
                         {day.date}
                       </div>
@@ -290,7 +297,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
                           <span>Volume:</span>
                           <span className="font-semibold text-orange-300">
                             {day.liquidationAmount.toLocaleString(undefined, {
-                              maximumFractionDigits: 0,
+                              maximumFractionDigits: 2,
                             })}
                           </span>
                         </div>
@@ -298,7 +305,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
                           <span>Rewards:</span>
                           <span className="font-semibold text-green-300">
                             {day.totalRewards.toLocaleString(undefined, {
-                              maximumFractionDigits: 1,
+                              maximumFractionDigits: 2,
                             })}
                           </span>
                         </div>
@@ -307,7 +314,7 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
                             <span>Bad Debt:</span>
                             <span className="font-semibold">
                               {day.badDebt.toLocaleString(undefined, {
-                                maximumFractionDigits: 1,
+                                maximumFractionDigits: 2,
                               })}
                             </span>
                           </div>
@@ -315,28 +322,29 @@ export function LiquidationWall({ poolId }: LiquidationWallProps) {
                       </div>
                     </div>
 
-                    {/* Bar */}
-                    <div
-                      className={`w-full rounded-t-lg transition-all duration-300 hover:opacity-80 relative ${
-                        hasBadDebt
-                          ? "bg-gradient-to-t from-red-600 to-orange-500"
-                          : "bg-gradient-to-t from-orange-500 to-amber-400"
-                      }`}
-                      style={{ height: `${heightPercent}%`, minHeight: "4px" }}
-                    >
-                      {/* Badge for bad debt */}
-                      {hasBadDebt && (
-                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 -translate-y-full">
-                          <div className="text-xs bg-red-500 text-white px-1 rounded animate-pulse">
-                            ⚠️
+                    {/* Bar container - aligns bar to bottom */}
+                    <div className="flex-1 w-full flex items-end">
+                      {/* Bar */}
+                      <div
+                        className={`w-full rounded-t transition-all duration-300 hover:brightness-110 relative ${
+                          hasBadDebt
+                            ? "bg-gradient-to-t from-red-600 to-orange-500"
+                            : "bg-gradient-to-t from-orange-500 to-amber-400"
+                        }`}
+                        style={{ height: `${heightPercent}%`, minHeight: day.liquidationAmount > 0 ? '24px' : '0px' }}
+                      >
+                        {/* Badge for bad debt */}
+                        {hasBadDebt && (
+                          <div className="absolute -top-5 left-1/2 -translate-x-1/2">
+                            <AlertIcon size={14} variant="warning" />
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
                     {/* Date label (show every few bars) */}
-                    {idx % Math.ceil(dailyData.length / 8) === 0 && (
-                      <div className="text-xs text-white/40 whitespace-nowrap -rotate-45 origin-top-left mt-2">
+                    {idx % Math.ceil(dailyData.length / 6) === 0 && (
+                      <div className="text-[10px] text-white/40 whitespace-nowrap mt-1">
                         {day.date}
                       </div>
                     )}

@@ -21,7 +21,7 @@ export const DepositHistory: FC<Props> = ({ address, poolId, supplierCapIds }) =
 
   // Get Sui explorer URL based on network
   const getExplorerUrl = (digest: string) => {
-    return `${explorerUrl}/tx/${digest}`;
+    return `${explorerUrl}/txblock/${digest}`;
   };
 
   // Manual refresh handler

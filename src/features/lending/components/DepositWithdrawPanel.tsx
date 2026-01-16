@@ -133,7 +133,8 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
       {/* Deposit */}
       <div className={`flex-1 ${tab === "deposit" ? "block" : "hidden"}`}>
         <div className="space-y-5">
-          <div className="flex items-center gap-2">
+          {/* Input with inline MAX button */}
+          <div className="relative">
             <input
               ref={inputRef}
               type="number"
@@ -141,12 +142,28 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
               max={assetBalanceNum}
               step="0.000001"
               placeholder={`Enter ${asset} amount`}
-              className={`input-surface flex-1 text-lg px-5 py-4 transition-all ${isFlashing ? "ring-4 ring-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.6)]" : ""}`}
+              className={`input-surface w-full text-lg pl-5 pr-24 py-4 transition-all ${isFlashing ? "ring-4 ring-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.6)]" : ""}`}
               value={inputAmount}
               onChange={(e) => setInputAmount(e.target.value)}
               id="deposit-amount"
             />
+            {balance && assetBalanceNum > 0 && (
+              <button
+                type="button"
+                onClick={() => setInputAmount(roundedAssetBalance)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-bold bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 hover:text-amber-200 rounded-lg border border-amber-400/30 transition-all"
+              >
+                MAX
+              </button>
+            )}
           </div>
+          
+          {/* Available balance - compact inline display */}
+          {balance && (
+            <div className="text-xs text-slate-400 flex items-center justify-between px-1">
+              <span>Available: <span className="text-slate-300">{roundedAssetBalance} {asset}</span></span>
+            </div>
+          )}
 
           {/* Earnings Projection */}
           {inputAmount &&
@@ -207,23 +224,9 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
             </div>
           </div>
 
-          {/* Balance Information for Deposit */}
-          {balance && (
-            <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
-              Available {asset}:{" "}
-              <span className="text-amber-300 font-bold">
-                {roundedAssetBalance}
-              </span>
-            </p>
-          )}
 
-          <p className="text-sm text-cyan-100/80 bg-white/5 px-4 py-3 rounded-xl border border-white/10">
-            Min Borrow:{" "}
-            <span className="text-amber-300 font-semibold">{minBorrow}</span> ·
-            Supply Cap:{" "}
-            <span className="text-amber-300 font-semibold">
-              {supplyCap.toLocaleString()}
-            </span>
+          <p className="text-xs text-slate-400 px-3 py-2">
+            Min Borrow: <span className="text-slate-300">{minBorrow}</span> · Supply Cap: <span className="text-slate-300">{supplyCap.toLocaleString()}</span>
           </p>
           <div className="flex items-center gap-2">
             {account ? (

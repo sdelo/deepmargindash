@@ -210,35 +210,6 @@ export const PoolCarousel: FC<Props> = ({
 
   return (
     <div className="relative">
-      {/* Pool Navigation - Container bar matching right side tabs */}
-      <div className="flex justify-center mb-4">
-        <div className="inline-flex gap-1 p-1.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
-          {pools.map((pool) => {
-            const isActive = pool.id === selectedPoolId;
-            return (
-              <button
-                key={pool.id}
-                onClick={() => onSelectPool?.(pool.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
-                  isActive
-                    ? "bg-amber-400 text-slate-900"
-                    : "text-slate-400 hover:text-white hover:bg-slate-700/50"
-                }`}
-              >
-                <img
-                  src={getIcon(pool.asset)}
-                  alt={`${pool.asset} logo`}
-                  className="w-4 h-4 rounded-full"
-                />
-                <span className="text-sm font-medium">
-                  {pool.asset}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Carousel Container */}
       <div className="relative">
         {/* Left Arrow */}
@@ -441,8 +412,9 @@ export const PoolCarousel: FC<Props> = ({
               </div>
 
               {/* Actions */}
-              <div className="mt-6 pt-6 border-t border-white/5">
-                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              {/* Actions - Links only, no redundant deposit button */}
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <a
                     href={`${explorerUrl}/object/${currentPool.contracts?.marginPoolId || currentPool.id}`}
                     target="_blank"
@@ -505,16 +477,6 @@ export const PoolCarousel: FC<Props> = ({
                     <span>⚙️ Admin History</span>
                   </button>
                 </div>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDepositClick?.(currentPool.id);
-                  }}
-                  className="w-full px-4 py-3 rounded-xl text-sm font-bold transition-all bg-amber-400 text-slate-900 hover:bg-amber-300"
-                >
-                  Deposit Now
-                </button>
               </div>
             </div>
           </div>

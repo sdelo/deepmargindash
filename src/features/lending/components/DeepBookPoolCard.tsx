@@ -42,6 +42,8 @@ const TOOLTIPS = {
   targetLiqRisk: "Target ratio after partial liquidation. When liquidated, the system aims to restore your position to this healthier ratio.",
   poolReward: "Percentage of liquidation amount given to the lending pool as compensation for absorbed risk.",
   userReward: "Percentage of liquidation amount given to the liquidator as incentive for maintaining system health.",
+  marginDisabled: "Margin trading is disabled for this pool. Trading and borrowing features are not available until enabled by pool administrators.",
+  marginEnabled: "Margin trading is active. You can open leveraged positions and borrow against your collateral in this pool.",
 };
 
 interface Props {
@@ -170,14 +172,17 @@ export const DeepBookPoolCard: FC<Props> = ({ poolIds, linkedMarginPools = ["SUI
             Linked Margin Pools: <span className="text-cyan-400 font-medium">{linkedMarginPools.join(", ")}</span>
           </p>
         </div>
-        <div
-          className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-            enabled
-              ? "bg-emerald-500/20 text-emerald-300"
-              : "bg-red-500/20 text-red-300"
-          }`}
-        >
-          {enabled ? "Margin Enabled" : "Margin Disabled"}
+        <div className="flex items-center">
+          <div
+            className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+              enabled
+                ? "bg-emerald-500/20 text-emerald-300"
+                : "bg-red-500/20 text-red-300"
+            }`}
+          >
+            {enabled ? "Margin Enabled" : "Margin Disabled"}
+          </div>
+          <InfoTooltip tooltip={enabled ? TOOLTIPS.marginEnabled : TOOLTIPS.marginDisabled} />
         </div>
       </div>
 

@@ -117,6 +117,9 @@ export function PoolsPage() {
   const [selectedPoolId, setSelectedPoolId] = React.useState<string | null>(
     null
   );
+  
+  // Animation key for pool switch visual sync
+  const [poolSwitchKey, setPoolSwitchKey] = React.useState(0);
 
   // Ensure we always have a valid selected pool if pools exist
   const selectedPool = React.useMemo(() => {
@@ -561,15 +564,60 @@ export function PoolsPage() {
 
           </div>
 
+          {/* Active Pool Selector - Top-left placement for F-pattern reading */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-500 uppercase tracking-wider">Active Pool:</span>
+            <div className="inline-flex gap-1 p-1 bg-slate-800/60 rounded-lg border border-slate-700/50">
+              {pools.map((pool) => {
+                const isActive = pool.id === selectedPoolId;
+                const ICONS: Record<string, string> = {
+                  SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
+                  DBUSDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+                };
+                return (
+                  <button
+                    key={pool.id}
+                    onClick={() => {
+                      if (pool.id !== selectedPoolId) {
+                        setPoolSwitchKey(prev => prev + 1);
+                        setSelectedPoolId(pool.id);
+                      }
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+                      isActive
+                        ? "bg-amber-400 text-slate-900 shadow-lg shadow-amber-400/20"
+                        : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                    }`}
+                  >
+                    <img
+                      src={ICONS[pool.asset] || ""}
+                      alt={`${pool.asset} logo`}
+                      className="w-5 h-5 rounded-full"
+                    />
+                    <span className="text-sm font-semibold">{pool.asset}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {selectedPool ? (
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+            <div 
+              key={poolSwitchKey}
+              className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch animate-fade-in"
+            >
               {/* Left Column: Pool Selection + Core Actions */}
               <div className="xl:col-span-8 space-y-4">
-                {/* Pool Selection Carousel */}
+                {/* Pool Cards */}
                 <PoolCarousel
                     pools={pools}
                     selectedPoolId={selectedPoolId}
-                    onSelectPool={setSelectedPoolId}
+                    onSelectPool={(id) => {
+                      if (id !== selectedPoolId) {
+                        setPoolSwitchKey(prev => prev + 1);
+                        setSelectedPoolId(id);
+                      }
+                    }}
                     onDepositClick={(id) => {
                       setSelectedPoolId(id);
                       setTimeout(() => {
@@ -587,7 +635,7 @@ export function PoolsPage() {
                   isLoading={isLoading}
                 />
 
-                {/* Action Panels */}
+                {/* Action Panels - Use flex to ensure equal height */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {/* Deposit/Withdraw Panel */}
                   <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
@@ -614,34 +662,35 @@ export function PoolsPage() {
                       />
                   </div>
 
-                  {/* Your Positions Panel */}
-                  <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+                  {/* Your Positions + History Panel - Combined */}
+                  <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex flex-col min-h-[400px]">
                     <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2 mb-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                       Your Positions
                     </h3>
-                    {account ? (
-                      <PersonalPositions
-                        userAddress={account.address}
-                        pools={pools}
-                        positions={userPositions}
-                        onShowHistory={() => setHistoryOpen(true)}
-                      />
-                    ) : (
-                      <div className="text-center py-8 text-slate-400">
-                        <LockIcon size={28} className="mx-auto mb-2 opacity-50" />
-                        <div className="text-sm font-medium">Connect Wallet</div>
-                        <div className="text-xs text-slate-500 mt-1">to view positions</div>
-                      </div>
-                    )}
+                    <div className="flex-1 min-h-0">
+                      {account ? (
+                        <PersonalPositions
+                          userAddress={account.address}
+                          pools={pools}
+                          positions={userPositions}
+                        />
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                          <LockIcon size={28} className="mb-2 opacity-50" />
+                          <div className="text-sm font-medium">Connect Wallet</div>
+                          <div className="text-xs text-slate-500 mt-1">to view positions</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Analytics */}
-              <div className="xl:col-span-4 space-y-4">
+              {/* Right Column: Analytics - Stretches to match left column height */}
+              <div className="xl:col-span-4 flex flex-col">
                 {/* Tab Navigation - Aligned with pool toggle height */}
-                <div className="flex gap-1 p-1.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
+                <div className="flex gap-1 p-1.5 bg-slate-800/60 rounded-lg border border-slate-700/50 mb-4">
                   {[
                     { key: "yield", label: "Yield Curve" },
                     { key: "history", label: "APY History" },
@@ -664,50 +713,54 @@ export function PoolsPage() {
                   ))}
                 </div>
 
-                {/* Content Panel */}
-                <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 min-h-[460px]">
-                  {overviewTab === "yield" && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-base font-semibold text-slate-200">Interest Rate Model</h3>
-                        <span className="text-xs text-slate-500">Supply vs Borrow APR</span>
+                {/* Content Panel - Fixed height with scrollable content */}
+                <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex-1 flex flex-col overflow-hidden" style={{ maxHeight: 'calc(100vh - 300px)', minHeight: '500px' }}>
+                  <div className="flex-1 overflow-y-auto">
+                    {overviewTab === "yield" && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-base font-semibold text-slate-200">Interest Rate Model</h3>
+                          <span className="text-xs text-slate-500">Supply vs Borrow APR</span>
+                        </div>
+                        <YieldCurve
+                          pool={selectedPool}
+                          onShowHistory={() => {
+                            setInterestRateHistoryPoolId(
+                              selectedPool.contracts?.marginPoolId || null
+                            );
+                            setInterestRateHistoryOpen(true);
+                          }}
+                        />
                       </div>
-                      <YieldCurve
-                        pool={selectedPool}
-                        onShowHistory={() => {
-                          setInterestRateHistoryPoolId(
-                            selectedPool.contracts?.marginPoolId || null
-                          );
-                          setInterestRateHistoryOpen(true);
-                        }}
+                    )}
+
+                    {overviewTab === "history" && (
+                      <APYHistory pool={selectedPool} />
+                    )}
+
+                    {overviewTab === "activity" && (
+                      <PoolActivity pool={selectedPool} />
+                    )}
+
+                    {overviewTab === "liquidations" && (
+                      <LiquidationWall
+                        poolId={selectedPool.contracts?.marginPoolId}
+                        asset={selectedPool.asset}
                       />
-                    </div>
-                  )}
+                    )}
 
-                  {overviewTab === "history" && (
-                    <APYHistory pool={selectedPool} />
-                  )}
+                    {overviewTab === "concentration" && (
+                      <WhaleWatch
+                        poolId={selectedPool.contracts?.marginPoolId}
+                        decimals={selectedPool.contracts?.coinDecimals}
+                        asset={selectedPool.asset}
+                      />
+                    )}
 
-                  {overviewTab === "activity" && (
-                    <PoolActivity pool={selectedPool} />
-                  )}
-
-                  {overviewTab === "liquidations" && (
-                    <LiquidationWall
-                      poolId={selectedPool.contracts?.marginPoolId}
-                    />
-                  )}
-
-                  {overviewTab === "concentration" && (
-                    <WhaleWatch
-                      poolId={selectedPool.contracts?.marginPoolId}
-                      decimals={selectedPool.contracts?.coinDecimals}
-                    />
-                  )}
-
-                  {overviewTab === "calculator" && (
-                    <EarningsCalculator pool={selectedPool} />
-                  )}
+                    {overviewTab === "calculator" && (
+                      <EarningsCalculator pool={selectedPool} />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -29,6 +29,7 @@ import {
   ErrorIcon,
 } from "../../../components/ThemedIcons";
 import type { PoolOverview } from "../types";
+import { calculatePoolRates, nineDecimalToPercent } from "../../../utils/interestRates";
 
 interface APYHistoryProps {
   pool: PoolOverview;
@@ -58,26 +59,33 @@ export function APYHistory({ pool }: APYHistoryProps) {
   const ic = pool.protocolConfig?.interest_config;
   const mc = pool.protocolConfig?.margin_pool_config;
 
+  // Get current live APY using the shared calculation function
+  const liveRates = React.useMemo(() => calculatePoolRates(pool), [pool]);
+
   // Calculate APY from utilization using the interest rate model
+  // This uses the same formula as calculatePoolRates for consistency
   const calculateAPY = React.useCallback(
-    (utilization: number) => {
+    (utilizationPct: number) => {
       if (!ic || !mc) return { supplyAPY: 0, borrowAPY: 0 };
 
-      const u = utilization; // 0 to 1
-      const baseRate = ic.base_rate;
-      const baseSlope = ic.base_slope;
-      const optimalU = ic.optimal_utilization;
-      const excessSlope = ic.excess_slope;
-      const spread = mc.protocol_spread;
+      const u = utilizationPct / 100; // Convert percentage to decimal (0-1)
+      
+      // Convert 9-decimal values to percentages for calculation
+      const baseRatePct = nineDecimalToPercent(ic.base_rate);
+      const baseSlopePct = nineDecimalToPercent(ic.base_slope);
+      const optimalPct = nineDecimalToPercent(ic.optimal_utilization);
+      const optimalU = optimalPct / 100;
+      const excessSlopePct = nineDecimalToPercent(ic.excess_slope);
+      const spreadPct = nineDecimalToPercent(mc.protocol_spread);
 
-      // Borrow APY calculation (same as YieldCurve)
+      // Borrow APY calculation (matches calculateBorrowApr)
       const borrowAPY =
         u <= optimalU
-          ? baseRate + baseSlope * u
-          : baseRate + baseSlope * optimalU + excessSlope * (u - optimalU);
+          ? baseRatePct + baseSlopePct * u
+          : baseRatePct + baseSlopePct * optimalU + excessSlopePct * (u - optimalU);
 
-      // Supply APY = borrow APY * utilization * (1 - spread)
-      const supplyAPY = borrowAPY * u * (1 - spread);
+      // Supply APY = borrow APY * utilization * (1 - spread) (matches calculateSupplyApr)
+      const supplyAPY = borrowAPY * u * (1 - spreadPct / 100);
 
       return { supplyAPY, borrowAPY };
     },
@@ -184,40 +192,37 @@ export function APYHistory({ pool }: APYHistoryProps) {
               day: "numeric",
             });
 
-            const utilization =
-              runningSupply > 0 ? runningBorrow / runningSupply : 0;
-            const { supplyAPY, borrowAPY } = calculateAPY(utilization);
+            const utilizationPct =
+              runningSupply > 0 ? (runningBorrow / runningSupply) * 100 : 0;
+            const { supplyAPY, borrowAPY } = calculateAPY(utilizationPct);
 
             dayMap.set(date, {
               date,
               timestamp: event.timestamp,
               supply: runningSupply,
               borrow: runningBorrow,
-              utilization: utilization * 100,
-              supplyAPY: supplyAPY * 100,
-              borrowAPY: borrowAPY * 100,
+              utilization: utilizationPct,
+              supplyAPY: supplyAPY, // Already in percentage
+              borrowAPY: borrowAPY, // Already in percentage
             });
           });
         }
 
-        // If no events, show current state as a single point
-        if (dayMap.size === 0) {
-          const currentUtil =
-            pool.state?.supply > 0
-              ? pool.state.borrow / pool.state.supply
-              : 0;
-          const { supplyAPY, borrowAPY } = calculateAPY(currentUtil);
-
-          dayMap.set("Now", {
-            date: "Now",
-            timestamp: Date.now(),
-            supply: pool.state?.supply ?? 0,
-            borrow: pool.state?.borrow ?? 0,
-            utilization: currentUtil * 100,
-            supplyAPY: supplyAPY * 100,
-            borrowAPY: borrowAPY * 100,
-          });
-        }
+        // Always add current live state as the final point to ensure chart ends at current APY
+        // Use the same calculatePoolRates function that the pool card uses for consistency
+        const livePoolRates = calculatePoolRates(pool);
+        
+        // Use a unique key with timestamp to ensure it comes last
+        const nowKey = `Now_${Date.now()}`;
+        dayMap.set(nowKey, {
+          date: "Now",
+          timestamp: Date.now(),
+          supply: pool.state?.supply ?? 0,
+          borrow: pool.state?.borrow ?? 0,
+          utilization: livePoolRates.utilizationPct,
+          supplyAPY: livePoolRates.supplyApr, // Directly use the live calculated APR
+          borrowAPY: livePoolRates.borrowApr,
+        });
 
         setDailyData(
           Array.from(dayMap.values()).sort((a, b) => a.timestamp - b.timestamp)
@@ -233,19 +238,22 @@ export function APYHistory({ pool }: APYHistoryProps) {
     fetchData();
   }, [timeRange, poolId, decimals, calculateAPY, serverUrl, pool.state]);
 
-  // Calculate stats
+  // Calculate stats - use live APY for current, historical for avg/min/max
   const stats = React.useMemo(() => {
+    // Use the live calculated APY for "Current APY" to match the pool card
+    const currentAPY = liveRates.supplyApr;
+    
     if (dailyData.length === 0)
-      return { avgAPY: 0, maxAPY: 0, minAPY: 0, currentAPY: 0 };
+      return { avgAPY: currentAPY, maxAPY: currentAPY, minAPY: currentAPY, currentAPY };
 
     const apys = dailyData.map((d) => d.supplyAPY);
     return {
       avgAPY: apys.reduce((a, b) => a + b, 0) / apys.length,
-      maxAPY: Math.max(...apys),
-      minAPY: Math.min(...apys),
-      currentAPY: apys[apys.length - 1] || 0,
+      maxAPY: Math.max(...apys, currentAPY), // Include current in peak calculation
+      minAPY: Math.min(...apys, currentAPY), // Include current in low calculation
+      currentAPY, // Always use live value
     };
-  }, [dailyData]);
+  }, [dailyData, liveRates.supplyApr]);
 
   return (
     <div className="space-y-6">
