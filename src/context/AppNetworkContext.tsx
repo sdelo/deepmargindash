@@ -8,6 +8,7 @@ import {
   TESTNET_INDEXERS,
 } from "../config/networks";
 import { apiClient } from "../lib/api/client";
+import { useIndexerStatus, type IndexerStatus } from "../hooks/useIndexerStatus";
 
 const INDEXER_STORAGE_KEY = "deepdashboard_selected_indexer";
 
@@ -19,6 +20,8 @@ interface AppNetworkContextType {
   setUseLocalServer: (use: boolean) => void;
   selectedIndexer: string;
   setSelectedIndexer: (indexerUrl: string) => void;
+  /** Indexer health status - use to warn users when data may be stale */
+  indexerStatus: IndexerStatus;
 }
 
 const AppNetworkContext = createContext<AppNetworkContextType | null>(null);
@@ -88,6 +91,9 @@ export function AppNetworkProvider({
     // Note: The serverUrl effect below will handle resetting queries
   }, [currentNetwork, config.serverUrl]);
 
+  // Fetch indexer health status
+  const indexerStatus = useIndexerStatus(serverUrl);
+
   return (
     <AppNetworkContext.Provider
       value={{
@@ -100,6 +106,7 @@ export function AppNetworkProvider({
           console.warn("Use TESTNET_SERVER_URL env var to toggle local server"),
         selectedIndexer,
         setSelectedIndexer,
+        indexerStatus,
       }}
     >
       {children}

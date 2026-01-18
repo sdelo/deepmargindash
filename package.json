@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "codegen": "sui-ts-codegen generate",
     "mint-referral": "bun scripts/mint-supply-referral.ts",
+    "mint-all-referrals": "bun scripts/mint-all-referrals.ts",
     "update-contracts": "bun scripts/update-contracts.ts",
     "deploy": "vite build && site-builder publish --epochs 1 dist"
   },

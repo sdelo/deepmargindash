@@ -255,12 +255,12 @@ export function PositionHistoryModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-slate-900 rounded-2xl border border-white/10 w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl">
+      <div className="relative rounded-2xl border border-cyan-500/20 w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl" style={{ background: 'linear-gradient(180deg, #0c1a24 0%, #0a1419 100%)' }}>
         {/* Header */}
-        <div className="sticky top-0 bg-slate-900 border-b border-white/10 p-6 z-10">
+        <div className="sticky top-0 border-b border-cyan-500/20 p-6 z-10" style={{ background: 'rgba(12, 26, 36, 0.95)' }}>
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <h2 className="text-xl font-bold text-cyan-100 flex items-center gap-2">
                 <HistoryIcon size={24} />
                 Position History
               </h2>
@@ -275,9 +275,9 @@ export function PositionHistoryModal({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 hover:bg-cyan-500/10 border border-cyan-500/20 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 text-cyan-200/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -285,8 +285,8 @@ export function PositionHistoryModal({
 
           {/* Current State Summary */}
           <div className="grid grid-cols-4 gap-3 mt-4">
-            <div className="bg-white/5 rounded-lg p-3">
-              <div className="text-xs text-white/60">Risk Ratio</div>
+            <div className="bg-cyan-900/30 rounded-lg p-3 border border-cyan-500/10">
+              <div className="text-xs text-cyan-200/60">Risk Ratio</div>
               <div className={`text-lg font-bold ${
                 position.isLiquidatable ? 'text-rose-400' :
                 position.distanceToLiquidation < 5 ? 'text-teal-400' :
@@ -296,14 +296,14 @@ export function PositionHistoryModal({
                 {position.riskRatio.toFixed(4)}
               </div>
             </div>
-            <div className="bg-white/5 rounded-lg p-3">
-              <div className="text-xs text-white/60">Total Debt</div>
-              <div className="text-lg font-bold text-white">
+            <div className="bg-cyan-900/30 rounded-lg p-3 border border-cyan-500/10">
+              <div className="text-xs text-cyan-200/60">Total Debt</div>
+              <div className="text-lg font-bold text-cyan-100">
                 {formatUsd(position.totalDebtUsd)}
               </div>
             </div>
-            <div className="bg-white/5 rounded-lg p-3">
-              <div className="text-xs text-white/60">Distance to Liq</div>
+            <div className="bg-cyan-900/30 rounded-lg p-3 border border-cyan-500/10">
+              <div className="text-xs text-cyan-200/60">Distance to Liq</div>
               <div className={`text-lg font-bold ${
                 position.distanceToLiquidation < 0 ? 'text-rose-400' :
                 position.distanceToLiquidation < 5 ? 'text-teal-400' :
@@ -313,9 +313,9 @@ export function PositionHistoryModal({
                 {position.distanceToLiquidation > 0 ? '+' : ''}{position.distanceToLiquidation.toFixed(1)}%
               </div>
             </div>
-            <div className="bg-white/5 rounded-lg p-3">
-              <div className="text-xs text-white/60">Position Age</div>
-              <div className="text-lg font-bold text-white">
+            <div className="bg-cyan-900/30 rounded-lg p-3 border border-cyan-500/10">
+              <div className="text-xs text-cyan-200/60">Position Age</div>
+              <div className="text-lg font-bold text-cyan-100">
                 {positionAge || 'N/A'}
               </div>
             </div>
@@ -335,46 +335,46 @@ export function PositionHistoryModal({
           ) : (
             <div className="space-y-6">
               {/* Activity Summary */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <h3 className="text-sm font-semibold text-white/80 mb-3">Activity Summary</h3>
+              <div className="bg-cyan-900/20 rounded-xl p-4 border border-cyan-500/20">
+                <h3 className="text-sm font-semibold text-cyan-100/80 mb-3">Activity Summary</h3>
                 <div className="grid grid-cols-4 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-white">{timeline.length}</div>
-                    <div className="text-xs text-white/60">Total Events</div>
+                    <div className="text-2xl font-bold text-cyan-100">{timeline.length}</div>
+                    <div className="text-xs text-cyan-200/60">Total Events</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-teal-400">
                       {timeline.filter(e => e.type === 'borrow').length}
                     </div>
-                    <div className="text-xs text-white/60">Borrows</div>
+                    <div className="text-xs text-cyan-200/60">Borrows</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-cyan-400">
                       {timeline.filter(e => e.type === 'repay').length}
                     </div>
-                    <div className="text-xs text-white/60">Repays</div>
+                    <div className="text-xs text-cyan-200/60">Repays</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-rose-400">
                       {timeline.filter(e => e.type === 'liquidation').length}
                     </div>
-                    <div className="text-xs text-white/60">Liquidations</div>
+                    <div className="text-xs text-cyan-200/60">Liquidations</div>
                   </div>
                 </div>
 
                 {/* Volume Totals */}
-                <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="mt-4 pt-4 border-t border-cyan-500/20">
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <span className="text-white/60">Total Borrowed: </span>
+                      <span className="text-cyan-200/60">Total Borrowed: </span>
                       <span className="font-semibold text-teal-400">{formatAmount(totals.totalBorrowed)}</span>
                     </div>
                     <div>
-                      <span className="text-white/60">Total Repaid: </span>
+                      <span className="text-cyan-200/60">Total Repaid: </span>
                       <span className="font-semibold text-cyan-400">{formatAmount(totals.totalRepaid)}</span>
                     </div>
                     <div>
-                      <span className="text-white/60">Total Liquidated: </span>
+                      <span className="text-cyan-200/60">Total Liquidated: </span>
                       <span className="font-semibold text-rose-400">{formatAmount(totals.totalLiquidated)}</span>
                     </div>
                   </div>
@@ -382,42 +382,42 @@ export function PositionHistoryModal({
               </div>
 
               {/* Position Breakdown */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <h3 className="text-sm font-semibold text-white/80 mb-3">Current Position Breakdown</h3>
+              <div className="bg-cyan-900/20 rounded-xl p-4 border border-cyan-500/20">
+                <h3 className="text-sm font-semibold text-cyan-100/80 mb-3">Current Position Breakdown</h3>
                 <div className="grid grid-cols-2 gap-4">
                   {/* Collateral */}
                   <div>
-                    <div className="text-xs text-white/60 uppercase tracking-wider mb-2">Collateral</div>
+                    <div className="text-xs text-cyan-200/60 uppercase tracking-wider mb-2">Collateral</div>
                     <div className="space-y-2">
                       {position.baseAsset > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-white/70">{position.baseAssetSymbol}</span>
-                          <span className="font-semibold text-white">
+                          <span className="text-cyan-200/70">{position.baseAssetSymbol}</span>
+                          <span className="font-semibold text-cyan-100">
                             {formatAmount(position.baseAsset)} ({formatUsd(position.baseAssetUsd)})
                           </span>
                         </div>
                       )}
                       {position.quoteAsset > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-white/70">{position.quoteAssetSymbol}</span>
-                          <span className="font-semibold text-white">
+                          <span className="text-cyan-200/70">{position.quoteAssetSymbol}</span>
+                          <span className="font-semibold text-cyan-100">
                             {formatAmount(position.quoteAsset, 6)} ({formatUsd(position.quoteAssetUsd)})
                           </span>
                         </div>
                       )}
                       {position.baseAsset === 0 && position.quoteAsset === 0 && (
-                        <div className="text-white/40 text-sm">No collateral</div>
+                        <div className="text-cyan-200/40 text-sm">No collateral</div>
                       )}
                     </div>
                   </div>
 
                   {/* Debt */}
                   <div>
-                    <div className="text-xs text-white/60 uppercase tracking-wider mb-2">Debt</div>
+                    <div className="text-xs text-cyan-200/60 uppercase tracking-wider mb-2">Debt</div>
                     <div className="space-y-2">
                       {position.baseDebt > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-white/70">{position.baseAssetSymbol}</span>
+                          <span className="text-cyan-200/70">{position.baseAssetSymbol}</span>
                           <span className="font-semibold text-teal-400">
                             {formatAmount(position.baseDebt)} ({formatUsd(position.baseDebtUsd)})
                           </span>
@@ -425,14 +425,14 @@ export function PositionHistoryModal({
                       )}
                       {position.quoteDebt > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-white/70">{position.quoteAssetSymbol}</span>
+                          <span className="text-cyan-200/70">{position.quoteAssetSymbol}</span>
                           <span className="font-semibold text-teal-400">
                             {formatAmount(position.quoteDebt, 6)} ({formatUsd(position.quoteDebtUsd)})
                           </span>
                         </div>
                       )}
                       {position.baseDebt === 0 && position.quoteDebt === 0 && (
-                        <div className="text-white/40 text-sm">No debt</div>
+                        <div className="text-cyan-200/40 text-sm">No debt</div>
                       )}
                     </div>
                   </div>
@@ -441,9 +441,9 @@ export function PositionHistoryModal({
 
               {/* Timeline */}
               <div>
-                <h3 className="text-sm font-semibold text-white/80 mb-3">Event Timeline</h3>
+                <h3 className="text-sm font-semibold text-cyan-100/80 mb-3">Event Timeline</h3>
                 {timeline.length === 0 ? (
-                  <div className="text-center py-8 text-white/60">
+                  <div className="text-center py-8 text-cyan-200/60">
                     No events found for this position
                   </div>
                 ) : (
@@ -465,7 +465,7 @@ export function PositionHistoryModal({
                                    event.type === 'repay' ? 'Loan Repaid' :
                                    'Liquidation'}
                                 </div>
-                                <div className="text-xs text-white/60">
+                                <div className="text-xs text-cyan-200/60">
                                   {event.timestamp.toLocaleString()}
                                 </div>
                               </div>
@@ -482,17 +482,17 @@ export function PositionHistoryModal({
 
                           {/* Event-specific details */}
                           {event.data.amount !== undefined && (
-                            <div className="mt-3 pt-3 border-t border-white/10 text-sm">
+                            <div className="mt-3 pt-3 border-t border-cyan-500/20 text-sm">
                               <div className="flex flex-wrap gap-4">
                                 <div>
-                                  <span className="text-white/60">Amount: </span>
-                                  <span className="font-semibold text-white">
+                                  <span className="text-cyan-200/60">Amount: </span>
+                                  <span className="font-semibold text-cyan-100">
                                     {formatAmount(event.data.amount)}
                                   </span>
                                 </div>
                                 {event.data.riskRatio !== undefined && (
                                   <div>
-                                    <span className="text-white/60">Risk Ratio: </span>
+                                    <span className="text-cyan-200/60">Risk Ratio: </span>
                                     <span className="font-semibold text-rose-400">
                                       {event.data.riskRatio.toFixed(4)}
                                     </span>
@@ -500,7 +500,7 @@ export function PositionHistoryModal({
                                 )}
                                 {event.data.reward !== undefined && (
                                   <div>
-                                    <span className="text-white/60">Reward: </span>
+                                    <span className="text-cyan-200/60">Reward: </span>
                                     <span className="font-semibold text-cyan-400">
                                       {formatAmount(event.data.reward)}
                                     </span>
@@ -508,7 +508,7 @@ export function PositionHistoryModal({
                                 )}
                                 {event.data.poolDefault !== undefined && event.data.poolDefault > 0 && (
                                   <div>
-                                    <span className="text-white/60">Bad Debt: </span>
+                                    <span className="text-cyan-200/60">Bad Debt: </span>
                                     <span className="font-semibold text-rose-400">
                                       {formatAmount(event.data.poolDefault)}
                                     </span>
@@ -528,14 +528,14 @@ export function PositionHistoryModal({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-slate-900 border-t border-white/10 p-4">
+        <div className="sticky bottom-0 border-t border-cyan-500/20 p-4" style={{ background: 'rgba(12, 26, 36, 0.95)' }}>
           <div className="flex items-center justify-between">
-            <div className="text-xs text-white/40">
+            <div className="text-xs text-cyan-200/40">
               Last updated: {position.updatedAt.toLocaleString()}
             </div>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 rounded-lg text-sm font-medium text-cyan-200 transition-colors"
             >
               Close
             </button>

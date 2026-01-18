@@ -99,16 +99,17 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
         </div>
       </div>
 
-      {/* KPIs - Compact */}
+      {/* KPIs - With visual hierarchy (Supply APY is hero) */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-lg p-3 bg-white/5 border border-white/10">
-          <div className="text-xs text-white/60 flex items-center gap-1">
+        {/* HERO METRIC: Supply APY - This is what suppliers care about most */}
+        <div className="stat-hero-metric animate-breathe">
+          <div className="text-xs text-cyan-200/80 flex items-center gap-1">
             Supply APY <InfoTooltip tooltip="supplyAPY" />
           </div>
-          <div className="text-xl font-bold text-cyan-300 mt-1">
+          <div className="text-2xl font-bold text-cyan-300 mt-1 animate-value-pulse">
             {supplyApr.toFixed(2)}%
           </div>
-          <div className="text-[10px] text-white/40">what suppliers earn</div>
+          <div className="text-[10px] text-cyan-200/50">what suppliers earn</div>
         </div>
         <div className="rounded-lg p-3 bg-white/5 border border-white/10">
           <div className="text-xs text-white/60 flex items-center gap-1">
@@ -130,52 +131,83 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
         </div>
       </div>
 
-      {/* Utilization Curve - Always visible */}
-      <div className="rounded-lg p-3 bg-white/5 border border-white/10">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-xs text-white/60">Utilization Curve</div>
+      {/* Utilization Curve - Always visible with ambient life */}
+      <div className="rounded-lg p-3 bg-white/5 border border-white/10 relative overflow-hidden">
+        {/* Subtle shimmer overlay */}
+        <div className="absolute inset-0 shimmer-line pointer-events-none opacity-30"></div>
+        
+        <div className="flex items-center justify-between mb-2 relative">
+          <div className="text-xs text-white/60 flex items-center gap-2">
+            Utilization Curve
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          </div>
           <div className="text-[10px] text-white/40">
             <span className="text-teal-400 font-medium">Higher utilization = higher rates</span>
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={180}>
-          <LineChart data={curveData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis
-              dataKey="u"
-              type="number"
-              domain={[0, 100]}
-              tickFormatter={(v) => `${v}%`}
-              tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tickFormatter={(v) => `${Math.round(v)}%`}
-              tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }}
-              axisLine={false}
-              tickLine={false}
-              width={35}
-            />
-            <Tooltip
-              formatter={(value) => [`${(value as number).toFixed(2)}%`, "APY"]}
-              labelFormatter={(label) => `Utilization ${label}%`}
-              contentStyle={{
-                backgroundColor: "rgba(15,23,42,0.95)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "6px",
-                fontSize: "11px",
-              }}
-            />
-            <ReferenceLine x={Math.round(optimalU * 100)} stroke="#fbbf24" strokeWidth={1.5} />
-            <Line type="monotone" dataKey="apr" stroke="#22d3ee" strokeWidth={2} dot={false} />
-            <ReferenceLine x={Math.round(u * 100)} stroke="#67e8f9" strokeDasharray="3 3" />
-            <ReferenceDot x={Math.round(u * 100)} y={borrowApr} r={4} fill="#22d3ee" />
-          </LineChart>
-        </ResponsiveContainer>
-        <div className="text-[10px] text-white/40 mt-1">
-          Current: <span className="text-cyan-400">{utilPct.toFixed(1)}%</span> utilization
-          {utilPct > optimalUPct && <span className="text-teal-300 ml-2">↑ Above optimal — rates elevated</span>}
+        <div className="relative">
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={curveData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+              <defs>
+                {/* Gradient for the line */}
+                <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.6} />
+                  <stop offset={`${Math.min(u * 100, 100)}%`} stopColor="#22d3ee" stopOpacity={1} />
+                  <stop offset={`${Math.min(u * 100 + 1, 100)}%`} stopColor="#22d3ee" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.4} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis
+                dataKey="u"
+                type="number"
+                domain={[0, 100]}
+                tickFormatter={(v) => `${v}%`}
+                tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tickFormatter={(v) => `${Math.round(v)}%`}
+                tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                width={35}
+              />
+              <Tooltip
+                formatter={(value) => [`${(value as number).toFixed(2)}%`, "APY"]}
+                labelFormatter={(label) => `Utilization ${label}%`}
+                contentStyle={{
+                  backgroundColor: "rgba(15,23,42,0.95)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "6px",
+                  fontSize: "11px",
+                }}
+              />
+              {/* Optimal utilization marker */}
+              <ReferenceLine x={Math.round(optimalU * 100)} stroke="#fbbf24" strokeWidth={1.5} />
+              {/* The curve with gradient */}
+              <Line type="monotone" dataKey="apr" stroke="url(#lineGradient)" strokeWidth={2.5} dot={false} />
+              {/* Current position indicator */}
+              <ReferenceLine x={Math.round(u * 100)} stroke="#67e8f9" strokeDasharray="3 3" />
+              {/* Animated current position dot - using CSS class for animation */}
+              <ReferenceDot 
+                x={Math.round(u * 100)} 
+                y={borrowApr} 
+                r={5} 
+                fill="#22d3ee" 
+                stroke="rgba(34, 211, 238, 0.5)"
+                strokeWidth={8}
+                className="animate-chart-dot"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="text-[10px] text-white/40 mt-1 flex items-center gap-2 relative">
+          <span className="flex items-center gap-1.5">
+            Current: <span className="text-cyan-400 font-medium">{utilPct.toFixed(1)}%</span> utilization
+          </span>
+          {utilPct > optimalUPct && <span className="text-teal-300">↑ Above optimal — rates elevated</span>}
         </div>
       </div>
 
@@ -204,6 +236,37 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
           </div>
         </div>
       </details>
+
+      {/* What This Tells You */}
+      <div className="bg-white/[0.02] border border-white/5 rounded-lg p-4 mt-4">
+        <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
+          What This Tells You
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-white/60">
+          <div>
+            <span className="text-white/80 font-medium">The Kink Mechanism</span>
+            <p className="mt-1">
+              Rates climb gently until {optimalUPct.toFixed(0)}% utilization (the "kink"), then accelerate sharply. This incentivizes borrowers to repay and keeps liquidity available.
+            </p>
+          </div>
+          <div>
+            <span className="text-white/80 font-medium">Your Current Position</span>
+            <p className="mt-1">
+              {utilPct < optimalUPct ? (
+                <>Pool is below optimal utilization—rates are stable. More borrowing would increase your APY.</>
+              ) : (
+                <>Pool is above the kink—rates are elevated. Good for suppliers, but utilization may drop as borrowers repay.</>
+              )}
+            </p>
+          </div>
+          <div>
+            <span className="text-white/80 font-medium">Rate Sensitivity</span>
+            <p className="mt-1">
+              Above {optimalUPct.toFixed(0)}%, each 1% utilization increase adds ~{(excessSlopePct / 100).toFixed(2)}% to borrow APR vs ~{(baseSlopePct / 100).toFixed(2)}% below it.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

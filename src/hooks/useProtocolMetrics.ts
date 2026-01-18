@@ -1,7 +1,7 @@
 import React from 'react';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { fetchAssetSupplied, fetchAssetWithdrawn, fetchLoanBorrowed, fetchLoanRepaid, fetchMarginManagerCreated, fetchLiquidations } from '../features/lending/api/events';
-import { CONTRACTS } from '../config/contracts';
+import { useSuiClient, useSuiClientContext } from '@mysten/dapp-kit';
+import { fetchMarginManagerCreated, fetchLiquidations } from '../features/lending/api/events';
+import { getMarginPools, type NetworkType } from '../config/contracts';
 import { fetchMarginPool } from '../api/poolData';
 import { useAppNetwork } from '../context/AppNetworkContext';
 
@@ -20,6 +20,7 @@ export interface ProtocolMetrics {
  */
 export function useProtocolMetrics(): ProtocolMetrics {
   const suiClient = useSuiClient();
+  const { network } = useSuiClientContext();
   const { serverUrl } = useAppNetwork();
   const [metrics, setMetrics] = React.useState<ProtocolMetrics>({
     totalValueLocked: 0,
@@ -33,15 +34,18 @@ export function useProtocolMetrics(): ProtocolMetrics {
 
   const fetchMetrics = React.useCallback(async () => {
     try {
-      // Fetch pool states for TVL and total borrowed
-      const [suiPool, dbusdcPool] = await Promise.all([
-        fetchMarginPool(suiClient, CONTRACTS.testnet.SUI_MARGIN_POOL_ID),
-        fetchMarginPool(suiClient, CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID),
-      ]);
+      const networkType = network as NetworkType;
+      const poolConfigs = getMarginPools(networkType);
+      
+      // Fetch all pool states for TVL and total borrowed
+      const poolPromises = poolConfigs.map(config => 
+        fetchMarginPool(suiClient, config.poolId, networkType)
+      );
+      const pools = await Promise.all(poolPromises);
 
       // Calculate TVL (total supply across pools)
-      const totalSupply = (suiPool?.state.supply || 0) + (dbusdcPool?.state.supply || 0);
-      const totalBorrowed = (suiPool?.state.borrow || 0) + (dbusdcPool?.state.borrow || 0);
+      const totalSupply = pools.reduce((sum, pool) => sum + (pool?.state.supply || 0), 0);
+      const totalBorrowed = pools.reduce((sum, pool) => sum + (pool?.state.borrow || 0), 0);
 
       // Fetch unique margin managers (from margin_manager_created events)
       // Default time range (1 year) is automatically applied

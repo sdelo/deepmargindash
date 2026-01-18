@@ -206,19 +206,15 @@ export async function buildWithdrawTransaction({
   const tx = new Transaction();
   tx.setSender(owner);
 
-  // SupplierCap handling
+  // SupplierCap handling - user MUST have an existing cap to withdraw
   const packageId = await getPackageId(suiClient, poolId);
   const existingCap = await getSupplierCapId(suiClient, owner, packageId);
-  let capArg;
 
-  if (existingCap) {
-    capArg = tx.object(existingCap);
-  } else {
-    [capArg] = mintSupplierCap({
-      package: packageId,
-      arguments: { registry: tx.object(registryId) }
-    })(tx);
+  if (!existingCap) {
+    throw new Error("No SupplierCap found. You need to have deposited to this pool before you can withdraw.");
   }
+
+  const capArg = tx.object(existingCap);
 
   const [withdrawnCoin] = withdraw({
     package: packageId,
@@ -230,10 +226,6 @@ export async function buildWithdrawTransaction({
     },
     typeArguments: [poolType],
   })(tx);
-
-  if (!existingCap) {
-    tx.transferObjects([capArg], owner);
-  }
 
   // Transfer the withdrawn coin to the owner
   tx.transferObjects([withdrawnCoin], owner);
@@ -270,19 +262,15 @@ export async function buildWithdrawAllTransaction({
   const tx = new Transaction();
   tx.setSender(owner);
 
-  // SupplierCap handling
+  // SupplierCap handling - user MUST have an existing cap to withdraw
   const packageId = await getPackageId(suiClient, poolId);
   const existingCap = await getSupplierCapId(suiClient, owner, packageId);
-  let capArg;
 
-  if (existingCap) {
-    capArg = tx.object(existingCap);
-  } else {
-    [capArg] = mintSupplierCap({
-      package: packageId,
-      arguments: { registry: tx.object(registryId) }
-    })(tx);
+  if (!existingCap) {
+    throw new Error("No SupplierCap found. You need to have deposited to this pool before you can withdraw.");
   }
+
+  const capArg = tx.object(existingCap);
 
   const [withdrawnCoin] = withdraw({
     package: packageId,
@@ -294,10 +282,6 @@ export async function buildWithdrawAllTransaction({
     },
     typeArguments: [poolType],
   })(tx);
-
-  if (!existingCap) {
-    tx.transferObjects([capArg], owner);
-  }
 
   // Transfer the withdrawn coin to the owner
   tx.transferObjects([withdrawnCoin], owner);

@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { usePoolData } from "../hooks/usePoolData";
-import { CONTRACTS } from "../config/contracts";
-import { syntheticPools } from "../data/synthetic/pools";
-import type { PoolOverview } from "../features/lending/types";
+import { useAllPools } from "../hooks/useAllPools";
 
 interface DashboardNavProps {
   className?: string;
@@ -18,11 +15,17 @@ const NAV_ITEMS = [
   { id: "fees", label: "Fees & Liquidations", icon: "💰" },
 ];
 
-const ICONS: Record<string, string> = {
+// Fallback icons for when dynamic iconUrl is not available
+const FALLBACK_ICONS: Record<string, string> = {
   SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
-  DBUSDC:
-    "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  DBUSDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  USDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  DEEP: "https://assets.coingecko.com/coins/images/38087/standard/deep.png?1728614086",
+  WAL: "https://assets.coingecko.com/coins/images/54016/standard/walrus.jpg?1737525627",
 };
+// Get icon from pool's dynamic iconUrl or fall back to static icons
+const getPoolIcon = (pool: { asset: string; ui?: { iconUrl?: string | null } }) => 
+  pool.ui?.iconUrl || FALLBACK_ICONS[pool.asset] || "";
 
 export function DashboardNav({
   className = "",
@@ -31,34 +34,8 @@ export function DashboardNav({
 }: DashboardNavProps) {
   const [activeSection, setActiveSection] = useState<string>("pools-deposit");
 
-  // Fetch pool data for navigation
-  const suiPoolData = usePoolData(CONTRACTS.testnet.SUI_MARGIN_POOL_ID);
-  const dbusdcPoolData = usePoolData(CONTRACTS.testnet.DBUSDC_MARGIN_POOL_ID);
-
-  const pools: PoolOverview[] = React.useMemo(() => {
-    const livePools = [];
-
-    if (suiPoolData.data) {
-      livePools.push(suiPoolData.data);
-    } else if (!suiPoolData.isLoading && !suiPoolData.error) {
-      livePools.push(syntheticPools.find((p) => p.asset === "SUI")!);
-    }
-
-    if (dbusdcPoolData.data) {
-      livePools.push(dbusdcPoolData.data);
-    } else if (!dbusdcPoolData.isLoading && !dbusdcPoolData.error) {
-      livePools.push(syntheticPools.find((p) => p.asset === "DBUSDC")!);
-    }
-
-    return livePools.length > 0 ? livePools : syntheticPools;
-  }, [
-    suiPoolData.data,
-    suiPoolData.isLoading,
-    suiPoolData.error,
-    dbusdcPoolData.data,
-    dbusdcPoolData.isLoading,
-    dbusdcPoolData.error,
-  ]);
+  // Fetch all pools dynamically
+  const { pools } = useAllPools();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -127,7 +104,7 @@ export function DashboardNav({
                     `}
                   >
                     <img
-                      src={ICONS[pool.asset]}
+                      src={getPoolIcon(pool)}
                       alt={`${pool.asset} logo`}
                       className="w-5 h-5 rounded flex-shrink-0"
                     />
@@ -191,7 +168,7 @@ export function DashboardNav({
                     `}
                   >
                     <img
-                      src={ICONS[pool.asset]}
+                      src={getPoolIcon(pool)}
                       alt={`${pool.asset} logo`}
                       className="w-4 h-4 rounded flex-shrink-0"
                     />

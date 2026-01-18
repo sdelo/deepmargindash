@@ -1,4 +1,4 @@
-export type PoolAssetSymbol = 'DBUSDC' | 'SUI';
+export type PoolAssetSymbol = 'SUI' | 'USDC' | 'DEEP' | 'WAL' | 'DBUSDC' | string;
 
 export type StateFields = {
   supply: number;
@@ -37,12 +37,15 @@ export type PoolOverview = {
     coinDecimals: number;
     coinDepositSourceId?: string;
     maintainerCapId?: string;
+    /** DeepBook trading pair name for market stats (e.g., "SUI_USDC") */
+    tradingPair?: string;
   };
   ui: {
     aprSupplyPct: number;
     depositors: number;
     ageDays: number;
     deepbookPoolId: string;
+    iconUrl?: string | null;
   };
   maintainerCapId?: string;
 };

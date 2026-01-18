@@ -7,14 +7,18 @@ interface LandingPoolCardProps {
   pool: PoolOverview;
 }
 
-const ICONS: Record<string, string> = {
+// Fallback icons for when dynamic iconUrl is not available
+const FALLBACK_ICONS: Record<string, string> = {
   SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
-  DBUSDC:
-    "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  DBUSDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  USDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  DEEP: "https://assets.coingecko.com/coins/images/38087/standard/deep.png?1728614086",
+  WAL: "https://assets.coingecko.com/coins/images/54016/standard/walrus.jpg?1737525627",
 };
 
 export function LandingPoolCard({ pool }: LandingPoolCardProps) {
-  const getIcon = (asset: string) => ICONS[asset] || "";
+  // Get icon from pool's dynamic iconUrl or fall back to static icons
+  const getIcon = () => pool.ui.iconUrl || FALLBACK_ICONS[pool.asset] || "";
   const supply = Number(pool.state.supply);
   const utilization = utilizationPct(pool.state.supply, pool.state.borrow);
 
@@ -24,7 +28,7 @@ export function LandingPoolCard({ pool }: LandingPoolCardProps) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <img
-            src={getIcon(pool.asset)}
+            src={getIcon()}
             alt={`${pool.asset} logo`}
             className="w-10 h-10 rounded-full"
           />

@@ -41,32 +41,19 @@ export async function fetchUserOriginalValue(
   currentShares: bigint
 ): Promise<bigint | null> {
   try {
-    // Fetch all supply events for this pool
-    const supplyEvents = await fetchAssetSupplied({
+    // Fetch supply events for this specific supplier cap
+    const userSupplies = await fetchAssetSupplied({
       margin_pool_id: poolId,
+      supplier: supplierCapId,
       limit: 10000,
     });
     
-    // Fetch all withdrawal events for this pool
-    const withdrawEvents = await fetchAssetWithdrawn({
+    // Fetch withdrawal events for this specific supplier cap
+    const userWithdrawals = await fetchAssetWithdrawn({
       margin_pool_id: poolId,
+      supplier: supplierCapId,
       limit: 10000,
     });
-    
-    // Filter to only events for this specific supplier cap
-    const userSupplies = supplyEvents.filter(
-      (event) => {
-        const capId = (event as any).supplier_cap_id || event.supplier;
-        return capId === supplierCapId;
-      }
-    );
-    
-    const userWithdrawals = withdrawEvents.filter(
-      (event) => {
-        const capId = (event as any).supplier_cap_id || event.supplier;
-        return capId === supplierCapId;
-      }
-    );
     
     if (userSupplies.length === 0) {
       console.log('[fetchUserOriginalValue] No supply events found - indexer may be behind or not running');
@@ -157,26 +144,19 @@ export async function fetchUserPositionHistory(
   netPrincipal: bigint;
 } | null> {
   try {
-    // Fetch all supply events for this supplier cap in this pool
-    const supplyEvents = await fetchAssetSupplied({
+    // Fetch supply events for this specific supplier cap in this pool
+    const userSupplies = await fetchAssetSupplied({
       margin_pool_id: poolId,
+      supplier: supplierCapId,
       limit: 10000,
     });
     
-    // Fetch all withdrawal events for this supplier cap in this pool
-    const withdrawEvents = await fetchAssetWithdrawn({
+    // Fetch withdrawal events for this specific supplier cap in this pool
+    const userWithdrawals = await fetchAssetWithdrawn({
       margin_pool_id: poolId,
+      supplier: supplierCapId,
       limit: 10000,
     });
-    
-    // Filter to only events for this specific supplier cap
-    const userSupplies = supplyEvents.filter(
-      (event) => (event as any).supplier_cap_id === supplierCapId || event.supplier === supplierCapId
-    );
-    
-    const userWithdrawals = withdrawEvents.filter(
-      (event) => (event as any).supplier_cap_id === supplierCapId || event.supplier === supplierCapId
-    );
     
     // Calculate net principal
     const totalSupplied = userSupplies.reduce(

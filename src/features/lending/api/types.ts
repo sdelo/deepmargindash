@@ -36,7 +36,7 @@ export interface QueryParams {
   limit?: number; // Maximum number of results
   margin_pool_id?: string;
   margin_manager_id?: string;
-  supplier?: string; // For asset_supplied/asset_withdrawn
+  supplier?: string; // For asset_supplied/asset_withdrawn (SupplierCap ID)
   deepbook_pool_id?: string; // For margin_manager_states
   max_risk_ratio?: number; // For margin_manager_states
   pool_id?: string; // For deepbook pool queries

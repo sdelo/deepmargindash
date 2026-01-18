@@ -54,6 +54,7 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
   const [connectOpen, setConnectOpen] = React.useState(false);
   const [inputAmount, setInputAmount] = React.useState<string>("");
   const [withdrawAmount, setWithdrawAmount] = React.useState<string>("");
+  const [isWithdrawMax, setIsWithdrawMax] = React.useState(false);
   const [isFlashing, setIsFlashing] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const { network } = useAppNetwork();
@@ -314,6 +315,8 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
                 // Allow empty or valid numbers
                 if (value === '' || !isNaN(Number(value))) {
                   setWithdrawAmount(value);
+                  // Clear the MAX flag when user manually edits
+                  setIsWithdrawMax(false);
                 }
               }}
             />
@@ -333,6 +336,8 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
                       // Round down to avoid exceeding balance
                       const roundedAmount = Math.floor(amount * 1000000) / 1000000;
                       setWithdrawAmount(roundedAmount.toString());
+                      // Track if MAX (100%) was selected
+                      setIsWithdrawMax(p === 100);
                     }
                   }}
                   disabled={depositedBalance <= 0}
@@ -390,8 +395,13 @@ const DepositWithdrawPanelComponent: React.ForwardRefRenderFunction<
                     if (txStatus === "pending") return;
                     const v = Number(withdrawAmount || 0);
                     if (!Number.isFinite(v) || v <= 0) return;
-                    if (v > depositedBalance) return;
-                    onWithdraw?.(v);
+                    // Use onWithdrawAll when MAX was selected to avoid precision issues
+                    if (isWithdrawMax && onWithdrawAll) {
+                      onWithdrawAll();
+                    } else {
+                      if (v > depositedBalance) return;
+                      onWithdraw?.(v);
+                    }
                   }}
                 >
                   {txStatus === "pending"

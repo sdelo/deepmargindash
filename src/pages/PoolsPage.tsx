@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import PoolCarousel from "../features/lending/components/PoolCarousel";
 import PositionsWithCalculator from "../features/lending/components/PositionsWithCalculator";
 import YieldCurve from "../features/lending/components/YieldCurve";
+import { OverviewTiles } from "../features/lending/components/OverviewTiles";
 import SlidePanel from "../features/shared/components/SlidePanel";
 import DepositHistory from "../features/lending/components/DepositHistory";
 import { LiquidationDashboard } from "../features/lending/components/LiquidationDashboard";
@@ -16,6 +17,9 @@ import { APYHistory } from "../features/lending/components/APYHistory";
 import { PoolActivity } from "../features/lending/components/PoolActivity";
 import { LiquidationWall } from "../features/lending/components/LiquidationWall";
 import { WhaleWatch } from "../features/lending/components/WhaleWatch";
+import { PoolRiskOutlook } from "../features/lending/components/PoolRiskOutlook";
+import { LiquidityTab } from "../features/lending/components/LiquidityTab";
+import { BackedMarketsTab } from "../features/lending/components/BackedMarketsTab";
 import { AdminHistorySlidePanel } from "../features/lending/components/AdminHistorySlidePanel";
 import { InterestRateHistoryPanel } from "../features/lending/components/InterestRateHistoryPanel";
 import { DeepbookPoolHistoryPanel } from "../features/lending/components/DeepbookPoolHistoryPanel";
@@ -26,8 +30,7 @@ import {
 } from "../features/shared/components/SectionNav";
 import { LockIcon } from "../components/ThemedIcons";
 import { useCoinBalance } from "../hooks/useCoinBalance";
-import { usePoolData } from "../hooks/usePoolData";
-import { getContracts, type NetworkType } from "../config/contracts";
+import { useAllPools } from "../hooks/useAllPools";
 import {
   ONE_BILLION,
   GAS_AMOUNT_MIST,
@@ -36,6 +39,7 @@ import {
 import {
   buildDepositTransaction,
   buildWithdrawTransaction,
+  buildWithdrawAllTransaction,
 } from "../lib/suiTransactions";
 import type { PoolOverview, UserPosition } from "../features/lending/types";
 
@@ -49,39 +53,21 @@ export function PoolsPage() {
     React.useState<DashboardSection>("pools");
 
   const [overviewTab, setOverviewTab] = React.useState<
+    | "overview"
     | "yield"
     | "history"
     | "activity"
+    | "risk"
     | "liquidations"
     | "concentration"
-  >("yield");
+    | "liquidity"
+    | "markets"
+  >("overview");
   
   const [pendingDepositAmount, setPendingDepositAmount] = React.useState<string>("");
 
-  const contracts = getContracts(network as NetworkType);
-
-  const suiPoolData = usePoolData(
-    contracts.SUI_MARGIN_POOL_ID,
-    account?.address
-  );
-  const dbusdcPoolData = usePoolData(
-    contracts.DBUSDC_MARGIN_POOL_ID,
-    account?.address
-  );
-
-  const pools: PoolOverview[] = React.useMemo(() => {
-    const realPools: PoolOverview[] = [];
-    if (suiPoolData.data) realPools.push(suiPoolData.data);
-    if (dbusdcPoolData.data) realPools.push(dbusdcPoolData.data);
-    return realPools;
-  }, [suiPoolData.data, dbusdcPoolData.data]);
-
-  const userPositions: UserPosition[] = React.useMemo(() => {
-    const positions: UserPosition[] = [];
-    if (suiPoolData.userPosition) positions.push(suiPoolData.userPosition);
-    if (dbusdcPoolData.userPosition) positions.push(dbusdcPoolData.userPosition);
-    return positions;
-  }, [suiPoolData.userPosition, dbusdcPoolData.userPosition]);
+  // Fetch all pools dynamically based on network configuration
+  const { pools, userPositions, isLoading, error: poolsError, refetch: refetchPools } = useAllPools(account?.address);
 
   const userSupplierCapIds: string[] = React.useMemo(() => {
     const capIds = new Set(
@@ -214,7 +200,7 @@ export function PoolsPage() {
 
         setTxStatus("success");
         setPendingDepositAmount("");
-        await Promise.all([suiPoolData.refetch(), dbusdcPoolData.refetch(), coinBalance.refetch(), suiBalance.refetch()]);
+        await Promise.all([refetchPools(), coinBalance.refetch(), suiBalance.refetch()]);
         setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: ['assetSupplied'] });
           queryClient.invalidateQueries({ queryKey: ['assetWithdrawn'] });
@@ -267,7 +253,7 @@ export function PoolsPage() {
         }
 
         setTxStatus("success");
-        await Promise.all([suiPoolData.refetch(), dbusdcPoolData.refetch(), coinBalance.refetch(), suiBalance.refetch()]);
+        await Promise.all([refetchPools(), coinBalance.refetch(), suiBalance.refetch()]);
         setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: ['assetSupplied'] });
           queryClient.invalidateQueries({ queryKey: ['assetWithdrawn'] });
@@ -280,8 +266,59 @@ export function PoolsPage() {
     [account, selectedPool, signAndExecute, network, suiBalance, suiClient, queryClient]
   );
 
-  const isLoading = suiPoolData.isLoading || dbusdcPoolData.isLoading;
-  const hasError = suiPoolData.error || dbusdcPoolData.error;
+  const handleWithdrawAll = React.useCallback(
+    async () => {
+      if (!account || !selectedPool) return;
+
+      const suiBalanceNum = parseFloat(suiBalance?.raw || "0") / ONE_BILLION;
+      if (suiBalanceNum < MIN_GAS_BALANCE_SUI) {
+        setTxStatus("error");
+        setTxError("Insufficient SUI for gas fees.");
+        return;
+      }
+
+      try {
+        setTxStatus("pending");
+        setTxError(null);
+        const poolContracts = selectedPool.contracts;
+
+        // Use buildWithdrawAllTransaction which passes null for amount,
+        // telling the contract to withdraw everything available
+        const tx = await buildWithdrawAllTransaction({
+          poolId: poolContracts.marginPoolId,
+          registryId: poolContracts.registryId,
+          poolType: poolContracts.marginPoolType,
+          owner: account.address,
+          suiClient,
+        });
+        
+        const result = await signAndExecute({ transaction: tx, chain: `sui:${network}` });
+        const txResponse = await suiClient.waitForTransaction({
+          digest: result.digest,
+          options: { showEffects: true, showEvents: true },
+        });
+
+        if (txResponse.effects?.status?.status !== "success") {
+          setTxStatus("error");
+          setTxError(txResponse.effects?.status?.error || "Transaction failed");
+          return;
+        }
+
+        setTxStatus("success");
+        await Promise.all([refetchPools(), coinBalance.refetch(), suiBalance.refetch()]);
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['assetSupplied'] });
+          queryClient.invalidateQueries({ queryKey: ['assetWithdrawn'] });
+        }, 3000);
+      } catch (error) {
+        setTxStatus("error");
+        setTxError(error instanceof Error ? error.message : "Transaction failed");
+      }
+    },
+    [account, selectedPool, signAndExecute, network, suiBalance, suiClient, queryClient, refetchPools, coinBalance]
+  );
+
+  const hasError = poolsError;
 
   return (
     <div className="max-w-[1920px] mx-auto text-white pb-12">
@@ -301,7 +338,7 @@ export function PoolsPage() {
           )}
           {hasError && (
             <div className="text-sm text-red-400">
-              Error: {suiPoolData.error?.message || dbusdcPoolData.error?.message}
+              Error: {poolsError?.message}
             </div>
           )}
         </div>
@@ -323,11 +360,13 @@ export function PoolsPage() {
             }}
             onDeposit={handleDeposit}
             onWithdraw={handleWithdraw}
+            onWithdrawAll={handleWithdrawAll}
             walletBalance={coinBalance?.formatted}
             depositedBalance={selectedPoolDepositedBalance}
             suiBalance={suiBalance?.formatted}
             txStatus={txStatus}
             onAmountChange={setPendingDepositAmount}
+            currentPositionBalance={selectedPoolDepositedBalance}
           />
 
           {/* Main Content */}
@@ -345,28 +384,24 @@ export function PoolsPage() {
                       setPendingDepositAmount("");
                     }
                   }}
-                  onAdminAuditClick={(id) => {
-                    setAdminHistoryPoolId(id);
-                    setAdminHistoryOpen(true);
-                  }}
-                  onDeepbookPoolHistoryClick={(id) => {
-                    setDeepbookPoolHistoryPoolId(id);
-                    setDeepbookPoolHistoryOpen(true);
-                  }}
                   isLoading={isLoading}
                 />
 
                 {/* Two Column Layout: Analytics | Positions+Calculator (SWAPPED) */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  {/* Left: Analytics Tabs (now 2 columns) */}
-                  <div className="lg:col-span-2 bg-slate-800/40 rounded-xl border border-slate-700/50 overflow-hidden min-h-[680px] flex flex-col">
+                  {/* Left: Analytics Tabs (now 2 columns) - Tier 1 styling */}
+                  <div className="lg:col-span-2 surface-tier-1 rounded-xl overflow-hidden min-h-[680px] flex flex-col">
                     {/* Tab Navigation */}
                     <div className="flex gap-1 p-1.5 bg-slate-800/60 border-b border-slate-700/50 flex-shrink-0">
                       {[
+                        { key: "overview", label: "Overview" },
                         { key: "yield", label: "Yield Curve" },
                         { key: "history", label: "APY History" },
                         { key: "activity", label: "Activity" },
-                        { key: "liquidations", label: "Risk" },
+                        { key: "liquidity", label: "Liquidity" },
+                        { key: "markets", label: "Markets" },
+                        { key: "risk", label: "Risk" },
+                        { key: "liquidations", label: "Liquidations" },
                         { key: "concentration", label: "Whales" },
                       ].map((tab) => (
                         <button
@@ -385,6 +420,12 @@ export function PoolsPage() {
 
                     {/* Content Panel - SCROLLABLE INSIDE with max height cap */}
                     <div className="flex-1 p-4 overflow-y-auto max-h-[680px]">
+                      {overviewTab === "overview" && (
+                        <OverviewTiles
+                          pool={selectedPool}
+                          onSelectTab={(tab) => setOverviewTab(tab)}
+                        />
+                      )}
                       {overviewTab === "yield" && (
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
@@ -405,18 +446,37 @@ export function PoolsPage() {
                       {overviewTab === "liquidations" && (
                         <LiquidationWall poolId={selectedPool.contracts?.marginPoolId} asset={selectedPool.asset} />
                       )}
+                      {overviewTab === "risk" && (
+                        <PoolRiskOutlook pool={selectedPool} onSelectTab={setOverviewTab} />
+                      )}
                       {overviewTab === "concentration" && (
                         <WhaleWatch poolId={selectedPool.contracts?.marginPoolId} decimals={selectedPool.contracts?.coinDecimals} asset={selectedPool.asset} />
+                      )}
+                      {overviewTab === "liquidity" && (
+                        <LiquidityTab pool={selectedPool} />
+                      )}
+                      {overviewTab === "markets" && (
+                        <BackedMarketsTab
+                          pool={selectedPool}
+                          pools={pools}
+                          onMarketClick={(id) => {
+                            setDeepbookPoolHistoryPoolId(id);
+                            setDeepbookPoolHistoryOpen(true);
+                          }}
+                        />
                       )}
                     </div>
                   </div>
 
-                  {/* Right: Positions with Calculator (now 1 column) */}
-                  <div className="lg:col-span-1 bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 min-h-[680px] flex flex-col">
-                    <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2 mb-3 flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                      Your Positions
-                    </h3>
+                  {/* Right: Positions with Calculator (now 1 column) - Tier 1 styling */}
+                  <div className="lg:col-span-1 surface-tier-1 rounded-xl p-4 min-h-[680px] flex flex-col card-hover-lift">
+                    <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                      <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Your Positions
+                      </h3>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider">Position Summary</span>
+                    </div>
                     <div className="flex-1 min-h-0">
                       {account ? (
                         <PositionsWithCalculator

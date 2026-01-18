@@ -3,10 +3,17 @@ import React from "react";
 import type { PoolOverview } from "../types";
 import { InfoTooltip } from "../../../components/InfoTooltip";
 
-const ICONS: Record<string, string> = {
+// Fallback icons for when dynamic iconUrl is not available
+const FALLBACK_ICONS: Record<string, string> = {
   SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
   DBUSDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  USDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  DEEP: "https://assets.coingecko.com/coins/images/38087/standard/deep.png?1728614086",
+  WAL: "https://assets.coingecko.com/coins/images/54016/standard/walrus.jpg?1737525627",
 };
+// Get icon from pool's dynamic iconUrl or fall back to static icons
+const getPoolIcon = (pool: { asset: string; ui?: { iconUrl?: string | null } }) => 
+  pool.ui?.iconUrl || FALLBACK_ICONS[pool.asset] || "";
 
 function formatNumber(n: number | bigint, decimals: number = 2): string {
   const num = Number(n);
@@ -56,7 +63,7 @@ export const PoolSnapshotHero: FC<Props> = ({
           {/* Pool Icon */}
           <div className="relative">
             <img
-              src={ICONS[pool.asset]}
+              src={getPoolIcon(pool)}
               alt={pool.asset}
               className="w-12 h-12 rounded-full ring-2 ring-white/10"
             />

@@ -54,12 +54,12 @@ export default function SlidePanel({
       <div
         className={`
           md:hidden fixed inset-x-0 bottom-0 z-[90] 
-          bg-slate-900 rounded-t-2xl border-t border-white/10 shadow-2xl 
+          rounded-t-2xl border-t border-cyan-500/20 shadow-2xl 
           transition-transform duration-300 ease-out flex flex-col
           max-h-[90vh]
         `}
         style={{
-          transform: open ? "translateY(0)" : "translateY(100%)",
+          background: 'linear-gradient(180deg, #0c1a24 0%, #0a1419 100%)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -68,17 +68,17 @@ export default function SlidePanel({
           className="flex-shrink-0 py-3 flex justify-center"
           onClick={onClose}
         >
-          <div className="w-10 h-1 bg-white/30 rounded-full" />
+          <div className="w-10 h-1 bg-cyan-400/40 rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="flex-shrink-0 px-4 pb-3 flex items-center justify-between border-b border-white/10">
-          <div className="text-white font-semibold text-lg truncate pr-4">
+        <div className="flex-shrink-0 px-4 pb-3 flex items-center justify-between border-b border-cyan-500/20">
+          <div className="text-cyan-100 font-semibold text-lg truncate pr-4">
             {title}
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 p-2 rounded-lg bg-white/10 hover:bg-white/15 text-white transition-colors"
+            className="flex-shrink-0 p-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-200 transition-colors"
             aria-label="Close"
           >
             <svg
@@ -107,24 +107,25 @@ export default function SlidePanel({
       <div
         className={`
           hidden md:flex fixed top-0 right-0 h-full z-[90] 
-          bg-slate-900 border-l border-white/10 shadow-2xl 
+          border-l border-cyan-500/20 shadow-2xl 
           transition-transform duration-300 ease-out flex-col
         `}
         style={{
           maxWidth: "100vw",
           width: typeof width === "number" ? `${width}px` : width,
           transform: open ? "translateX(0)" : "translateX(100%)",
+          background: 'linear-gradient(180deg, #0c1a24 0%, #0a1419 100%)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex-shrink-0 px-6 py-4 flex items-center justify-between border-b border-white/10 bg-slate-900/80 backdrop-blur-sm">
-          <div className="text-white font-semibold text-lg truncate pr-4">
+        <div className="flex-shrink-0 px-6 py-4 flex items-center justify-between border-b border-cyan-500/20 bg-[#0c1a24]/90 backdrop-blur-sm">
+          <div className="text-cyan-100 font-semibold text-lg truncate pr-4">
             {title}
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-white text-sm font-medium transition-colors"
+            className="flex-shrink-0 px-4 py-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-200 text-sm font-medium transition-colors"
           >
             Close
           </button>

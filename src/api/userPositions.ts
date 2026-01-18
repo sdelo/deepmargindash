@@ -216,17 +216,22 @@ export async function fetchUserPositions(
     return [];
   }
 
-  // Get network-specific contracts
-  const contracts = getContracts(network);
+  // Get network-specific pool configurations
+  const { getMarginPools } = await import('../config/contracts');
+  const poolConfigs = getMarginPools(network);
 
-  // Get package ID from one of the pools (both pools use the same package)
-  const suiPoolResponse = await suiClient.getObject({
-    id: contracts.SUI_MARGIN_POOL_ID,
+  if (poolConfigs.length === 0) {
+    return [];
+  }
+
+  // Get package ID from the first pool (all pools use the same package)
+  const firstPoolResponse = await suiClient.getObject({
+    id: poolConfigs[0].poolId,
     options: { showType: true },
   });
 
-  const packageId = suiPoolResponse.data?.type 
-    ? getPackageId(suiPoolResponse.data.type)
+  const packageId = firstPoolResponse.data?.type 
+    ? getPackageId(firstPoolResponse.data.type)
     : null;
 
   console.log(`Derived package ID from pool: ${packageId}`);
@@ -246,7 +251,7 @@ export async function fetchUserPositions(
     return [];
   }
 
-  // Fetch positions for each SupplierCap across both pools
+  // Fetch positions for each SupplierCap across all pools
   const positionPromises: Promise<UserPosition | null>[] = [];
   
   for (const capId of validCapIds) {
@@ -255,29 +260,20 @@ export async function fetchUserPositions(
         console.warn("Skipping invalid capId:", capId);
         continue;
     }
-    // Try this cap against SUI pool
-    positionPromises.push(
-      fetchUserPositionFromPool(
-        suiClient,
-        contracts.SUI_MARGIN_POOL_ID,
-        userAddress,
-        'SUI',
-        9,
-        capId
-      )
-    );
     
-    // Try this cap against DBUSDC pool
-    positionPromises.push(
-      fetchUserPositionFromPool(
-        suiClient,
-        contracts.DBUSDC_MARGIN_POOL_ID,
-        userAddress,
-        'DBUSDC',
-        6,
-        capId
-      )
-    );
+    // Try this cap against all configured pools
+    for (const poolConfig of poolConfigs) {
+      positionPromises.push(
+        fetchUserPositionFromPool(
+          suiClient,
+          poolConfig.poolId,
+          userAddress,
+          poolConfig.asset,
+          poolConfig.decimals,
+          capId
+        )
+      );
+    }
   }
 
   const positions = await Promise.all(positionPromises);

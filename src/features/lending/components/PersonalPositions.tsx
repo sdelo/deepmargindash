@@ -6,6 +6,7 @@ import { useAppNetwork } from "../../../context/AppNetworkContext";
 import { useEnrichedUserPositions } from "../../../hooks/useEnrichedUserPositions";
 import { useUserActivity } from "../hooks/useUserActivity";
 import { MarketStats } from "./MarketStats";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 type Props = {
   userAddress: string | undefined;
@@ -31,7 +32,7 @@ export const PersonalPositions: FC<Props> = ({
 
   // Enrich positions with live on-chain data
   const enrichedPositions = useEnrichedUserPositions(positions, pools);
-  const { explorerUrl } = useAppNetwork();
+  const { explorerUrl, indexerStatus } = useAppNetwork();
 
   // Get SupplierCap IDs for history filtering
   const supplierCapIds = useMemo(() => {
@@ -165,6 +166,25 @@ export const PersonalPositions: FC<Props> = ({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Indexer Health Warning Banner */}
+      {!indexerStatus.isHealthy && !indexerStatus.isLoading && (
+        <div className="mb-3 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+          <div className="flex items-start gap-2">
+            <ExclamationTriangleIcon className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-amber-300">
+                Indexer temporarily unavailable
+              </p>
+              <p className="text-[10px] text-amber-400/80 mt-0.5">
+                {indexerStatus.lagDescription ||
+                  "Interest earned may not be calculated accurately."}{" "}
+                Balances shown are still accurate.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Positions Section - Top half, scrollable */}
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="text-sm font-medium text-slate-300 mb-2">
@@ -211,8 +231,9 @@ export const PersonalPositions: FC<Props> = ({
           {filteredPositions.map((pos) => {
             const currentBalance =
               pos.currentValueFromChain || pos.balanceFormatted;
-            const interestEarned = pos.interestEarned || "—";
-            const isIndexerPending = interestEarned.includes("indexer pending");
+            const interestEarned = pos.interestEarned;
+            const isLoadingInterest =
+              pos.isLoading || pos.isIndexerPending || !interestEarned;
 
             return (
               <div
@@ -230,20 +251,16 @@ export const PersonalPositions: FC<Props> = ({
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-emerald-400 font-medium">
-                      +{interestEarned}
-                    </span>
-                    {isIndexerPending && (
-                      <span
-                        className="text-slate-500 cursor-help text-xs"
-                        title="Indexer pending"
-                      >
-                        ?
-                      </span>
-                    )}
-                    {pos.isLoading && (
-                      <span className="text-[10px] text-teal-400 animate-pulse">
-                        ⟳
+                    {isLoadingInterest ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 border border-teal-400 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs text-slate-400">
+                          Calculating...
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-emerald-400 font-medium">
+                        +{interestEarned}
                       </span>
                     )}
                   </div>
@@ -326,7 +343,10 @@ export const PersonalPositions: FC<Props> = ({
 
       {/* Market Stats Section */}
       <div className="min-h-0">
-        <MarketStats poolName="SUI_DBUSDC" compact />
+        <MarketStats
+          poolName={pools[0]?.contracts?.tradingPair || "SUI_USDC"}
+          compact
+        />
       </div>
     </div>
   );

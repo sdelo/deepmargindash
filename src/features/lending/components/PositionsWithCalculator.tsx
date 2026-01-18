@@ -15,7 +15,7 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
 } from "recharts";
-import { ChevronDownIcon, ChevronUpIcon, CalculatorIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ChevronUpIcon, CalculatorIcon, ClockIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 type Props = {
   userAddress: string | undefined;
@@ -30,7 +30,9 @@ function generateProjectionData(
   existingPosition: number,
   currentAPY: number,
   lowAPY: number,
-  highAPY: number
+  highAPY: number,
+  showIncremental: boolean = false,
+  period: "30d" | "1y" = "30d"
 ) {
   const dataPoints: {
     day: number;
@@ -39,41 +41,64 @@ function generateProjectionData(
     low: number;
     high: number;
     baseline?: number;
+    incrementalEarnings?: number;
+    incrementalEarningsHigh?: number;
+    incrementalEarningsLow?: number;
   }[] = [];
 
   const totalAmount = depositAmount + existingPosition;
-  const intervals = [
-    { day: 1, label: "1d" },
-    { day: 7, label: "1w" },
-    { day: 14, label: "2w" },
-    { day: 30, label: "1m" },
-    { day: 60, label: "2m" },
-    { day: 90, label: "3m" },
-    { day: 180, label: "6m" },
-    { day: 270, label: "9m" },
-    { day: 365, label: "1y" },
-  ];
+  
+  // Use different intervals based on period
+  const intervals = period === "30d" 
+    ? [
+        { day: 1, label: "1d" },
+        { day: 3, label: "3d" },
+        { day: 7, label: "1w" },
+        { day: 14, label: "2w" },
+        { day: 21, label: "3w" },
+        { day: 30, label: "30d" },
+      ]
+    : [
+        { day: 1, label: "1d" },
+        { day: 7, label: "1w" },
+        { day: 14, label: "2w" },
+        { day: 30, label: "1m" },
+        { day: 60, label: "2m" },
+        { day: 90, label: "3m" },
+        { day: 180, label: "6m" },
+        { day: 270, label: "9m" },
+        { day: 365, label: "1y" },
+      ];
 
   for (const { day, label } of intervals) {
     const currentDailyRate = currentAPY / 100 / 365;
     const lowDailyRate = lowAPY / 100 / 365;
     const highDailyRate = highAPY / 100 / 365;
 
-    const currentValue = totalAmount * Math.pow(1 + currentDailyRate, day);
-    const lowValue = totalAmount * Math.pow(1 + lowDailyRate, day);
-    const highValue = totalAmount * Math.pow(1 + highDailyRate, day);
+    // Calculate EARNINGS (interest only), not total balance
+    const currentEarnings = totalAmount * (Math.pow(1 + currentDailyRate, day) - 1);
+    const lowEarnings = totalAmount * (Math.pow(1 + lowDailyRate, day) - 1);
+    const highEarnings = totalAmount * (Math.pow(1 + highDailyRate, day) - 1);
     
-    const baselineValue = existingPosition > 0 
-      ? existingPosition * Math.pow(1 + currentDailyRate, day)
+    const baselineEarnings = existingPosition > 0 
+      ? existingPosition * (Math.pow(1 + currentDailyRate, day) - 1)
       : undefined;
+
+    // Calculate incremental earnings from just the deposit amount
+    const depositEarningsCurrent = depositAmount * (Math.pow(1 + currentDailyRate, day) - 1);
+    const depositEarningsHigh = depositAmount * (Math.pow(1 + highDailyRate, day) - 1);
+    const depositEarningsLow = depositAmount * (Math.pow(1 + lowDailyRate, day) - 1);
 
     dataPoints.push({
       day,
       label,
-      current: currentValue,
-      low: lowValue,
-      high: highValue,
-      baseline: baselineValue,
+      current: currentEarnings,
+      low: lowEarnings,
+      high: highEarnings,
+      baseline: baselineEarnings,
+      incrementalEarnings: showIncremental && depositAmount > 0 ? depositEarningsCurrent : undefined,
+      incrementalEarningsHigh: showIncremental && depositAmount > 0 ? depositEarningsHigh : undefined,
+      incrementalEarningsLow: showIncremental && depositAmount > 0 ? depositEarningsLow : undefined,
     });
   }
 
@@ -87,9 +112,10 @@ export const PositionsWithCalculator: FC<Props> = ({
   positions: propPositions,
   pendingDepositAmount = "",
 }) => {
-  const { explorerUrl } = useAppNetwork();
+  const { explorerUrl, indexerStatus } = useAppNetwork();
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
   const [manualAmount, setManualAmount] = useState<string>("");
+  const [projectionPeriod, setProjectionPeriod] = useState<"30d" | "1y">("30d");
 
   const {
     data: fetchedPositions,
@@ -183,14 +209,19 @@ export const PositionsWithCalculator: FC<Props> = ({
   }
 
   const chartData = useMemo(
-    () => generateProjectionData(depositAmount, currentPositionForPool, currentAPY, pessimisticAPY, optimisticAPY),
-    [depositAmount, currentPositionForPool, currentAPY, pessimisticAPY, optimisticAPY]
+    () => generateProjectionData(depositAmount, currentPositionForPool, currentAPY, pessimisticAPY, optimisticAPY, isWhatIfMode, projectionPeriod),
+    [depositAmount, currentPositionForPool, currentAPY, pessimisticAPY, optimisticAPY, isWhatIfMode, projectionPeriod]
   );
 
   const totalAmount = depositAmount + currentPositionForPool;
   const dailyEarnings = (totalAmount * (currentAPY / 100)) / 365;
   const monthlyEarnings = (totalAmount * (currentAPY / 100)) / 12;
-  const yearlyTotal = totalAmount * (1 + currentAPY / 100);
+  const yearlyEarnings = totalAmount * (currentAPY / 100);
+  
+  // Incremental earnings from just the deposit (the delta)
+  const incrementalDailyEarnings = (depositAmount * (currentAPY / 100)) / 365;
+  const incrementalMonthlyEarnings = (depositAmount * (currentAPY / 100)) / 12;
+  const incrementalYearlyEarnings = depositAmount * (currentAPY / 100);
 
   const formatValue = (num: number) => {
     if (num < 0.01) return num.toFixed(6);
@@ -200,10 +231,14 @@ export const PositionsWithCalculator: FC<Props> = ({
   };
 
   const formatEarnings = (num: number) => {
-    if (num < 0.0001) return num.toFixed(8);
-    if (num < 0.01) return num.toFixed(6);
-    if (num < 1) return num.toFixed(4);
-    return num.toFixed(2);
+    const absNum = Math.abs(num);
+    const sign = num < 0 ? '-' : '';
+    if (absNum >= 1000) return sign + absNum.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    if (absNum >= 1) return sign + absNum.toFixed(2);
+    if (absNum >= 0.01) return sign + absNum.toFixed(4);
+    if (absNum >= 0.0001) return sign + absNum.toFixed(6);
+    if (absNum === 0) return '0';
+    return sign + absNum.toFixed(8);
   };
 
   const truncateAddress = (address: string) => {
@@ -216,19 +251,24 @@ export const PositionsWithCalculator: FC<Props> = ({
 
   const isEnriching = enrichedPositions.some((pos) => pos.isLoading);
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string; color: string }>; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string; color: string; dataKey?: string }>; label?: string }) => {
     if (active && payload && payload.length && selectedPool) {
+      // Check if we're showing incremental data
+      const hasIncremental = payload.some(p => p.dataKey?.includes('incremental'));
+      
       return (
         <div className="bg-slate-900/95 border border-slate-700 rounded-lg p-3 shadow-xl">
-          <p className="text-xs text-slate-400 mb-2">At {label}</p>
+          <p className="text-xs text-slate-400 mb-2">Earnings at {label}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatValue(entry.value)} {selectedPool.asset}
+              {entry.name}: +{formatEarnings(entry.value)} {selectedPool.asset}
             </p>
           ))}
-          <p className="text-xs text-slate-500 mt-1 border-t border-slate-700 pt-1">
-            +{formatEarnings(payload[0]?.value - totalAmount || 0)} earned
-          </p>
+          {isWhatIfMode && depositAmount > 0 && (
+            <p className="text-[10px] text-emerald-400 mt-1 border-t border-slate-700 pt-1">
+              From your {formatValue(totalAmount)} {selectedPool.asset} position
+            </p>
+          )}
         </div>
       );
     }
@@ -240,12 +280,39 @@ export const PositionsWithCalculator: FC<Props> = ({
 
   return (
     <div className="flex flex-col h-full space-y-3">
+      {/* Indexer Health Warning - Compact Chip */}
+      {!indexerStatus.isHealthy && !indexerStatus.isLoading && (
+        <div className="flex-shrink-0 flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full w-fit" title={indexerStatus.lagDescription || "Interest earned may not be calculated accurately. Balances shown are still accurate."}>
+          <ExclamationTriangleIcon className="w-3 h-3 text-amber-400" />
+          <span className="text-[10px] text-amber-300 font-medium">Data delayed: {indexerStatus.lagDescription?.match(/\d+d/)?.[0] || "~2d"}</span>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SECTION 0: PENDING DEPOSIT INDICATOR (When in What-If Mode) - Compact One-Line
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {isWhatIfMode && selectedPool && (
+        <div className="flex-shrink-0 animate-fade-in">
+          <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/25 rounded-lg">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-medium text-emerald-400">
+              +{depositAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {selectedPool.asset} pending deposit
+            </span>
+            {currentPositionForPool > 0 && (
+              <span className="text-[10px] text-slate-500 ml-auto">
+                → {totalAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} total
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════════
           SECTION 1: POSITION SUMMARY (Top)
           ═══════════════════════════════════════════════════════════════════════ */}
       <div className="flex-shrink-0">
         <div className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-          Position Summary
+          {isWhatIfMode ? "Current Position" : "Position Summary"}
         </div>
 
         {isLoading || isEnriching ? (
@@ -262,8 +329,58 @@ export const PositionsWithCalculator: FC<Props> = ({
             Connect wallet to view positions
           </div>
         ) : positions.length === 0 ? (
-          <div className="text-slate-500 text-sm py-2">
-            No positions yet — make your first deposit above
+          /* ═══════════════════════════════════════════════════════════════════
+             EMPTY STATE: Contextual Education (not a void)
+             ═══════════════════════════════════════════════════════════════════ */
+          <div className="space-y-3">
+            {/* What you'll see after deposit */}
+            <div className="bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 rounded-lg p-3 border border-emerald-500/20">
+              <div className="flex items-start gap-2">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-emerald-400 text-xs">→</span>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-300 font-medium mb-1">After your first deposit:</p>
+                  <ul className="space-y-1 text-[11px] text-slate-400">
+                    <li className="flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-emerald-400"></span>
+                      Live balance with accrued interest
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-cyan-400"></span>
+                      Earnings projection chart
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-amber-400"></span>
+                      Transaction history
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            {/* Pool snapshot - show real data even before deposit */}
+            {selectedPool && (
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Current Pool Stats</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[10px] text-slate-500">Total Supplied</div>
+                    <div className="text-sm font-semibold text-white">
+                      {selectedPool.state.supply.toLocaleString(undefined, { maximumFractionDigits: 0 })} 
+                      <span className="text-[10px] text-slate-500 ml-1">{selectedPool.asset}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-500">Active Suppliers</div>
+                    <div className="text-sm font-semibold text-cyan-400">
+                      {/* This is placeholder - ideally fetch from indexer */}
+                      Earning {selectedPool.ui.aprSupplyPct.toFixed(2)}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -309,6 +426,48 @@ export const PositionsWithCalculator: FC<Props> = ({
                 </div>
               );
             })}
+
+            {/* ═══════════════════════════════════════════════════════════════════
+                EXIT STATUS INDICATOR - Can I withdraw my full position?
+            ═══════════════════════════════════════════════════════════════════ */}
+            {selectedPool && currentPositionForPool > 0 && (() => {
+              const availableLiquidity = selectedPool.state.supply - selectedPool.state.borrow;
+              const canWithdrawFull = availableLiquidity >= currentPositionForPool;
+              const withdrawablePct = Math.min((availableLiquidity / currentPositionForPool) * 100, 100);
+              const withdrawableAmount = Math.min(availableLiquidity, currentPositionForPool);
+              
+              return (
+                <div className={`mt-2 px-3 py-2 rounded-lg border ${
+                  canWithdrawFull 
+                    ? 'bg-emerald-500/5 border-emerald-500/20' 
+                    : 'bg-amber-500/10 border-amber-500/30'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {canWithdrawFull ? (
+                        <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      ) : (
+                        <ExclamationTriangleIcon className="w-4 h-4 text-amber-400" />
+                      )}
+                      <span className={`text-xs font-medium ${canWithdrawFull ? 'text-emerald-300' : 'text-amber-300'}`}>
+                        Exit Status
+                      </span>
+                    </div>
+                    <span className={`text-xs font-semibold ${canWithdrawFull ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {canWithdrawFull ? '100%' : `${withdrawablePct.toFixed(0)}%`} available
+                    </span>
+                  </div>
+                  <p className={`text-[10px] mt-1 ${canWithdrawFull ? 'text-emerald-200/60' : 'text-amber-200/70'}`}>
+                    {canWithdrawFull 
+                      ? 'You can withdraw your full position right now.'
+                      : `Only ${withdrawableAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${selectedPool.asset} available. Wait for borrowers to repay for full exit.`
+                    }
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -317,30 +476,57 @@ export const PositionsWithCalculator: FC<Props> = ({
           SECTION 2: EARNINGS PROJECTION (Primary - Middle)
           ═══════════════════════════════════════════════════════════════════════ */}
       <div className="flex-1 min-h-0 flex flex-col">
-        {/* Connector Cue when previewing deposit */}
-        {isWhatIfMode && (
-          <div className="flex items-center justify-center gap-2 py-2 mb-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20 animate-pulse-subtle">
-            <span className="text-xs text-emerald-400 font-medium">
-              Previewing impact of this deposit ↓
-            </span>
-            <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold rounded">
-              +{depositAmount} {selectedPool?.asset}
-            </span>
-          </div>
-        )}
-
         <div className={`flex-1 flex flex-col rounded-lg p-3 ${isWhatIfMode ? 'bg-gradient-to-b from-emerald-500/5 to-transparent border border-emerald-500/20' : 'bg-slate-700/20 border border-slate-700/30'}`}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <CalculatorIcon className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs font-medium text-slate-300">
-                {isWhatIfMode ? "Projected Earnings (after deposit)" : "Earnings Projection"}
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-slate-300">
+                  {isWhatIfMode 
+                    ? "Incremental Earnings from Deposit" 
+                    : "Projection (Variable APY)"}
+                </span>
+                <span className="text-[9px] text-slate-500">APY changes with utilization — not guaranteed</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Period Toggle */}
+              <div className="flex items-center bg-slate-800/60 rounded-lg p-0.5">
+                <button
+                  onClick={() => setProjectionPeriod("30d")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
+                    projectionPeriod === "30d"
+                      ? "bg-cyan-500/20 text-cyan-300"
+                      : "text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  30d
+                </button>
+                <button
+                  onClick={() => setProjectionPeriod("1y")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
+                    projectionPeriod === "1y"
+                      ? "bg-cyan-500/20 text-cyan-300"
+                      : "text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  1y
+                </button>
+              </div>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${currentAPY < 0.01 ? 'bg-amber-500/20 text-amber-300' : 'bg-cyan-500/20 text-cyan-300'}`}>
+                {currentAPY.toFixed(2)}% APY
               </span>
             </div>
-            <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px] font-semibold">
-              {currentAPY.toFixed(2)}% APY
-            </span>
           </div>
+          
+          {/* Zero APY Warning */}
+          {currentAPY < 0.01 && showCalculator && (
+            <div className="mb-2 px-2 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <p className="text-[10px] text-amber-300">
+                <span className="font-semibold">No borrowers yet.</span> Current earnings are 0. Chart shows potential earnings if utilization increases.
+              </p>
+            </div>
+          )}
 
           {/* Manual input when not in What-If mode */}
           {!isWhatIfMode && !hasPosition && (
@@ -391,16 +577,24 @@ export const PositionsWithCalculator: FC<Props> = ({
                     />
                     <YAxis
                       tickFormatter={(v) => {
-                        if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
-                        if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
-                        if (v < 1) return v.toFixed(2);
-                        return v.toFixed(0);
+                        // Format earnings values with + prefix
+                        const prefix = v > 0 ? '+' : '';
+                        if (v >= 1000000) return `${prefix}${(v / 1000000).toFixed(1)}M`;
+                        if (v >= 1000) return `${prefix}${(v / 1000).toFixed(1)}k`;
+                        if (v >= 100) return `${prefix}${v.toFixed(0)}`;
+                        if (v >= 10) return `${prefix}${v.toFixed(1)}`;
+                        if (v >= 1) return `${prefix}${v.toFixed(2)}`;
+                        if (v >= 0.01) return `${prefix}${v.toFixed(3)}`;
+                        if (v >= 0.001) return `${prefix}${v.toFixed(4)}`;
+                        return `${prefix}${v.toFixed(6)}`;
                       }}
                       tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 9 }}
                       axisLine={false}
                       tickLine={false}
-                      width={40}
-                      domain={[totalAmount * 0.995, 'auto']}
+                      width={55}
+                      domain={[0, 'auto']}
+                      allowDecimals={true}
+                      tickCount={5}
                     />
                     <RechartsTooltip content={<CustomTooltip />} />
                     <Legend wrapperStyle={{ fontSize: "9px", paddingTop: "4px" }} iconType="line" />
@@ -408,7 +602,7 @@ export const PositionsWithCalculator: FC<Props> = ({
                       <Area
                         type="monotone"
                         dataKey="baseline"
-                        name="Current Only"
+                        name="Existing Position"
                         stroke="#64748b"
                         fill="transparent"
                         strokeWidth={1}
@@ -416,34 +610,102 @@ export const PositionsWithCalculator: FC<Props> = ({
                         dot={false}
                       />
                     )}
-                    <Area type="monotone" dataKey="high" name="High Util." stroke="#22d3ee" fill="url(#colorHighCalc)" strokeWidth={1.5} dot={false} />
-                    <Area type="monotone" dataKey="current" name="Current APY" stroke="#10b981" fill="url(#colorCurrentCalc)" strokeWidth={2} dot={false} />
-                    <Area type="monotone" dataKey="low" name="Low Util." stroke="#6366f1" fill="url(#colorLowCalc)" strokeWidth={1.5} dot={false} />
+                    <Area type="monotone" dataKey="high" name={`High (${optimisticAPY.toFixed(1)}%)`} stroke="#22d3ee" fill="url(#colorHighCalc)" strokeWidth={1.5} dot={false} />
+                    <Area type="monotone" dataKey="current" name={`Current (${currentAPY.toFixed(1)}%)`} stroke={currentAPY < 0.01 ? "#64748b" : "#10b981"} fill={currentAPY < 0.01 ? "transparent" : "url(#colorCurrentCalc)"} strokeWidth={currentAPY < 0.01 ? 1 : 2} strokeDasharray={currentAPY < 0.01 ? "4 4" : undefined} dot={false} />
+                    <Area type="monotone" dataKey="low" name={`Low (${pessimisticAPY.toFixed(1)}%)`} stroke="#6366f1" fill="url(#colorLowCalc)" strokeWidth={1.5} dot={false} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* Stats Row */}
+              {/* Stats Row - Show values relevant to selected period */}
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <div className="bg-white/5 rounded-lg p-2 text-center">
-                  <div className="text-[9px] text-white/50 mb-0.5">Daily</div>
-                  <div className="text-xs font-semibold text-emerald-400">+{formatEarnings(dailyEarnings)}</div>
+                <div className={`rounded-lg p-2 text-center ${isWhatIfMode ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-white/5'}`}>
+                  <div className="text-[9px] text-white/50 mb-0.5">{isWhatIfMode ? 'Daily (from deposit)' : 'Est. Daily'}</div>
+                  <div className="text-xs font-semibold text-emerald-400">
+                    +{formatEarnings(isWhatIfMode ? incrementalDailyEarnings : dailyEarnings)}
+                  </div>
                 </div>
-                <div className="bg-white/5 rounded-lg p-2 text-center">
-                  <div className="text-[9px] text-white/50 mb-0.5">Monthly</div>
-                  <div className="text-xs font-semibold text-emerald-400">+{formatEarnings(monthlyEarnings)}</div>
+                <div className={`rounded-lg p-2 text-center ${isWhatIfMode ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-white/5'}`}>
+                  <div className="text-[9px] text-white/50 mb-0.5">{isWhatIfMode ? 'At 30d (from deposit)' : (projectionPeriod === "30d" ? 'Est. at 30d' : 'Est. Monthly')}</div>
+                  <div className="text-xs font-semibold text-emerald-400">
+                    +{formatEarnings(isWhatIfMode ? incrementalMonthlyEarnings : monthlyEarnings)}
+                  </div>
                 </div>
-                <div className="bg-white/5 rounded-lg p-2 text-center">
-                  <div className="text-[9px] text-white/50 mb-0.5">1 Year Total</div>
-                  <div className="text-xs font-semibold text-cyan-400">{formatValue(yearlyTotal)}</div>
+                <div className={`rounded-lg p-2 text-center ${isWhatIfMode ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-white/5'}`}>
+                  <div className="text-[9px] text-white/50 mb-0.5">
+                    {isWhatIfMode 
+                      ? (projectionPeriod === "30d" ? 'At 30d (from deposit)' : '1 Year (from deposit)')
+                      : (projectionPeriod === "30d" ? 'Est. at 30d' : 'Est. at 1 Year')}
+                  </div>
+                  <div className="text-xs font-semibold text-cyan-400">
+                    {projectionPeriod === "30d" 
+                      ? `+${formatEarnings(isWhatIfMode ? incrementalMonthlyEarnings : monthlyEarnings)}`
+                      : (isWhatIfMode ? `+${formatEarnings(incrementalYearlyEarnings)}` : `+${formatEarnings(yearlyEarnings)}`)}
+                  </div>
+                </div>
+              </div>
+
+              {/* APY Assumption Disclaimer - Clear framing */}
+              <div className="mt-2 px-3 py-2 bg-slate-800/60 rounded-lg border border-slate-700/40">
+                <div className="text-[10px] text-slate-300 space-y-1.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <svg className="w-3 h-3 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="font-semibold text-amber-300">How the projection band works</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-[9px]">
+                    <div className="flex items-start gap-1">
+                      <span className="inline-block w-2 h-0.5 bg-cyan-400 mt-1.5 shrink-0"></span>
+                      <div>
+                        <span className="font-medium text-cyan-300">High</span>
+                        <span className="text-slate-400 block">If pool hits optimal utilization ({(selectedPool?.protocolConfig?.interest_config?.optimal_utilization || 0.7) * 100}%)</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1">
+                      <span className="inline-block w-2 h-0.5 bg-emerald-400 mt-1.5 shrink-0"></span>
+                      <div>
+                        <span className="font-medium text-emerald-300">Current</span>
+                        <span className="text-slate-400 block">Today's APY stays constant</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-1">
+                      <span className="inline-block w-2 h-0.5 bg-indigo-400 mt-1.5 shrink-0"></span>
+                      <div>
+                        <span className="font-medium text-indigo-300">Low</span>
+                        <span className="text-slate-400 block">If borrowing demand drops 75%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-slate-500 text-[9px] pt-1 border-t border-slate-700/50 italic">
+                    Variable APY — actual returns depend on borrower demand and may differ significantly
+                  </p>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center py-4">
-              <CalculatorIcon className="w-8 h-8 text-slate-600 mb-2" />
-              <p className="text-xs text-slate-500">Enter an amount above to preview earnings</p>
-              <p className="text-[10px] text-slate-600 mt-1">Or make a deposit to start earning</p>
+            /* ═══════════════════════════════════════════════════════════════════
+               CALCULATOR EMPTY STATE: Interactive preview prompt
+               ═══════════════════════════════════════════════════════════════════ */
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+              <div className="relative mb-3">
+                <CalculatorIcon className="w-10 h-10 text-slate-600" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyan-500/50 animate-breathe"></div>
+              </div>
+              <p className="text-sm text-slate-400 font-medium mb-1">Enter an amount above to preview earnings</p>
+              <p className="text-[10px] text-slate-600 max-w-[200px]">
+                Or make a deposit to start earning
+              </p>
+              
+              {/* Quick example calculation */}
+              {selectedPool && (
+                <div className="mt-4 px-4 py-2 bg-white/5 rounded-lg border border-white/10">
+                  <p className="text-[10px] text-slate-500 mb-1">Example with 100 {selectedPool.asset}:</p>
+                  <p className="text-xs text-emerald-400 font-medium">
+                    +{((100 * (selectedPool.ui.aprSupplyPct / 100)) / 365).toFixed(4)} {selectedPool.asset}/day
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

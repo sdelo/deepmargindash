@@ -85,38 +85,38 @@ export function InterestRateHistoryPanel({
   const curveData = displayConfig ? generateCurveData(displayConfig) : null;
 
   return (
-    <div className="h-full flex flex-col bg-slate-900">
+    <div className="h-full flex flex-col" style={{ background: 'linear-gradient(180deg, #0c1a24 0%, #0a1419 100%)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10">
+      <div className="flex items-center justify-between p-4 md:p-6 border-b border-cyan-500/20">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-white">
+          <h2 className="text-xl md:text-2xl font-bold text-cyan-100">
             Interest Rate Parameter History
           </h2>
           {poolName && (
-            <p className="text-sm text-white/60 mt-1">Pool: {poolName}</p>
+            <p className="text-sm text-cyan-200/60 mt-1">Pool: {poolName}</p>
           )}
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors md:hidden"
+          className="p-2 rounded-lg hover:bg-cyan-500/10 border border-cyan-500/20 transition-colors md:hidden"
         >
-          <XMarkIcon className="w-6 h-6 text-white" />
+          <XMarkIcon className="w-6 h-6 text-cyan-200" />
         </button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {/* Top half - Historical Events List (Scrollable) */}
-        <div className="flex-1 overflow-auto p-4 md:p-6 border-b border-white/10 max-h-[50vh]">
+        <div className="flex-1 overflow-auto p-4 md:p-6 border-b border-cyan-500/20 max-h-[50vh]">
           {isLoading && (
             <div className="flex items-center justify-center h-64">
-              <div className="text-white text-lg">Loading history...</div>
+              <div className="text-cyan-100 text-lg">Loading history...</div>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-              <p className="text-red-400">
+            <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4">
+              <p className="text-rose-400">
                 Error loading history: {error.message}
               </p>
             </div>
@@ -124,11 +124,11 @@ export function InterestRateHistoryPanel({
 
           {!isLoading && !error && validEvents.length === 0 && (
             <div className="flex flex-col items-center justify-center h-64 text-center px-6">
-              <ClockIcon className="w-16 h-16 text-white/30 mb-4" />
-              <p className="text-white text-lg font-semibold">
+              <ClockIcon className="w-16 h-16 text-cyan-400/30 mb-4" />
+              <p className="text-cyan-100 text-lg font-semibold">
                 No Parameter Updates Yet
               </p>
-              <p className="text-white/50 text-sm mt-2 max-w-md">
+              <p className="text-cyan-200/50 text-sm mt-2 max-w-md">
                 This pool is currently using its initial interest rate
                 configuration. Updates will appear here when administrators
                 modify the interest rate parameters.
@@ -154,7 +154,7 @@ export function InterestRateHistoryPanel({
                   className={`relative rounded-xl border p-4 transition-all cursor-pointer ${
                     selectedConfig?.isCurrent || !selectedConfig
                       ? "bg-emerald-500/10 border-emerald-400/40"
-                      : "bg-white/5 border-white/10 hover:bg-white/10"
+                      : "bg-cyan-900/20 border-cyan-500/20 hover:bg-cyan-900/30"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -179,41 +179,41 @@ export function InterestRateHistoryPanel({
                   </div>
 
                   {/* Parameters Grid */}
-                  <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                  <div className="bg-cyan-900/20 rounded-lg p-3 border border-cyan-500/10">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="text-xs text-white/40">
+                        <div className="text-xs text-cyan-200/40">
                           Base Rate
                         </div>
-                        <div className="text-lg font-bold text-white">
+                        <div className="text-lg font-bold text-cyan-100">
                           {(currentConfig.base_rate * 100).toFixed(2)}%
                         </div>
                       </div>
 
                       <div>
-                        <div className="text-xs text-white/40">
+                        <div className="text-xs text-cyan-200/40">
                           Base Slope
                         </div>
-                        <div className="text-lg font-bold text-white">
+                        <div className="text-lg font-bold text-cyan-100">
                           {(currentConfig.base_slope * 100).toFixed(2)}%
                         </div>
                       </div>
 
                       <div>
-                        <div className="text-xs text-white/40">
+                        <div className="text-xs text-cyan-200/40">
                           Optimal Utilization
                         </div>
-                        <div className="text-lg font-bold text-white">
+                        <div className="text-lg font-bold text-cyan-100">
                           {(currentConfig.optimal_utilization * 100).toFixed(2)}
                           %
                         </div>
                       </div>
 
                       <div>
-                        <div className="text-xs text-white/40">
+                        <div className="text-xs text-cyan-200/40">
                           Excess Slope
                         </div>
-                        <div className="text-lg font-bold text-white">
+                        <div className="text-lg font-bold text-cyan-100">
                           {(currentConfig.excess_slope * 100).toFixed(2)}%
                         </div>
                       </div>
@@ -225,7 +225,7 @@ export function InterestRateHistoryPanel({
               {/* Historical Events */}
               {validEvents.length > 0 && (
                 <>
-                  <div className="text-xs text-white/40 uppercase tracking-wider font-semibold pt-2">
+                  <div className="text-xs text-cyan-200/40 uppercase tracking-wider font-semibold pt-2">
                     Historical Updates
                   </div>
                   {validEvents.map((event, index) => {
@@ -250,11 +250,11 @@ export function InterestRateHistoryPanel({
                         className={`relative rounded-xl border p-4 transition-all cursor-pointer ${
                           isSelected
                             ? "bg-amber-500/10 border-teal-400/40"
-                            : "bg-white/5 border-white/10 hover:bg-white/10"
+                            : "bg-cyan-900/20 border-cyan-500/20 hover:bg-cyan-900/30"
                         }`}
                       >
                         {/* Timeline dot */}
-                        <div className="absolute -left-1.5 top-6 w-3 h-3 rounded-full bg-cyan-400 border-2 border-slate-900" />
+                        <div className="absolute -left-1.5 top-6 w-3 h-3 rounded-full bg-cyan-400 border-2 border-[#0c1a24]" />
 
                         {/* Timestamp */}
                         <div className="flex items-center justify-between mb-3">
@@ -288,73 +288,73 @@ export function InterestRateHistoryPanel({
                                     diff / (1000 * 60 * 60 * 24)
                                   );
                                   if (days > 0)
-                                    return `${days} day${days > 1 ? "s" : ""} ago`;
-                                  const hours = Math.floor(
-                                    diff / (1000 * 60 * 60)
-                                  );
-                                  if (hours > 0)
-                                    return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-                                  return "Just now";
-                                })()}
-                              </div>
-                            </div>
-                          </div>
-                          <span className="text-xs text-white/40">
-                            {new Date(
-                              event.checkpoint_timestamp_ms
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-
-                        {/* Parameters Grid */}
-                        <div className="ml-0 md:ml-10 bg-white/5 rounded-lg p-3 border border-white/5">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <div className="text-xs text-white/40">
-                                Base Rate
-                              </div>
-                              <div className="text-lg font-bold text-white">
-                                {formatPercent(config.base_rate)}%
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="text-xs text-white/40">
-                                Base Slope
-                              </div>
-                              <div className="text-lg font-bold text-white">
-                                {formatPercent(config.base_slope)}%
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="text-xs text-white/40">
-                                Optimal Utilization
-                              </div>
-                              <div className="text-lg font-bold text-white">
-                                {formatPercent(config.optimal_utilization)}%
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="text-xs text-white/40">
-                                Excess Slope
-                              </div>
-                              <div className="text-lg font-bold text-white">
-                                {formatPercent(config.excess_slope)}%
-                              </div>
+                                  return `${days} day${days > 1 ? "s" : ""} ago`;
+                                const hours = Math.floor(
+                                  diff / (1000 * 60 * 60)
+                                );
+                                if (hours > 0)
+                                  return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+                                return "Just now";
+                              })()}
                             </div>
                           </div>
                         </div>
+                        <span className="text-xs text-cyan-200/40">
+                          {new Date(
+                            event.checkpoint_timestamp_ms
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
 
-                        {/* Footer Info */}
-                        <div className="ml-0 md:ml-10 mt-2">
-                          <div className="text-xs text-white/40">
-                            Checkpoint: {event.checkpoint.toLocaleString()} •{" "}
-                            {event.event_digest.slice(0, 8)}...
+                      {/* Parameters Grid */}
+                      <div className="ml-0 md:ml-10 bg-cyan-900/20 rounded-lg p-3 border border-cyan-500/10">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-xs text-cyan-200/40">
+                              Base Rate
+                            </div>
+                            <div className="text-lg font-bold text-cyan-100">
+                              {formatPercent(config.base_rate)}%
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-xs text-cyan-200/40">
+                              Base Slope
+                            </div>
+                            <div className="text-lg font-bold text-cyan-100">
+                              {formatPercent(config.base_slope)}%
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-xs text-cyan-200/40">
+                              Optimal Utilization
+                            </div>
+                            <div className="text-lg font-bold text-cyan-100">
+                              {formatPercent(config.optimal_utilization)}%
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-xs text-cyan-200/40">
+                              Excess Slope
+                            </div>
+                            <div className="text-lg font-bold text-cyan-100">
+                              {formatPercent(config.excess_slope)}%
+                            </div>
                           </div>
                         </div>
                       </div>
+
+                      {/* Footer Info */}
+                      <div className="ml-0 md:ml-10 mt-2">
+                        <div className="text-xs text-cyan-200/40">
+                          Checkpoint: {event.checkpoint.toLocaleString()} •{" "}
+                          {event.event_digest.slice(0, 8)}...
+                        </div>
+                      </div>
+                    </div>
                     );
                   })}
                 </>
@@ -364,15 +364,15 @@ export function InterestRateHistoryPanel({
         </div>
 
         {/* Bottom half - Yield Curve Visualization */}
-        <div className="p-4 md:p-6 bg-slate-900/50 overflow-auto">
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+        <div className="p-4 md:p-6 bg-[#081114]/50 overflow-auto">
+          <div className="bg-cyan-900/20 border border-cyan-500/20 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg md:text-xl font-bold text-white mb-1">
+                <h3 className="text-lg md:text-xl font-bold text-cyan-100 mb-1">
                   {displayConfig?.isCurrent ? "Current" : "Historical"} Yield
                   Curve
                 </h3>
-                <p className="text-white/50 text-sm">
+                <p className="text-cyan-200/50 text-sm">
                   Visual representation of interest rate vs utilization
                 </p>
               </div>
@@ -385,7 +385,7 @@ export function InterestRateHistoryPanel({
           </div>
 
           {curveData && (
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 md:p-6">
+            <div className="bg-cyan-900/20 border border-cyan-500/20 rounded-xl p-4 md:p-6">
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
                   data={curveData}
@@ -460,27 +460,27 @@ export function InterestRateHistoryPanel({
 
               {/* Legend */}
               <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 text-sm">
-                <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
-                  <div className="text-white/40 text-xs mb-1">Base Rate</div>
-                  <div className="text-white font-bold text-sm md:text-base">
+                <div className="bg-cyan-900/30 rounded-lg p-2 md:p-3 border border-cyan-500/10">
+                  <div className="text-cyan-200/40 text-xs mb-1">Base Rate</div>
+                  <div className="text-cyan-100 font-bold text-sm md:text-base">
                     {formatPercent(displayConfig.base_rate)}%
                   </div>
                 </div>
-                <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
-                  <div className="text-white/40 text-xs mb-1">Base Slope</div>
-                  <div className="text-white font-bold text-sm md:text-base">
+                <div className="bg-cyan-900/30 rounded-lg p-2 md:p-3 border border-cyan-500/10">
+                  <div className="text-cyan-200/40 text-xs mb-1">Base Slope</div>
+                  <div className="text-cyan-100 font-bold text-sm md:text-base">
                     {formatPercent(displayConfig.base_slope)}%
                   </div>
                 </div>
-                <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
-                  <div className="text-white/40 text-xs mb-1">Optimal Util</div>
-                  <div className="text-white font-bold text-sm md:text-base">
+                <div className="bg-cyan-900/30 rounded-lg p-2 md:p-3 border border-cyan-500/10">
+                  <div className="text-cyan-200/40 text-xs mb-1">Optimal Util</div>
+                  <div className="text-cyan-100 font-bold text-sm md:text-base">
                     {formatPercent(displayConfig.optimal_utilization)}%
                   </div>
                 </div>
-                <div className="bg-white/5 rounded-lg p-2 md:p-3 border border-white/5">
-                  <div className="text-white/40 text-xs mb-1">Excess Slope</div>
-                  <div className="text-white font-bold text-sm md:text-base">
+                <div className="bg-cyan-900/30 rounded-lg p-2 md:p-3 border border-cyan-500/10">
+                  <div className="text-cyan-200/40 text-xs mb-1">Excess Slope</div>
+                  <div className="text-cyan-100 font-bold text-sm md:text-base">
                     {formatPercent(displayConfig.excess_slope)}%
                   </div>
                 </div>
@@ -489,11 +489,11 @@ export function InterestRateHistoryPanel({
           )}
 
           {!curveData && (
-            <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
-              <p className="text-lg text-white/50 mb-2">
+            <div className="bg-cyan-900/20 border border-cyan-500/20 rounded-xl p-12 text-center">
+              <p className="text-lg text-cyan-100/50 mb-2">
                 Select a configuration to view its yield curve
               </p>
-              <p className="text-sm text-white/30">
+              <p className="text-sm text-cyan-200/30">
                 Click on any configuration card above to visualize its interest
                 rate model
               </p>

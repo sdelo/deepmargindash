@@ -131,15 +131,23 @@ export function FloatingCalculator({
   };
 
   const formatEarnings = (num: number) => {
-    if (num < 0.0001) return num.toFixed(8);
-    if (num < 0.01) return num.toFixed(6);
-    if (num < 1) return num.toFixed(4);
-    return num.toFixed(2);
+    const absNum = Math.abs(num);
+    const sign = num < 0 ? '-' : '';
+    if (absNum >= 1000) return sign + absNum.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    if (absNum >= 1) return sign + absNum.toFixed(2);
+    if (absNum >= 0.01) return sign + absNum.toFixed(4);
+    if (absNum >= 0.0001) return sign + absNum.toFixed(6);
+    if (absNum === 0) return '0';
+    return sign + absNum.toFixed(8);
   };
 
   // Custom tooltip for the chart
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string; color: string }>; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string; color: string; dataKey?: string }>; label?: string }) => {
     if (active && payload && payload.length) {
+      // Find the "current" projection value for earnings calculation
+      const currentProjection = payload.find(p => p.dataKey === 'current');
+      const currentEarnings = currentProjection ? currentProjection.value - depositAmount : 0;
+      
       return (
         <div className="bg-slate-900/95 border border-slate-700 rounded-lg p-3 shadow-xl">
           <p className="text-xs text-slate-400 mb-2">At {label}</p>
@@ -148,9 +156,11 @@ export function FloatingCalculator({
               {entry.name}: {formatValue(entry.value)} {pool.asset}
             </p>
           ))}
-          <p className="text-xs text-slate-500 mt-1 border-t border-slate-700 pt-1">
-            +{formatEarnings(payload[0]?.value - depositAmount || 0)} earned
-          </p>
+          {currentEarnings > 0 && (
+            <p className="text-xs text-emerald-400 mt-1 border-t border-slate-700 pt-1">
+              +{formatEarnings(currentEarnings)} earned (at current APY)
+            </p>
+          )}
         </div>
       );
     }
@@ -254,12 +264,20 @@ export function FloatingCalculator({
                 tickLine={false}
               />
               <YAxis
-                tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
+                tickFormatter={(v) => {
+                  if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
+                  if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
+                  if (v >= 100) return v.toFixed(0);
+                  if (v >= 10) return v.toFixed(1);
+                  if (v >= 1) return v.toFixed(2);
+                  return v.toFixed(2);
+                }}
                 tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
-                width={45}
+                width={48}
                 domain={['dataMin - 10', 'dataMax + 10']}
+                tickCount={5}
               />
               <RechartsTooltip content={<CustomTooltip />} />
               <Legend
@@ -269,7 +287,7 @@ export function FloatingCalculator({
               <Area
                 type="monotone"
                 dataKey="high"
-                name="High Util."
+                name={`High (${optimisticAPY.toFixed(1)}%)`}
                 stroke="#22d3ee"
                 fill="url(#colorHigh)"
                 strokeWidth={1.5}
@@ -278,7 +296,7 @@ export function FloatingCalculator({
               <Area
                 type="monotone"
                 dataKey="current"
-                name="Current APY"
+                name={`Current (${currentAPY.toFixed(1)}%)`}
                 stroke="#10b981"
                 fill="url(#colorCurrent)"
                 strokeWidth={2}
@@ -287,7 +305,7 @@ export function FloatingCalculator({
               <Area
                 type="monotone"
                 dataKey="low"
-                name="Low Util."
+                name={`Low (${pessimisticAPY.toFixed(1)}%)`}
                 stroke="#6366f1"
                 fill="url(#colorLow)"
                 strokeWidth={1.5}
@@ -333,8 +351,16 @@ export function FloatingCalculator({
         </div>
 
         {/* Disclaimer */}
-        <div className="mt-3 text-[10px] text-white/30 text-center">
-          Projections based on current rates. Actual returns vary with pool utilization.
+        <div className="mt-3 px-2 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700/30">
+          <div className="text-[9px] text-slate-400 text-center space-y-0.5">
+            <p className="font-medium text-slate-300">Scenario Assumptions:</p>
+            <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5">
+              <span><span className="inline-block w-2 h-0.5 bg-cyan-400 mr-1 align-middle"></span>High: Optimal utilization</span>
+              <span><span className="inline-block w-2 h-0.5 bg-emerald-400 mr-1 align-middle"></span>Current: Today's APY</span>
+              <span><span className="inline-block w-2 h-0.5 bg-indigo-400 mr-1 align-middle"></span>Low: 25% of optimal</span>
+            </div>
+            <p className="text-slate-500 italic pt-0.5">APY changes with pool utilization. Projections compound daily.</p>
+          </div>
         </div>
       </div>
     </div>

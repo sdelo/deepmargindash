@@ -72,7 +72,23 @@ export async function fetchMarketSummary(): Promise<MarketSummary[]> {
  */
 export async function fetchPairSummary(pairName: string): Promise<MarketSummary | null> {
   const summaries = await fetchMarketSummary();
-  return summaries.find(s => s.trading_pairs === pairName) || null;
+  // Try exact match first
+  let match = summaries.find(s => s.trading_pairs === pairName);
+  if (!match) {
+    // Try case-insensitive match
+    const pairNameLower = pairName.toLowerCase();
+    match = summaries.find(s => s.trading_pairs.toLowerCase() === pairNameLower);
+  }
+  if (!match) {
+    // Try matching by base/quote currencies
+    const [base, quote] = pairName.split('_');
+    if (base && quote) {
+      match = summaries.find(s => 
+        s.base_currency === base && s.quote_currency === quote
+      );
+    }
+  }
+  return match || null;
 }
 
 /**

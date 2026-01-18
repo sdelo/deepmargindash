@@ -1,6 +1,6 @@
 import { MarginPool } from '../contracts/deepbook_margin/deepbook_margin/margin_pool';
 import { calculatePoolRates } from './interestRates';
-import { getContracts, type NetworkType } from '../config/contracts';
+import { getContracts, getMarginPools, type NetworkType } from '../config/contracts';
 import type { PoolOverview } from '../features/lending/types';
 
 /**
@@ -21,6 +21,31 @@ function nineDecimalToPercent(nineDecimal: string | number | bigint): number {
 }
 
 /**
+ * Detects asset info from the pool type string
+ */
+function detectAssetFromType(assetType: string, network: NetworkType): { asset: string; decimals: number } {
+  // Check for known asset patterns
+  if (assetType.includes('::sui::SUI')) {
+    return { asset: 'SUI', decimals: 9 };
+  }
+  if (assetType.includes('::usdc::USDC')) {
+    return { asset: 'USDC', decimals: 6 };
+  }
+  if (assetType.includes('::deep::DEEP')) {
+    return { asset: 'DEEP', decimals: 6 };
+  }
+  if (assetType.includes('::wal::WAL')) {
+    return { asset: 'WAL', decimals: 9 };
+  }
+  // Legacy testnet DBUSDC
+  if (assetType.includes('::DBUSDC::DBUSDC')) {
+    return { asset: 'DBUSDC', decimals: 6 };
+  }
+  // Default fallback
+  return { asset: 'UNKNOWN', decimals: 9 };
+}
+
+/**
  * Transforms raw BCS data into a PoolOverview object
  * Handles unit conversion, type conversion, and rate calculations
  */
@@ -30,15 +55,15 @@ export function transformMarginPoolData(
   assetType: string,
   network: NetworkType = 'mainnet'
 ): PoolOverview {
-  // Determine asset type
-  const isSui = assetType.includes('0x2::sui::SUI');
-  const asset: 'SUI' | 'DBUSDC' = isSui ? 'SUI' : 'DBUSDC';
-
-  // Get the appropriate decimal places for this asset
-  const decimals = isSui ? 9 : 6; // SUI has 9 decimals, DBUSDC has 6 decimals
+  // Detect asset type and decimals from the pool type string
+  const { asset, decimals } = detectAssetFromType(assetType, network);
 
   // Get network-specific contracts
   const networkContracts = getContracts(network);
+  const marginPools = getMarginPools(network);
+  
+  // Find the pool config for this asset
+  const poolConfig = marginPools.find(p => p.asset === asset);
   
   // Access the parsed MarginPool object fields
   const state = {
@@ -67,25 +92,27 @@ export function transformMarginPoolData(
     },
   };
 
-  // Get contract metadata based on asset type
-  const contracts = isSui 
+  // Get contract metadata from pool config or use defaults
+  const contracts = poolConfig 
     ? {
         registryId: networkContracts.MARGIN_REGISTRY_ID,
-        marginPoolId: networkContracts.SUI_MARGIN_POOL_ID,
-        marginPoolType: networkContracts.SUI_MARGIN_POOL_TYPE,
-        referralId: networkContracts.SUI_MARGIN_POOL_REFERRAL,
-        coinType: networkContracts.SUI_MARGIN_POOL_TYPE,
-        coinDecimals: 9,
-        coinDepositSourceId: networkContracts.SUI_ID,
+        marginPoolId: poolConfig.poolId,
+        marginPoolType: poolConfig.poolType,
+        referralId: poolConfig.referralId,
+        coinType: poolConfig.poolType,
+        coinDecimals: poolConfig.decimals,
+        coinDepositSourceId: poolConfig.coinId,
+        tradingPair: poolConfig.tradingPair,
       }
     : {
         registryId: networkContracts.MARGIN_REGISTRY_ID,
-        marginPoolId: networkContracts.DBUSDC_MARGIN_POOL_ID,
-        marginPoolType: networkContracts.DBUSDC_MARGIN_POOL_TYPE,
-        referralId: networkContracts.DBUSDC_MARGIN_POOL_REFERRAL,
-        coinType: networkContracts.DBUSDC_MARGIN_POOL_TYPE,
-        coinDecimals: 6,
-        coinDepositSourceId: networkContracts.DBUSDC_ID,
+        marginPoolId: poolId,
+        marginPoolType: assetType,
+        referralId: undefined,
+        coinType: assetType,
+        coinDecimals: decimals,
+        coinDepositSourceId: networkContracts.SUI_ID, // fallback
+        tradingPair: undefined,
       };
 
   // Create temporary pool object for rate calculations

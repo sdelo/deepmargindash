@@ -11,6 +11,7 @@ export type EnrichedUserPosition = UserPosition & {
   originalValueFromEvents: string | null;
   interestEarned: string | null;
   isLoading: boolean;
+  isIndexerPending: boolean; // True if we're still waiting for indexer data
   error: Error | null;
 };
 
@@ -20,10 +21,18 @@ type EnrichedDataEntry = {
   isLoading: boolean;
   error: Error | null;
   shares: number;  // Track shares to detect when position changes
+  retryCount: number; // Track retry attempts for indexer polling
+  lastRetryTime: number; // Track when we last retried
 };
+
+// Constants for indexer retry polling
+const MAX_RETRY_COUNT = 10;
+const INITIAL_RETRY_DELAY_MS = 1000; // 1 second
+const MAX_RETRY_DELAY_MS = 5000; // 5 seconds max
 
 /**
  * Hook to enrich user positions with live on-chain data and event-based cost basis.
+ * Includes auto-retry polling when indexer data is not yet available.
  */
 export function useEnrichedUserPositions(
   positions: UserPosition[],
@@ -39,6 +48,9 @@ export function useEnrichedUserPositions(
   // Use ref to access current enrichedData without adding it to dependencies
   const enrichedDataRef = React.useRef(enrichedData);
   enrichedDataRef.current = enrichedData;
+  
+  // Track retry timeouts so we can clear them on unmount
+  const retryTimeoutsRef = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   React.useEffect(() => {
     // Create a unique run ID for debugging
@@ -87,83 +99,134 @@ export function useEnrichedUserPositions(
 
       console.log(`[useEnrichedUserPositions][${runId}] Fetching data for ${key}`);
 
-      // Async IIFE to handle each position
+      // Async IIFE to handle each position with retry logic
       (async () => {
-        try {
-          const contracts = getContracts(network);
-          const packageId = contracts.MARGIN_PACKAGE_ID;
+        const fetchWithRetry = async (retryCount: number = 0) => {
+          try {
+            const contracts = getContracts(network);
+            const packageId = contracts.MARGIN_PACKAGE_ID;
 
-          // Fetch current value from chain
-          const currentValue = await fetchUserCurrentSupply(
-            suiClient,
-            pool.contracts.marginPoolId,
-            position.supplierCapId,
-            pool.contracts.marginPoolType,
-            packageId
-          );
+            // Fetch current value from chain
+            const currentValue = await fetchUserCurrentSupply(
+              suiClient,
+              pool.contracts.marginPoolId,
+              position.supplierCapId,
+              pool.contracts.marginPoolType,
+              packageId
+            );
 
-          // Calculate original value from events
-          // Ensure shares is converted to BigInt properly (handles string or number)
-          const sharesAsBigInt = typeof position.shares === 'bigint' 
-            ? position.shares 
-            : BigInt(Math.floor(Number(position.shares)));
+            // Calculate original value from events
+            // Ensure shares is converted to BigInt properly (handles string or number)
+            const sharesAsBigInt = typeof position.shares === 'bigint' 
+              ? position.shares 
+              : BigInt(Math.floor(Number(position.shares)));
+              
+            const originalValue = await fetchUserOriginalValue(
+              position.supplierCapId,
+              pool.contracts.marginPoolId,
+              sharesAsBigInt
+            );
+
+            // Log results (convert to string to avoid serialization issues)
+            let interestCalc = 'pending';
+            if (currentValue !== null && originalValue !== null) {
+              const currentBigInt = BigInt(currentValue);
+              const originalBigInt = BigInt(originalValue);
+              interestCalc = (currentBigInt - originalBigInt).toString();
+            }
+            console.log(`[useEnrichedUserPositions][${runId}] ${position.asset} result (attempt ${retryCount + 1}):`, {
+              currentValue: currentValue !== null ? String(currentValue) : null,
+              originalValue: originalValue !== null ? String(originalValue) : null,
+              interest: interestCalc
+            });
+
+            // Ensure all values are BigInt (convert if needed)
+            const currentBigInt = currentValue !== null ? BigInt(currentValue) : null;
+            const originalBigInt = originalValue !== null ? BigInt(originalValue) : null;
             
-          const originalValue = await fetchUserOriginalValue(
-            position.supplierCapId,
-            pool.contracts.marginPoolId,
-            sharesAsBigInt
-          );
-
-          // Log results (convert to string to avoid serialization issues)
-          // Explicitly convert to BigInt to avoid "Cannot mix BigInt and other types" errors
-          let interestCalc = 'pending';
-          if (currentValue !== null && originalValue !== null) {
-            const currentBigInt = BigInt(currentValue);
-            const originalBigInt = BigInt(originalValue);
-            interestCalc = (currentBigInt - originalBigInt).toString();
+            // If originalValue is null but we have currentValue, and we haven't exceeded retries, schedule a retry
+            if (currentBigInt !== null && originalBigInt === null && retryCount < MAX_RETRY_COUNT) {
+              console.log(`[useEnrichedUserPositions][${runId}] Indexer pending for ${key}, scheduling retry ${retryCount + 1}/${MAX_RETRY_COUNT}`);
+              
+              // Update state to show loading state (but with current value available)
+              setEnrichedData(prev => {
+                const next = new Map(prev);
+                next.set(key, {
+                  currentValue: currentBigInt,
+                  originalValue: null,
+                  isLoading: true, // Keep loading state during retries
+                  error: null,
+                  shares: position.shares,
+                  retryCount: retryCount + 1,
+                  lastRetryTime: Date.now(),
+                });
+                return next;
+              });
+              
+              // Clear any existing timeout for this key
+              const existingTimeout = retryTimeoutsRef.current.get(key);
+              if (existingTimeout) {
+                clearTimeout(existingTimeout);
+              }
+              
+              // Schedule retry with exponential backoff (capped at MAX_RETRY_DELAY_MS)
+              const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(1.5, retryCount), MAX_RETRY_DELAY_MS);
+              const timeoutId = setTimeout(() => {
+                retryTimeoutsRef.current.delete(key);
+                fetchWithRetry(retryCount + 1);
+              }, delay);
+              retryTimeoutsRef.current.set(key, timeoutId);
+              
+              return; // Don't update state again, we'll do it in the retry
+            }
+            
+            // Update state with final result
+            setEnrichedData(prev => {
+              const next = new Map(prev);
+              next.set(key, {
+                currentValue: currentBigInt,
+                originalValue: originalBigInt,
+                isLoading: false,
+                error: null,
+                shares: position.shares,
+                retryCount: retryCount,
+                lastRetryTime: Date.now(),
+              });
+              return next;
+            });
+          } catch (error) {
+            console.error(`[useEnrichedUserPositions][${runId}] Error for ${position.asset}:`, error);
+            
+            setEnrichedData(prev => {
+              const next = new Map(prev);
+              next.set(key, {
+                currentValue: null,
+                originalValue: null,
+                isLoading: false,
+                error: error instanceof Error ? error : new Error(String(error)),
+                shares: position.shares,
+                retryCount: retryCount,
+                lastRetryTime: Date.now(),
+              });
+              return next;
+            });
+          } finally {
+            // Only remove from in-flight if we're not retrying
+            if (retryCount === 0 || retryCount >= MAX_RETRY_COUNT) {
+              inFlightRef.current.delete(key);
+            }
           }
-          console.log(`[useEnrichedUserPositions][${runId}] ${position.asset} result:`, {
-            currentValue: currentValue !== null ? String(currentValue) : null,
-            originalValue: originalValue !== null ? String(originalValue) : null,
-            interest: interestCalc
-          });
-
-          // Update state with functional update to avoid stale closure
-          // Ensure all values are BigInt (convert if needed)
-          const currentBigInt = currentValue !== null ? BigInt(currentValue) : null;
-          const originalBigInt = originalValue !== null ? BigInt(originalValue) : null;
-          
-          setEnrichedData(prev => {
-            const next = new Map(prev);
-            next.set(key, {
-              currentValue: currentBigInt,
-              originalValue: originalBigInt,
-              isLoading: false,
-              error: null,
-              shares: position.shares,  // Track shares to detect changes
-            });
-            return next;
-          });
-        } catch (error) {
-          console.error(`[useEnrichedUserPositions][${runId}] Error for ${position.asset}:`, error);
-          
-          setEnrichedData(prev => {
-            const next = new Map(prev);
-            next.set(key, {
-              currentValue: null,
-              originalValue: null,
-              isLoading: false,
-              error: error instanceof Error ? error : new Error(String(error)),
-              shares: position.shares,
-            });
-            return next;
-          });
-        } finally {
-          // Remove from in-flight
-          inFlightRef.current.delete(key);
-        }
+        };
+        
+        await fetchWithRetry(0);
       })();
     }
+    
+    // Cleanup function to clear retry timeouts on unmount
+    return () => {
+      retryTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+      retryTimeoutsRef.current.clear();
+    };
   }, [positions, pools, suiClient, network]);
 
   // Merge the enriched data with positions
@@ -179,6 +242,7 @@ export function useEnrichedUserPositions(
         originalValueFromEvents: null,
         interestEarned: null,
         isLoading: inFlightRef.current.has(key),
+        isIndexerPending: false,
         error: null,
       };
     }
@@ -194,6 +258,11 @@ export function useEnrichedUserPositions(
     const originalValueFormatted = enriched.originalValue !== null
       ? (Number(enriched.originalValue) / divisor).toLocaleString() + ` ${position.asset}`
       : null;
+
+    // Check if we're still waiting for indexer (have current value but not original)
+    const isIndexerPending = enriched.currentValue !== null && 
+                             enriched.originalValue === null && 
+                             enriched.retryCount < MAX_RETRY_COUNT;
 
     // Calculate interest earned
     let interestEarnedFormatted: string | null = null;
@@ -225,9 +294,12 @@ export function useEnrichedUserPositions(
         });
       }
       interestEarnedFormatted = formattedInterest + ` ${position.asset}`;
+    } else if (isIndexerPending || enriched.isLoading) {
+      // Still loading or waiting for indexer - show null to trigger loading state in UI
+      interestEarnedFormatted = null;
     } else if (enriched.currentValue !== null && enriched.originalValue === null) {
-      // Current value available but no event data
-      interestEarnedFormatted = '— (indexer pending)';
+      // Retries exhausted but still no indexer data - show dash
+      interestEarnedFormatted = '—';
     } else {
       interestEarnedFormatted = null;
     }
@@ -237,7 +309,8 @@ export function useEnrichedUserPositions(
       currentValueFromChain: currentValueFormatted,
       originalValueFromEvents: originalValueFormatted,
       interestEarned: interestEarnedFormatted,
-      isLoading: enriched.isLoading,
+      isLoading: enriched.isLoading || isIndexerPending,
+      isIndexerPending,
       error: enriched.error,
     };
   });

@@ -227,16 +227,24 @@ export function PoolActivity({ pool }: PoolActivityProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {/* Current TVL - Live on-chain data */}
+        <div className="bg-white/5 rounded-2xl p-4 border border-teal-500/30">
+          <div className="text-sm text-white/60 mb-1">Current TVL</div>
+          <div className="text-xl font-bold text-teal-400">
+            {formatNumber(pool.state?.supply ?? 0)}
+          </div>
+          <div className="text-xs text-white/40 mt-1">{pool.asset} (on-chain)</div>
+        </div>
         <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-          <div className="text-sm text-white/60 mb-1">Total Deposited</div>
+          <div className="text-sm text-white/60 mb-1">Deposits ({timeRange})</div>
           <div className="text-xl font-bold text-emerald-400">
             +{formatNumber(stats.totalDeposits)}
           </div>
           <div className="text-xs text-white/40 mt-1">{pool.asset}</div>
         </div>
         <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-          <div className="text-sm text-white/60 mb-1">Total Withdrawn</div>
+          <div className="text-sm text-white/60 mb-1">Withdrawals ({timeRange})</div>
           <div className="text-xl font-bold text-red-400">
             -{formatNumber(stats.totalWithdrawals)}
           </div>
@@ -249,7 +257,7 @@ export function PoolActivity({ pool }: PoolActivityProps) {
               : "border-red-500/30"
           }`}
         >
-          <div className="text-sm text-white/60 mb-1">Net Change</div>
+          <div className="text-sm text-white/60 mb-1">Net Change ({timeRange})</div>
           <div
             className={`text-xl font-bold ${
               stats.netChange >= 0 ? "text-emerald-400" : "text-red-400"
@@ -424,7 +432,13 @@ export function PoolActivity({ pool }: PoolActivityProps) {
         <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
           What This Tells You
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-white/60">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-xs text-white/60">
+          <div>
+            <span className="text-white/80 font-medium">Current TVL vs Events</span>
+            <p className="mt-1">
+              Current TVL shows live on-chain balance. Deposits/Withdrawals show activity within the {timeRange} time range. Differences may occur if some activity is outside this range.
+            </p>
+          </div>
           <div>
             <span className="text-white/80 font-medium">TVL Trend</span>
             <p className="mt-1">

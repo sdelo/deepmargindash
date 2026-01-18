@@ -1,35 +1,11 @@
 @theme {
-  /* Background - lifted teal-navy gradient */
-  --color-bg-start: #0c1a24;
-  --color-bg-end: #0a1419;
-  
-  /* Brand accent - teal */
-  --color-brand: #2dd4bf;
-  --color-brand-light: #5eead4;
-  --color-brand-muted: rgba(45, 212, 191, 0.15);
-  
-  /* Warning accent - amber (separate from brand) */
-  --color-warning: #fbbf24;
-  --color-warning-light: #fcd34d;
-  
-  /* Semantic colors */
-  --color-positive: #2dd4bf;
-  --color-negative: #f87171;
-  
-  /* Neutrals - slate/blue-gray */
-  --color-neutral: #64748b;
-  --color-neutral-light: #94a3b8;
-  
-  /* Glass colors - refined */
-  --color-glass-bg: rgba(255, 255, 255, 0.025);
-  --color-glass-border: rgba(255, 255, 255, 0.06);
-  --color-glass-highlight: rgba(255, 255, 255, 0.08);
-  
-  /* Legacy support */
+  /* Colors */
+  --color-bg-start: #020617; /* slate-950 */
+  --color-bg-end: #0b1226;   /* custom deep blue */
   --color-amber-300: #fcd34d;
   --color-amber-400: #fbbf24;
-  --color-cyan-200: #99f6e4;
-  --color-cyan-300: #5eead4;
+  --color-cyan-200: #a5f3fc;
+  --color-cyan-300: #67e8f9;
   --color-rose-400: #fb7185;
   --color-emerald-400: #34d399;
   --color-indigo-400: #818cf8;
@@ -38,489 +14,296 @@
   --color-white-10: rgba(255,255,255,0.10);
   --color-white-05: rgba(255,255,255,0.05);
 
-  /* Radii - Apple-style generous curves */
-  --radius-xl: 0.875rem;
-  --radius-2xl: 1.25rem;
-  --radius-3xl: 1.75rem;
+  /* Radii */
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
 
-  /* Shadows - layered for premium depth */
+  /* Shadows */
   --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  --shadow-brand: 0 4px 14px -3px rgba(45, 212, 191, 0.25);
-  --shadow-glass: 
-    0 1px 2px rgba(0, 0, 0, 0.1),
-    0 4px 16px -4px rgba(0, 0, 0, 0.15),
-    0 12px 40px -8px rgba(0, 0, 0, 0.1);
-  --shadow-glass-elevated: 
-    0 2px 4px rgba(0, 0, 0, 0.08),
-    0 8px 24px -4px rgba(0, 0, 0, 0.2),
-    0 24px 64px -12px rgba(0, 0, 0, 0.15);
-  --shadow-ambient-glow: 0 0 80px -20px rgba(45, 212, 191, 0.08);
+  
+  /* Hero glow for primary action surfaces */
+  --shadow-hero-glow: 0 0 60px -15px rgba(34, 211, 238, 0.25), 0 0 30px -10px rgba(16, 185, 129, 0.15);
 }
 
 :root {
   color-scheme: dark;
-  --bg-gradient: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+  --bg-gradient: linear-gradient(to bottom, var(--color-bg-start), var(--color-bg-end));
 }
 
-/* ========================================
-   Institutional Typography
-   ======================================== */
-
-/* Tabular numbers for data/finance */
-.font-tabular {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-
-/* Hero numbers - large, bold, institutional */
-.stat-hero {
-  @apply text-3xl font-bold tracking-tight;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-
-.stat-value {
-  @apply text-2xl font-semibold;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-
-.stat-value-sm {
-  @apply text-lg font-semibold;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-
-/* Labels - quiet, spaced */
-.stat-label {
-  @apply text-xs font-medium uppercase tracking-wider text-white/50;
-  letter-spacing: 0.05em;
-}
-
-.stat-label-lg {
-  @apply text-sm font-medium uppercase tracking-wide text-white/40;
-  letter-spacing: 0.04em;
-}
-
-/* ========================================
-   Premium Glass Surfaces
-   ======================================== */
-
-/* Base card - subtle, professional */
+/* Reusable component skins */
 .card-surface {
   @apply rounded-2xl p-6;
-  position: relative;
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.035) 0%,
-    rgba(255, 255, 255, 0.015) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  box-shadow: var(--shadow-glass);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
 }
 
-/* Top specular highlight */
-.card-surface::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 1px;
-  right: 1px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.1) 20%,
-    rgba(255, 255, 255, 0.12) 50%,
-    rgba(255, 255, 255, 0.1) 80%,
-    transparent 100%
-  );
-  border-radius: 1rem 1rem 0 0;
-}
-
-/* Inner ring for depth */
-.card-surface::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: calc(1rem - 1px);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  pointer-events: none;
-}
-
-/* Elevated card - hero treatment */
 .card-surface-elevated {
-  @apply rounded-2xl p-6;
+  @apply rounded-2xl p-6 shadow-xl;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(103, 232, 249, 0.2);
+  backdrop-filter: blur(20px);
+}
+
+/* Subtle glow effect - use sparingly */
+.glow-subtle {
   position: relative;
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-  border: 1px solid rgba(45, 212, 191, 0.08);
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
-  box-shadow: 
-    var(--shadow-glass-elevated),
-    var(--shadow-ambient-glow);
 }
-
-.card-surface-elevated::before {
+.glow-subtle::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 1px;
-  right: 1px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(45, 212, 191, 0.15) 20%,
-    rgba(45, 212, 191, 0.2) 50%,
-    rgba(45, 212, 191, 0.15) 80%,
-    transparent 100%
-  );
-  border-radius: 1rem 1rem 0 0;
+  inset: 0;
+  border-radius: 1.5rem;
+  background: radial-gradient(ellipse at center, color-mix(in oklab, var(--color-cyan-300) 10%, transparent), transparent 70%);
+  filter: blur(20px);
+  z-index: -1;
+  opacity: 0.5;
 }
-
-.card-surface-elevated::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: calc(1rem - 1px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  pointer-events: none;
-}
-
-/* Hero panel - for Pool Snapshot */
-.card-hero {
-  @apply rounded-2xl p-8;
-  position: relative;
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.045) 0%,
-    rgba(255, 255, 255, 0.02) 50%,
-    rgba(45, 212, 191, 0.02) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  box-shadow: 
-    var(--shadow-glass-elevated),
-    0 0 120px -40px rgba(45, 212, 191, 0.1);
-}
-
-.card-hero::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 1px;
-  right: 1px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.12) 15%,
-    rgba(255, 255, 255, 0.15) 50%,
-    rgba(255, 255, 255, 0.12) 85%,
-    transparent 100%
-  );
-  border-radius: 1rem 1rem 0 0;
-}
-
-.card-hero::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: calc(1rem - 1px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  pointer-events: none;
-}
-
-/* Nested surface - for sections within cards */
-.surface-inset {
-  @apply rounded-xl p-4;
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-/* ========================================
-   KPI Tiles
-   ======================================== */
-
-.kpi-tile {
-  @apply rounded-xl p-4;
-  position: relative;
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.015) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.kpi-tile::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 8px;
-  right: 8px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.08) 30%,
-    rgba(255, 255, 255, 0.08) 70%,
-    transparent 100%
-  );
-}
-
-.kpi-tile-brand {
-  @apply rounded-xl p-4;
-  position: relative;
-  background: linear-gradient(
-    160deg,
-    rgba(45, 212, 191, 0.08) 0%,
-    rgba(45, 212, 191, 0.03) 100%
-  );
-  border: 1px solid rgba(45, 212, 191, 0.12);
-}
-
-.kpi-tile-brand::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 8px;
-  right: 8px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(45, 212, 191, 0.2) 30%,
-    rgba(45, 212, 191, 0.2) 70%,
-    transparent 100%
-  );
-}
-
-/* ========================================
-   Status Chips & Badges
-   ======================================== */
-
-.chip {
-  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.chip-brand {
-  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium;
-  background: rgba(45, 212, 191, 0.1);
-  border: 1px solid rgba(45, 212, 191, 0.2);
-  color: var(--color-brand-light);
-}
-
-.chip-warning {
-  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium;
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.2);
-  color: var(--color-warning-light);
-}
-
-.chip-danger {
-  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium;
-  background: rgba(248, 113, 113, 0.1);
-  border: 1px solid rgba(248, 113, 113, 0.2);
-  color: #fca5a5;
-}
-
-/* Live indicator */
-.badge-live {
-  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
-  background: rgba(45, 212, 191, 0.08);
-  border: 1px solid rgba(45, 212, 191, 0.15);
-  color: var(--color-brand-light);
-}
-
-.badge-live::before {
-  content: "";
-  @apply w-1.5 h-1.5 rounded-full;
-  background: var(--color-positive);
-  box-shadow: 0 0 4px var(--color-positive);
-  animation: pulse-subtle 2s ease-in-out infinite;
-}
-
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-/* ========================================
-   Buttons - Refined
-   ======================================== */
 
 .btn-primary {
-  @apply relative overflow-hidden rounded-xl py-3 px-6 font-semibold transition-all duration-300 ease-out;
-  background: linear-gradient(135deg, var(--color-brand-light) 0%, var(--color-brand) 100%);
-  color: #0c1a24;
-  box-shadow: 
-    0 2px 8px -2px rgba(45, 212, 191, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  @apply relative overflow-hidden rounded-xl py-3 px-6 font-semibold shadow-lg transition-all duration-200;
+  background: var(--color-amber-400);
+  color: #1a1a2e;
 }
-
 .btn-primary:hover {
+  background: var(--color-amber-300);
   transform: translateY(-1px);
-  box-shadow: 
-    0 4px 16px -4px rgba(45, 212, 191, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
+  box-shadow: 0 8px 24px -4px rgba(251, 191, 36, 0.4);
 }
 
 .btn-secondary {
-  @apply relative overflow-hidden rounded-xl py-3 px-6 font-semibold transition-all duration-300 ease-out;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(8px);
+  @apply relative overflow-hidden rounded-xl py-3 px-6 font-semibold transition-all duration-200;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-
 .btn-secondary:hover {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
-
-.btn-warning {
-  @apply relative overflow-hidden rounded-xl py-3 px-6 font-semibold transition-all duration-300 ease-out;
-  background: linear-gradient(135deg, var(--color-warning-light) 0%, var(--color-warning) 100%);
-  color: #1a1a2e;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-/* ========================================
-   Form Inputs
-   ======================================== */
 
 .input-surface {
-  @apply w-full rounded-xl p-3 transition-all duration-300 focus:outline-none;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-  font-variant-numeric: tabular-nums;
+  @apply w-full rounded-xl p-3 transition focus:outline-none focus:ring-2;
+  background: var(--color-white-10);
+  border-width: 2px;
+  border-color: color-mix(in oklab, var(--color-amber-400) 70%, transparent);
+  --tw-ring-color: color-mix(in oklab, var(--color-amber-300) 80%, transparent);
 }
-
-.input-surface:focus {
-  border-color: rgba(45, 212, 191, 0.3);
-  box-shadow: 
-    0 0 0 3px rgba(45, 212, 191, 0.08),
-    inset 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-/* ========================================
-   Pills / Tags
-   ======================================== */
 
 .pill {
-  @apply rounded-full px-3 py-1.5 text-sm font-medium;
-  background: rgba(45, 212, 191, 0.1);
-  border: 1px solid rgba(45, 212, 191, 0.15);
-  color: var(--color-brand-light);
+  @apply rounded-xl px-3 py-1.5 border text-cyan-100;
+  border-color: color-mix(in oklab, var(--color-cyan-300) 35%, transparent);
+  background: color-mix(in oklab, white 7%, transparent);
 }
 
-.pill-neutral {
-  @apply rounded-full px-3 py-1.5 text-sm font-medium;
+/* ═══════════════════════════════════════════════════════════════════════════
+   3-TIER ELEVATION SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Tier 0 - Background/recessed (informational, quiet) */
+.surface-tier-0 {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Tier 1 - Default cards (informational, neutral) */
+.surface-tier-1 {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
 }
 
-/* ========================================
-   Section Headers
-   ======================================== */
-
-.section-header {
-  @apply flex items-center justify-between mb-4;
+/* Tier 2 - Action surfaces (CTAs, primary stats, deposit) */
+.surface-tier-2 {
+  position: relative;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(103, 232, 249, 0.25);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-hero-glow);
+}
+.surface-tier-2::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(16, 185, 129, 0.08), transparent 60%);
+  z-index: -1;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
-.section-title {
-  @apply text-sm font-semibold uppercase tracking-wider text-white/60;
-  letter-spacing: 0.06em;
+/* Hero metric - for THE one metric you want to stand out */
+.stat-hero-metric {
+  position: relative;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 0.75rem;
+}
+.stat-hero-metric::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  pointer-events: none;
 }
 
-.section-divider {
-  height: 1px;
+/* ═══════════════════════════════════════════════════════════════════════════
+   AMBIENT LIFE ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Breathing glow for live metrics */
+@keyframes breatheGlow {
+  0%, 100% { 
+    opacity: 0.7;
+    filter: brightness(1);
+  }
+  50% { 
+    opacity: 1;
+    filter: brightness(1.1);
+  }
+}
+
+.animate-breathe {
+  animation: breatheGlow 3s ease-in-out infinite;
+}
+
+/* Slow pulse for key values */
+@keyframes valuePulse {
+  0%, 100% { 
+    text-shadow: 0 0 0 transparent;
+  }
+  50% { 
+    text-shadow: 0 0 8px currentColor;
+  }
+}
+
+.animate-value-pulse {
+  animation: valuePulse 4s ease-in-out infinite;
+}
+
+/* Moving dot animation for charts */
+@keyframes dotSlide {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.4);
+  }
+  50% { 
+    transform: scale(1.2);
+    box-shadow: 0 0 12px 4px rgba(34, 211, 238, 0.3);
+  }
+}
+
+.animate-chart-dot {
+  animation: dotSlide 2s ease-in-out infinite;
+}
+
+/* Shimmer effect for the utilization curve */
+@keyframes shimmerGradient {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-line {
+  background: linear-gradient(90deg, transparent 25%, rgba(34, 211, 238, 0.15) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmerGradient 3s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MICRO-INTERACTIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Button hover glow */
+.btn-glow-hover {
+  transition: all 0.2s ease-out;
+}
+.btn-glow-hover:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 8px 24px -4px rgba(16, 185, 129, 0.4);
+}
+.btn-glow-hover:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+/* Input focus glow */
+.input-glow-focus {
+  transition: all 0.2s ease-out;
+}
+.input-glow-focus:focus-within {
+  border-color: rgba(34, 211, 238, 0.5);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1), 0 0 20px -5px rgba(34, 211, 238, 0.3);
+}
+
+/* Card hover lift */
+.card-hover-lift {
+  transition: all 0.25s ease-out;
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NERID SCROLLBARS - Deep sea bioluminescent aesthetic
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(2, 6, 23, 0.8);
+  border-left: 1px solid rgba(103, 232, 249, 0.08);
+}
+
+::-webkit-scrollbar-thumb {
   background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.06) 10%,
-    rgba(255, 255, 255, 0.06) 90%,
-    transparent 100%
+    180deg,
+    rgba(34, 211, 238, 0.4) 0%,
+    rgba(16, 185, 129, 0.3) 50%,
+    rgba(34, 211, 238, 0.4) 100%
+  );
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 
+    inset 0 0 6px rgba(103, 232, 249, 0.2),
+    0 0 8px rgba(34, 211, 238, 0.15);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(34, 211, 238, 0.6) 0%,
+    rgba(16, 185, 129, 0.45) 50%,
+    rgba(34, 211, 238, 0.6) 100%
+  );
+  box-shadow: 
+    inset 0 0 8px rgba(103, 232, 249, 0.3),
+    0 0 12px rgba(34, 211, 238, 0.25);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(
+    180deg,
+    rgba(34, 211, 238, 0.7) 0%,
+    rgba(16, 185, 129, 0.55) 50%,
+    rgba(34, 211, 238, 0.7) 100%
   );
 }
 
-/* ========================================
-   Dividers
-   ======================================== */
-
-.divider-glass {
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.06) 20%,
-    rgba(255, 255, 255, 0.06) 80%,
-    transparent 100%
-  );
+::-webkit-scrollbar-corner {
+  background: rgba(2, 6, 23, 0.9);
 }
 
-.divider-brand {
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(45, 212, 191, 0.15) 20%,
-    rgba(45, 212, 191, 0.15) 80%,
-    transparent 100%
-  );
-}
-
-/* ========================================
-   Utility Classes
-   ======================================== */
-
-.text-brand { color: var(--color-brand); }
-.text-warning { color: var(--color-warning); }
-.text-positive { color: var(--color-positive); }
-.text-negative { color: var(--color-negative); }
-
-/* Muted text variants */
-.text-muted { color: rgba(255, 255, 255, 0.5); }
-.text-muted-strong { color: rgba(255, 255, 255, 0.7); }
-
-/* Glass hover effect */
-.glass-hover {
-  @apply transition-all duration-300;
-}
-
-.glass-hover:hover {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 100%);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Trend indicators */
-.trend-up {
-  @apply text-teal-400;
-}
-
-.trend-down {
-  @apply text-red-400;
-}
-
-.trend-neutral {
-  @apply text-white/50;
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.4) rgba(2, 6, 23, 0.8);
 }

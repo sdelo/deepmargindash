@@ -7,41 +7,11 @@ import { HowItWorks } from "../components/HowItWorks";
 import { DashboardFeatures } from "../components/DashboardFeatures";
 import { TransparencySection } from "../components/TransparencySection";
 import { Footer } from "../components/Footer";
-import { usePoolData } from "../hooks/usePoolData";
-import { useNetworkContracts } from "../hooks/useNetworkContracts";
-import { syntheticPools } from "../data/synthetic/pools";
+import { useAllPools } from "../hooks/useAllPools";
 import { brand } from "../config/brand";
 
 export function LandingPage() {
-  const contracts = useNetworkContracts();
-  const suiPoolData = usePoolData(contracts.SUI_MARGIN_POOL_ID);
-  const dbusdcPoolData = usePoolData(contracts.DBUSDC_MARGIN_POOL_ID);
-
-  // Get pools data with fallback
-  const pools = React.useMemo(() => {
-    const livePools = [];
-
-    if (suiPoolData.data) {
-      livePools.push(suiPoolData.data);
-    } else if (!suiPoolData.isLoading && !suiPoolData.error) {
-      livePools.push(syntheticPools.find((p) => p.asset === "SUI")!);
-    }
-
-    if (dbusdcPoolData.data) {
-      livePools.push(dbusdcPoolData.data);
-    } else if (!dbusdcPoolData.isLoading && !dbusdcPoolData.error) {
-      livePools.push(syntheticPools.find((p) => p.asset === "DBUSDC")!);
-    }
-
-    return livePools.length > 0 ? livePools : syntheticPools;
-  }, [
-    suiPoolData.data,
-    suiPoolData.isLoading,
-    suiPoolData.error,
-    dbusdcPoolData.data,
-    dbusdcPoolData.isLoading,
-    dbusdcPoolData.error,
-  ]);
+  const { pools, isLoading } = useAllPools();
 
   // Calculate highest APY for hero
   const highestApy = React.useMemo(() => {
@@ -49,8 +19,6 @@ export function LandingPage() {
     const max = Math.max(...pools.map(p => Number(p.ui.aprSupplyPct)));
     return max.toFixed(2);
   }, [pools]);
-
-  const isLoading = suiPoolData.isLoading || dbusdcPoolData.isLoading;
 
   return (
     <div className="min-h-screen">
