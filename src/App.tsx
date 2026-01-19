@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import { LandingPage } from "./pages/LandingPage";
 import { PoolsPage } from "./pages/PoolsPage";
+import { LiquidationsPage } from "./pages/LiquidationsPage";
 
 const router = createBrowserRouter([
   {
@@ -35,6 +36,16 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <PoolsPage />,
+      },
+    ],
+  },
+  {
+    path: "/liquidations",
+    element: <MainLayout />,
+    children: [
+      {
+        index: true,
+        element: <LiquidationsPage />,
       },
     ],
   },

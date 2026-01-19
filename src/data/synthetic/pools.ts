@@ -107,6 +107,19 @@ export function formatNumber(n: number | number) {
   return Intl.NumberFormat('en-US').format(Number(n));
 }
 
+/**
+ * Format currency with consistent decimal places
+ * For amounts >= $1000: show no decimals ($10,051)
+ * For amounts < $1000: show 2 decimals ($31.40)
+ */
+export function formatCurrency(n: number | number) {
+  const num = Number(n);
+  if (num >= 1000) {
+    return Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num);
+  }
+  return Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+}
+
 export function utilizationPct(supply: number, borrow: number) {
   if (supply === 0) return 0;
   return Number(((borrow / supply) * 100).toFixed(2));

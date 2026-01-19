@@ -11,7 +11,7 @@ export function Footer() {
           <div className="flex items-center gap-3">
             <img src={brand.logo.src} alt={brand.logo.alt} className={brand.logo.sizes.md} />
             <div>
-              <div className="font-bold text-white">{brand.name}</div>
+              <div className="font-bold text-white tracking-wide">{brand.name}</div>
               <div className="text-sm text-white/50">{brand.tagline}</div>
             </div>
           </div>

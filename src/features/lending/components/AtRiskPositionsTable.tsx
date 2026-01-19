@@ -2,6 +2,7 @@ import React from 'react';
 import { type AtRiskPosition } from '../../../hooks/useAtRiskPositions';
 import { TransactionDetailsModal } from '../../../components/TransactionButton/TransactionDetailsModal';
 import { PositionHistoryModal } from './PositionHistoryModal';
+import { PositionDetailDrawer } from './PositionDetailDrawer';
 import { CONTRACTS } from '../../../config/contracts';
 import { useSuiClientContext } from '@mysten/dapp-kit';
 
@@ -10,6 +11,19 @@ interface AtRiskPositionsTableProps {
   isLoading: boolean;
   lastUpdated: Date | null;
   onRefresh: () => void;
+}
+
+/**
+ * Format relative time (e.g., "12s ago", "2m ago")
+ */
+function formatRelativeTime(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return date.toLocaleDateString();
 }
 
 /**
@@ -75,19 +89,35 @@ export function AtRiskPositionsTable({
   const [showTxModal, setShowTxModal] = React.useState(false);
   const [showHistoryModal, setShowHistoryModal] = React.useState(false);
   const [historyPosition, setHistoryPosition] = React.useState<AtRiskPosition | null>(null);
+  const [drawerPosition, setDrawerPosition] = React.useState<AtRiskPosition | null>(null);
   const [sortField, setSortField] = React.useState<'riskRatio' | 'totalDebtUsd' | 'distanceToLiquidation'>('riskRatio');
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+  const [bufferFilter, setBufferFilter] = React.useState<number>(25); // Show positions within X% of liquidation
+  const [showWatchlist, setShowWatchlist] = React.useState(false);
 
   // Get contract addresses based on network
   const contracts = network === 'mainnet' ? CONTRACTS.mainnet : CONTRACTS.testnet;
 
-  // Sort positions
+  // Filter and sort positions
+  const { actionablePositions, watchlistPositions } = React.useMemo(() => {
+    const actionable = positions.filter(p => 
+      p.isLiquidatable || p.distanceToLiquidation <= bufferFilter
+    );
+    const watchlist = positions.filter(p => 
+      !p.isLiquidatable && p.distanceToLiquidation > bufferFilter
+    );
+    return { actionablePositions: actionable, watchlistPositions: watchlist };
+  }, [positions, bufferFilter]);
+
   const sortedPositions = React.useMemo(() => {
-    return [...positions].sort((a, b) => {
+    const positionsToSort = showWatchlist 
+      ? [...actionablePositions, ...watchlistPositions]
+      : actionablePositions;
+    return positionsToSort.sort((a, b) => {
       const multiplier = sortDirection === 'asc' ? 1 : -1;
       return (a[sortField] - b[sortField]) * multiplier;
     });
-  }, [positions, sortField, sortDirection]);
+  }, [actionablePositions, watchlistPositions, showWatchlist, sortField, sortDirection]);
 
   // Handle sort click
   const handleSort = (field: typeof sortField) => {
@@ -105,8 +135,13 @@ export function AtRiskPositionsTable({
     setShowTxModal(true);
   };
 
-  // Handle row click to view history
+  // Handle row click to open detail drawer
   const handleRowClick = (position: AtRiskPosition) => {
+    setDrawerPosition(position);
+  };
+
+  // Handle view history from drawer
+  const handleViewHistory = (position: AtRiskPosition) => {
     setHistoryPosition(position);
     setShowHistoryModal(true);
   };
@@ -137,12 +172,12 @@ export function AtRiskPositionsTable({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-base font-semibold text-slate-200 flex items-center gap-2">
             At-Risk Positions
             {positions.filter(p => p.isLiquidatable).length > 0 && (
-              <span className="px-2 py-0.5 text-xs font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-full">
+              <span className="px-2 py-0.5 text-xs font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-full animate-pulse">
                 {positions.filter(p => p.isLiquidatable).length} liquidatable
               </span>
             )}
@@ -151,10 +186,27 @@ export function AtRiskPositionsTable({
             Sorted by proximity to liquidation threshold
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Buffer Filter */}
+          <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-1.5 border border-white/10">
+            <span className="text-xs text-white/50">Buffer:</span>
+            <select
+              value={bufferFilter}
+              onChange={(e) => setBufferFilter(Number(e.target.value))}
+              className="bg-transparent text-xs text-white/80 focus:outline-none cursor-pointer"
+            >
+              <option value={5} className="bg-slate-800">Within 5%</option>
+              <option value={10} className="bg-slate-800">Within 10%</option>
+              <option value={25} className="bg-slate-800">Within 25%</option>
+              <option value={50} className="bg-slate-800">Within 50%</option>
+              <option value={100} className="bg-slate-800">All positions</option>
+            </select>
+          </div>
+          
           {lastUpdated && (
-            <span className="text-xs text-white/40">
-              Updated {lastUpdated.toLocaleTimeString()}
+            <span className="text-xs text-white/40 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Updated {formatRelativeTime(lastUpdated)}
             </span>
           )}
           <button
@@ -187,12 +239,25 @@ export function AtRiskPositionsTable({
             <div className="animate-spin h-6 w-6 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-3" />
             <p className="text-slate-400 text-sm">Loading positions...</p>
           </div>
-        ) : positions.length === 0 ? (
+        ) : sortedPositions.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-base font-medium text-slate-300">No At-Risk Positions</p>
-            <p className="text-sm text-slate-500 mt-1">
-              All positions are healthy
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-base font-medium text-slate-300">No Positions Within {bufferFilter}% of Liquidation</p>
+            <p className="text-sm text-slate-500 mt-1 mb-4">
+              All positions have healthy collateral ratios
             </p>
+            {watchlistPositions.length > 0 && !showWatchlist && (
+              <button
+                onClick={() => setShowWatchlist(true)}
+                className="text-sm text-teal-400 hover:text-teal-300 transition-colors"
+              >
+                Show {watchlistPositions.length} watchlist position{watchlistPositions.length !== 1 ? 's' : ''} →
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -200,27 +265,43 @@ export function AtRiskPositionsTable({
               <thead>
                 <tr className="border-b border-slate-700/50">
                   <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
-                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Manager ID</th>
+                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Position</th>
                   <th 
-                    className="text-right py-3 px-4 text-slate-400 font-medium cursor-pointer hover:text-slate-200 transition-colors"
+                    className="text-right py-3 px-4 text-slate-400 font-medium cursor-pointer hover:text-slate-200 transition-colors group"
                     onClick={() => handleSort('riskRatio')}
+                    title="Health Factor = Collateral Value / Debt Value. Liquidation occurs at threshold (e.g., 1.05)"
                   >
-                    Risk Ratio <SortIndicator field="riskRatio" />
+                    <span className="flex items-center justify-end gap-1">
+                      Health Factor
+                      <svg className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <SortIndicator field="riskRatio" />
+                    </span>
                   </th>
                   <th 
-                    className="text-right py-3 px-4 text-slate-400 font-medium cursor-pointer hover:text-slate-200 transition-colors"
+                    className="text-right py-3 px-4 text-slate-400 font-medium cursor-pointer hover:text-slate-200 transition-colors group"
                     onClick={() => handleSort('distanceToLiquidation')}
+                    title="Price Buffer = How much further prices can move before liquidation"
                   >
-                    Distance to Liq <SortIndicator field="distanceToLiquidation" />
+                    <span className="flex items-center justify-end gap-1">
+                      Price Buffer
+                      <svg className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <SortIndicator field="distanceToLiquidation" />
+                    </span>
                   </th>
                   <th 
                     className="text-right py-3 px-4 text-slate-400 font-medium cursor-pointer hover:text-slate-200 transition-colors"
                     onClick={() => handleSort('totalDebtUsd')}
                   >
-                    Total Debt <SortIndicator field="totalDebtUsd" />
+                    Debt <SortIndicator field="totalDebtUsd" />
                   </th>
-                  <th className="text-right py-3 px-4 text-slate-400 font-medium">Est. Reward</th>
-                  <th className="text-center py-3 px-4 text-slate-400 font-medium">Action</th>
+                  <th className="text-right py-3 px-4 text-slate-400 font-medium" title="Estimated net profit after liquidation incentives">
+                    Est. Profit
+                  </th>
+                  <th className="text-center py-3 px-4 text-slate-400 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -239,54 +320,50 @@ export function AtRiskPositionsTable({
                           <span className={`px-2 py-1 text-xs font-bold rounded border ${badge.className}`}>
                             {badge.label}
                           </span>
-                          {/* Click indicator */}
-                          <svg 
-                            className="w-4 h-4 text-white/0 group-hover:text-teal-400 transition-colors" 
-                            fill="none" 
-                            viewBox="0 0 24 24" 
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <a
-                          href={`https://suivision.xyz/object/${position.marginManagerId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-mono text-cyan-300 hover:text-cyan-200 transition-colors"
-                        >
-                          {formatAddress(position.marginManagerId)}
-                        </a>
+                        <div className="flex flex-col">
+                          <a
+                            href={`https://suivision.xyz/object/${position.marginManagerId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-mono text-cyan-300 hover:text-cyan-200 transition-colors text-xs"
+                          >
+                            {formatAddress(position.marginManagerId)}
+                          </a>
+                          <div className="text-xs text-white/40 mt-0.5">
+                            {position.baseAssetSymbol}/{position.quoteAssetSymbol}
+                          </div>
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <span className={`font-bold ${
+                        <div className={`font-bold tabular-nums ${
                           position.isLiquidatable ? 'text-rose-400' :
-                          position.distanceToLiquidation < 5 ? 'text-teal-400' :
-                          position.distanceToLiquidation < 15 ? 'text-teal-300' :
-                          'text-white'
+                          position.distanceToLiquidation < 5 ? 'text-amber-400' :
+                          position.distanceToLiquidation < 15 ? 'text-yellow-400' :
+                          'text-emerald-400'
                         }`}>
-                          {position.riskRatio.toFixed(4)}
-                        </span>
-                        <span className="text-white/40 ml-1 text-xs">
-                          (liq: {position.liquidationThreshold.toFixed(2)})
-                        </span>
+                          {position.riskRatio.toFixed(3)}
+                        </div>
+                        <div className="text-xs text-white/40">
+                          liq @ {position.liquidationThreshold.toFixed(2)}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <span className={`font-semibold ${
+                        <span className={`font-semibold tabular-nums ${
                           position.distanceToLiquidation < 0 ? 'text-rose-400' :
-                          position.distanceToLiquidation < 5 ? 'text-teal-400' :
-                          position.distanceToLiquidation < 15 ? 'text-teal-300' :
-                          'text-cyan-400'
+                          position.distanceToLiquidation < 5 ? 'text-amber-400' :
+                          position.distanceToLiquidation < 15 ? 'text-yellow-400' :
+                          'text-emerald-400'
                         }`}>
                           {position.distanceToLiquidation < 0 ? '' : '+'}
                           {position.distanceToLiquidation.toFixed(1)}%
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="font-semibold text-white">
+                        <div className="font-semibold text-white tabular-nums">
                           {formatUsd(position.totalDebtUsd)}
                         </div>
                         <div className="text-xs text-white/40">
@@ -296,28 +373,36 @@ export function AtRiskPositionsTable({
                         </div>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <span className="text-green-400 font-semibold">
+                        <span className="text-emerald-400 font-semibold tabular-nums">
                           {formatUsd(position.estimatedRewardUsd)}
                         </span>
-                        <span className="text-white/40 text-xs ml-1">
-                          ({((position.userLiquidationRewardPct + position.poolLiquidationRewardPct) * 100).toFixed(1)}%)
-                        </span>
+                        <div className="text-xs text-white/40">
+                          {((position.userLiquidationRewardPct + position.poolLiquidationRewardPct) * 100).toFixed(1)}% incentive
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLiquidateClick(position);
-                          }}
-                          disabled={!position.isLiquidatable}
-                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                            position.isLiquidatable
-                              ? 'bg-rose-500 hover:bg-rose-400 text-white'
-                              : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
-                          }`}
-                        >
-                          {position.isLiquidatable ? 'Liquidate' : 'Not Yet'}
-                        </button>
+                        <div className="flex items-center gap-2 justify-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRowClick(position);
+                            }}
+                            className="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white/10 hover:bg-white/20 text-white/80 hover:text-white"
+                          >
+                            View
+                          </button>
+                          {position.isLiquidatable && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLiquidateClick(position);
+                              }}
+                              className="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-rose-500 hover:bg-rose-400 text-white"
+                            >
+                              Liquidate
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -337,21 +422,43 @@ export function AtRiskPositionsTable({
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <span>Critical</span>
+            <span>Critical (&lt;5%)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-teal-400" />
-            <span>Warning</span>
+            <span className="w-2 h-2 rounded-full bg-yellow-400" />
+            <span>Warning (&lt;15%)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-cyan-500" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>Watch</span>
           </div>
         </div>
-        <span className="text-slate-500">
-          Click row to view history
-        </span>
+        <div className="flex items-center gap-3">
+          {watchlistPositions.length > 0 && (
+            <button
+              onClick={() => setShowWatchlist(!showWatchlist)}
+              className="text-teal-400 hover:text-teal-300 transition-colors"
+            >
+              {showWatchlist ? 'Hide' : 'Show'} {watchlistPositions.length} watchlist
+            </button>
+          )}
+          <span className="text-slate-500">
+            Click row to view details
+          </span>
+        </div>
       </div>
+
+      {/* Position Detail Drawer */}
+      {drawerPosition && (
+        <PositionDetailDrawer
+          position={drawerPosition}
+          allPositions={positions}
+          isOpen={!!drawerPosition}
+          onClose={() => setDrawerPosition(null)}
+          onLiquidate={handleLiquidateClick}
+          onViewHistory={handleViewHistory}
+        />
+      )}
 
       {/* Transaction Modal */}
       {transactionInfo && (

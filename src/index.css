@@ -8,26 +8,37 @@ html, body, #root {
 
 body {
   margin: 0;
-  font-family: 'Outfit', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  /* Lifted teal-navy gradient background */
-  background: linear-gradient(180deg, #0c1a24 0%, #0a1419 50%, #081114 100%);
+  /* Premium typography: DM Sans for UI, with tabular numbers */
+  font-family: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Deep ocean navy - matching Nerid reference */
+  background: linear-gradient(180deg, #0d1a1f 0%, #0a1419 50%, #080f13 100%);
   background-attachment: fixed;
   color: white;
   /* Institutional number styling */
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'ss01' on, 'ss02' on;
+  letter-spacing: -0.01em;
 }
 
-/* Subtle vignette overlay - reduced intensity */
+/* Monospace numbers for data */
+.font-mono, .tabular-nums, [data-mono] {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-feature-settings: 'ss01' on;
+}
+
+/* Subtle ambient glow - more refined */
 #root::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(8,17,20,0.25) 100%);
+  background: 
+    radial-gradient(ellipse 100% 80% at 50% -20%, rgba(45, 212, 191, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 100% 100%, rgba(20, 184, 166, 0.02) 0%, transparent 50%);
+  z-index: -1;
 }
-
 
 /* Transaction Modal Animations */
 @keyframes fadeIn {

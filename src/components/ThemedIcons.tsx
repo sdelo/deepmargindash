@@ -997,6 +997,36 @@ export function InsightIcon({ className = "", size = 24 }: IconProps) {
   );
 }
 
+// Clock icon - For transaction history
+export function ClockIcon({ className = "", size = 24 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        fill="none"
+      />
+      <path
+        d="M12 6V12L16 14"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 // Lock icon - For connect wallet
 export function LockIcon({ className = "", size = 24 }: IconProps) {
   return (

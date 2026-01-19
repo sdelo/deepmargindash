@@ -86,7 +86,19 @@ function HowItWorksModal({
         </button>
 
         <h2 className="text-xl font-bold text-cyan-100 mb-4 flex items-center gap-2">
-          <span className="text-2xl">💡</span>
+          <svg
+            className="w-6 h-6 text-cyan-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
           How DeepBook Margin Works
         </h2>
 
@@ -402,11 +414,15 @@ export function QuickDepositBanner({
                 <div className="flex items-center gap-1.5">
                   {pools.map((pool) => {
                     const isActive = pool.id === selectedPoolId;
+                    const utilization =
+                      pool.state.supply > 0
+                        ? (pool.state.borrow / pool.state.supply) * 100
+                        : 0;
                     return (
                       <button
                         key={pool.id}
                         onClick={() => onSelectPool(pool.id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                           isActive
                             ? "bg-cyan-500/20 border border-cyan-500/50 text-white"
                             : "bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
@@ -415,16 +431,29 @@ export function QuickDepositBanner({
                         <img
                           src={getPoolIcon(pool)}
                           alt={pool.asset}
-                          className="w-5 h-5 rounded-full"
+                          className="w-6 h-6 rounded-full"
                         />
                         <div className="text-left">
                           <div className="text-xs font-semibold">
                             {pool.asset}
                           </div>
-                          <div
-                            className={`text-[10px] ${isActive ? "text-cyan-300" : "text-slate-500"}`}
-                          >
-                            {pool.ui.aprSupplyPct.toFixed(2)}% APY
+                          {/* Mini-stat chips */}
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span
+                              className={`text-[10px] font-medium ${isActive ? "text-emerald-400" : "text-emerald-400/70"}`}
+                            >
+                              {pool.ui.aprSupplyPct.toFixed(1)}% APY
+                            </span>
+                            <span
+                              className={`text-[10px] ${isActive ? "text-white/30" : "text-white/20"}`}
+                            >
+                              ·
+                            </span>
+                            <span
+                              className={`text-[10px] ${isActive ? "text-white/60" : "text-slate-500"}`}
+                            >
+                              {utilization.toFixed(0)}% util
+                            </span>
                           </div>
                         </div>
                       </button>
@@ -574,96 +603,152 @@ export function QuickDepositBanner({
                 )}
               </div>
 
-              {/* Row 3: INLINE "After Deposit" Preview - THE CONFIDENCE PAYLOAD */}
+              {/* Row 3: INLINE "After Deposit" Preview - Trade Ticket Style */}
               {depositPreview && (
                 <div className="mt-3 pt-3 border-t border-emerald-500/20 animate-fade-in">
-                  <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 rounded-lg p-3 border border-emerald-500/20">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 rounded-lg p-4 border border-emerald-500/20">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-3">
                       <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
-                        After Deposit
+                        Deposit Preview
                       </span>
-                      <span className="text-[9px] text-slate-500">
-                        at {depositPreview.apy.toFixed(2)}% APY
+                      <span className="text-[9px] text-slate-400 bg-slate-800/50 px-2 py-0.5 rounded">
+                        ~0.001 SUI gas
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {/* Position Change */}
-                      <div>
-                        <div className="text-[9px] text-slate-500 mb-0.5">
-                          Position
-                        </div>
-                        <div className="text-xs font-semibold text-white">
-                          {depositPreview.currentPosition > 0 ? (
-                            <>
-                              <span className="text-slate-400">
-                                {depositPreview.currentPosition.toLocaleString(
-                                  undefined,
-                                  { maximumFractionDigits: 2 }
-                                )}
-                              </span>
-                              <span className="text-emerald-400 mx-1">→</span>
-                              <span className="text-emerald-300">
-                                {depositPreview.newPosition.toLocaleString(
-                                  undefined,
-                                  { maximumFractionDigits: 2 }
-                                )}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-emerald-300">
-                              {depositPreview.newPosition.toLocaleString(
-                                undefined,
-                                { maximumFractionDigits: 2 }
-                              )}
-                            </span>
-                          )}
-                          <span className="text-slate-500 text-[10px] ml-1">
-                            {selectedPool.asset}
-                          </span>
-                        </div>
+
+                    {/* Position: Before → After → Delta */}
+                    <div className="bg-black/20 rounded-lg p-3 mb-3">
+                      <div className="text-[9px] text-slate-500 mb-1.5">
+                        Position
                       </div>
-                      {/* Daily Earnings */}
+                      <div className="flex items-center gap-2 text-sm font-mono">
+                        <span className="text-slate-400">
+                          {depositPreview.currentPosition.toLocaleString(
+                            undefined,
+                            {
+                              minimumFractionDigits: 3,
+                              maximumFractionDigits: 3,
+                            }
+                          )}
+                        </span>
+                        <span className="text-white/30">→</span>
+                        <span className="text-white font-semibold">
+                          {depositPreview.newPosition.toLocaleString(
+                            undefined,
+                            {
+                              minimumFractionDigits: 3,
+                              maximumFractionDigits: 3,
+                            }
+                          )}
+                        </span>
+                        <span className="text-emerald-400 text-xs bg-emerald-500/15 px-1.5 py-0.5 rounded">
+                          +
+                          {(parseFloat(inputAmount) || 0).toLocaleString(
+                            undefined,
+                            {
+                              minimumFractionDigits: 3,
+                              maximumFractionDigits: 3,
+                            }
+                          )}
+                        </span>
+                        <span className="text-slate-500 text-xs">
+                          {selectedPool.asset}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* APY + Rate Type + Utilization Sensitivity */}
+                    <div className="flex items-center gap-3 text-xs mb-3 pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-500">Est. APY:</span>
+                        <span className="text-emerald-400 font-semibold">
+                          {depositPreview.apy.toFixed(2)}%
+                        </span>
+                      </div>
+                      <span className="text-slate-700">•</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-500">Rate:</span>
+                        <span className="text-amber-400">Variable</span>
+                      </div>
+                      <span className="text-slate-700">•</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-500">
+                          ↑ with utilization
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Earnings Estimates */}
+                    <div className="grid grid-cols-3 gap-3">
                       <div>
                         <div className="text-[9px] text-slate-500 mb-0.5">
-                          Est. Daily
+                          Daily
                         </div>
-                        <div className="text-xs font-semibold text-emerald-400">
+                        <div className="text-xs font-semibold text-emerald-400 font-mono">
                           +
                           {depositPreview.incrementalDaily < 0.0001
                             ? depositPreview.incrementalDaily.toFixed(6)
-                            : depositPreview.incrementalDaily.toFixed(4)}{" "}
-                          {selectedPool.asset}
+                            : depositPreview.incrementalDaily.toFixed(4)}
                         </div>
                       </div>
-                      {/* Monthly Earnings */}
                       <div>
                         <div className="text-[9px] text-slate-500 mb-0.5">
-                          Est. Monthly
+                          Monthly
                         </div>
-                        <div className="text-xs font-semibold text-emerald-400">
+                        <div className="text-xs font-semibold text-emerald-400 font-mono">
                           +
                           {depositPreview.incrementalMonthly < 0.01
                             ? depositPreview.incrementalMonthly.toFixed(4)
-                            : depositPreview.incrementalMonthly.toFixed(2)}{" "}
-                          {selectedPool.asset}
+                            : depositPreview.incrementalMonthly.toFixed(2)}
                         </div>
                       </div>
-                      {/* Pool Info */}
                       <div>
                         <div className="text-[9px] text-slate-500 mb-0.5">
-                          Pool Shares
+                          Yearly
                         </div>
-                        <div className="text-xs font-medium text-cyan-400">
-                          Receipt token issued
+                        <div className="text-xs font-semibold text-emerald-400 font-mono">
+                          +
+                          {depositPreview.yearlyEarnings < 1
+                            ? depositPreview.yearlyEarnings.toFixed(4)
+                            : depositPreview.yearlyEarnings.toFixed(2)}
                         </div>
                       </div>
                     </div>
-                    {/* APY Disclaimer */}
-                    <div className="mt-2 pt-2 border-t border-white/5">
+
+                    {/* Footer with simulation link */}
+                    <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
                       <p className="text-[9px] text-slate-500 italic">
-                        Assumes APY stays constant. APY may change with
+                        Estimates assume constant APY. Actual yield varies with
                         utilization.
                       </p>
+                      <a
+                        href={`https://suiscan.xyz/${network}/tx/preview`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[9px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                      >
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                        Simulate
+                      </a>
                     </div>
                   </div>
                 </div>

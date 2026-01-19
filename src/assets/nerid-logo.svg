@@ -1,24 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
   <defs>
-    <linearGradient id="neridGradient" x1="50%" y1="0%" x2="50%" y2="100%">
+    <linearGradient id="neridGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#5eead4"/>
       <stop offset="100%" style="stop-color:#2dd4bf"/>
     </linearGradient>
+    <!-- Mask to cut the wave through the N -->
+    <mask id="waveCut">
+      <rect x="0" y="0" width="64" height="64" fill="white"/>
+      <!-- Wave cutout path -->
+      <path 
+        d="M0 10 Q18 4 32 24 Q46 44 40 52 L40 58 Q50 48 34 26 Q18 4 0 16 Z" 
+        fill="black"
+      />
+    </mask>
   </defs>
-  <!-- Droplet body -->
-  <path 
-    d="M32 6C32 6 14 24 14 38C14 49.5 22 58 32 58C42 58 50 49.5 50 38C50 24 32 6 32 6Z" 
-    fill="url(#neridGradient)"
-  />
-  <!-- Inner wave accent -->
-  <path 
-    d="M22 40C26 36 29 40 32 36C35 32 38 36 42 32" 
-    stroke="#0c1a24" 
-    stroke-width="2.5" 
-    stroke-linecap="round" 
-    fill="none" 
-    opacity="0.4"
-  />
-  <!-- Highlight reflection -->
-  <ellipse cx="26" cy="28" rx="4" ry="6" fill="white" opacity="0.25"/>
+  
+  <!-- N shape with wave cut through it -->
+  <g mask="url(#waveCut)">
+    <!-- Left vertical pillar -->
+    <rect x="8" y="8" width="12" height="48" rx="2" fill="url(#neridGradient)"/>
+    <!-- Right vertical pillar -->
+    <rect x="44" y="8" width="12" height="48" rx="2" fill="url(#neridGradient)"/>
+    <!-- Diagonal connector -->
+    <polygon points="8,8 20,8 56,56 44,56" fill="url(#neridGradient)"/>
+  </g>
 </svg>

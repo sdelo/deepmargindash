@@ -13,13 +13,39 @@ function formatRewardPercent(value: number): string {
 }
 
 function formatVolume(vol: number): string {
-  if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(1)}M`;
-  if (vol >= 1_000) return `${(vol / 1_000).toFixed(1)}K`;
-  return vol.toFixed(0);
+  if (vol >= 1_000_000) return `$${(vol / 1_000_000).toFixed(1)}M`;
+  if (vol >= 1_000) return `$${(vol / 1_000).toFixed(1)}K`;
+  return `$${vol.toFixed(0)}`;
 }
 
-// Mini Market Chart component
-function MiniMarketChart({ poolName, priceUp }: { poolName: string; priceUp: boolean }) {
+// Calculate volatility from candle data (average high-low range as % of close)
+function calculateVolatility(candles: Array<[number, number, number, number, number, number]>): number {
+  if (candles.length < 2) return 0;
+  
+  // Filter out invalid candles (where close is 0 or range is abnormal)
+  const validRanges = candles
+    .filter(([, , high, low, close]) => close > 0 && high > 0 && low > 0 && high >= low)
+    .map(([, , high, low, close]) => {
+      const range = ((high - low) / close) * 100;
+      // Cap individual candle ranges at 20% to avoid outliers skewing the average
+      return Math.min(range, 20);
+    });
+  
+  if (validRanges.length === 0) return 0;
+  
+  return validRanges.reduce((sum, r) => sum + r, 0) / validRanges.length;
+}
+
+// Mini Market Chart component with Price/Volatility toggle
+function MiniMarketChart({ 
+  poolName, 
+  priceUp, 
+  mode = 'price' 
+}: { 
+  poolName: string; 
+  priceUp: boolean;
+  mode?: 'price' | 'volatility';
+}) {
   const { data: candles, isLoading } = useQuery({
     queryKey: ['ohlcv-mini', poolName],
     queryFn: () => fetchOHLCV(poolName, { interval: '1h', limit: 24 }),
@@ -27,14 +53,57 @@ function MiniMarketChart({ poolName, priceUp }: { poolName: string; priceUp: boo
     refetchInterval: 60 * 1000,
   });
 
-  const chartData: ParsedCandle[] = React.useMemo(() => {
+  const chartData = React.useMemo(() => {
     if (!candles || candles.length === 0) return [];
-    return parseCandles(candles).sort((a, b) => a.timestamp - b.timestamp);
-  }, [candles]);
+    const parsed = parseCandles(candles).sort((a, b) => a.timestamp - b.timestamp);
+    
+    if (mode === 'volatility') {
+      // Calculate per-candle volatility (high-low range as % of close)
+      return parsed.map(c => ({
+        ...c,
+        volatility: c.close > 0 ? ((c.high - c.low) / c.close) * 100 : 0,
+      }));
+    }
+    return parsed;
+  }, [candles, mode]);
 
   if (isLoading || chartData.length < 2) {
     return (
       <div className="w-20 h-8 bg-slate-700/20 rounded animate-pulse" />
+    );
+  }
+
+  if (mode === 'volatility') {
+    const volData = chartData.map((c: any) => c.volatility);
+    const minVol = Math.min(...volData);
+    const maxVol = Math.max(...volData);
+    const volRange = maxVol - minVol;
+    const padding = volRange > 0 ? volRange * 0.1 : 0.1;
+    const avgVol = volData.reduce((a: number, b: number) => a + b, 0) / volData.length;
+    const isElevated = volData[volData.length - 1] > avgVol;
+
+    return (
+      <div className="w-20 h-8">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 2 }}>
+            <defs>
+              <linearGradient id={`vol-gradient-${poolName}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={isElevated ? "#f59e0b" : "#6366f1"} stopOpacity={0.4} />
+                <stop offset="100%" stopColor={isElevated ? "#f59e0b" : "#6366f1"} stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <YAxis domain={[Math.max(0, minVol - padding), maxVol + padding]} hide />
+            <Area
+              type="monotone"
+              dataKey="volatility"
+              stroke={isElevated ? "#f59e0b" : "#6366f1"}
+              strokeWidth={1.5}
+              fill={`url(#vol-gradient-${poolName})`}
+              dot={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     );
   }
 
@@ -81,6 +150,8 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
   const [deepbookConfigs, setDeepbookConfigs] = React.useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = React.useState(true);
   const [marketStats, setMarketStats] = React.useState<Record<string, MarketSummary | null>>({});
+  const [sparklineMode, setSparklineMode] = React.useState<'price' | 'volatility'>('price');
+  const [volatilityData, setVolatilityData] = React.useState<Record<string, { vol24h: number; vol7d: number }>>({});
 
   // Fetch allowed deepbook pools from margin pool
   React.useEffect(() => {
@@ -210,6 +281,36 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
     fetchMarketStats();
   }, [tradingPairs]);
 
+  // Fetch 24h and 7d candles for volatility comparison
+  React.useEffect(() => {
+    async function fetchVolatilityData() {
+      if (tradingPairs.length === 0) return;
+
+      const volData: Record<string, { vol24h: number; vol7d: number }> = {};
+      await Promise.all(
+        tradingPairs.map(async (pair) => {
+          try {
+            // Fetch 24h (hourly candles)
+            const candles24h = await fetchOHLCV(pair.api, { interval: '1h', limit: 24 });
+            // Fetch 7d (daily candles for 7 days)
+            const candles7d = await fetchOHLCV(pair.api, { interval: '1d', limit: 7 });
+
+            volData[pair.poolId] = {
+              vol24h: calculateVolatility(candles24h),
+              vol7d: calculateVolatility(candles7d),
+            };
+          } catch (error) {
+            console.error(`Error fetching volatility for ${pair.api}:`, error);
+            volData[pair.poolId] = { vol24h: 0, vol7d: 0 };
+          }
+        })
+      );
+      setVolatilityData(volData);
+    }
+
+    fetchVolatilityData();
+  }, [tradingPairs]);
+
   // Summary stats
   const summaryStats = React.useMemo(() => {
     const activeMarkets = tradingPairs.filter(p => p.isEnabled);
@@ -226,35 +327,50 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
     };
   }, [tradingPairs]);
 
-  // Calculate volatility from actual market data
-  const getVolatilityData = (poolId: string): { 
+  // Calculate volatility from actual candle data with 24h vs 7d comparison
+  const getVolatilityInfo = (poolId: string): { 
     level: "low" | "med" | "high"; 
-    percent: number;
-    priceChange: number;
-    range: { low: number; high: number } | null;
+    vol24h: number;
+    vol7d: number;
+    trend: "rising" | "falling" | "stable";
+    riskLabel: string;
   } => {
-    const stats = marketStats[poolId];
-    if (!stats || stats.last_price === 0) {
-      return { level: "low", percent: 0, priceChange: 0, range: null };
+    const volData = volatilityData[poolId];
+    if (!volData || (volData.vol24h === 0 && volData.vol7d === 0)) {
+      return { level: "low", vol24h: 0, vol7d: 0, trend: "stable", riskLabel: "No data" };
     }
 
-    // Calculate 24h range as % of price
-    const rangePercent = ((stats.highest_price_24h - stats.lowest_price_24h) / stats.last_price) * 100;
-    const priceChange = stats.price_change_percent_24h;
+    const { vol24h, vol7d } = volData;
     
-    // Determine volatility level
-    // < 2% range = Low, 2-5% = Medium, > 5% = High
+    // Determine volatility level based on 24h average range
+    // < 1% = Low, 1-3% = Medium, > 3% = High
     let level: "low" | "med" | "high";
-    if (rangePercent < 2) level = "low";
-    else if (rangePercent < 5) level = "med";
+    if (vol24h < 1) level = "low";
+    else if (vol24h < 3) level = "med";
     else level = "high";
 
-    return {
-      level,
-      percent: rangePercent,
-      priceChange,
-      range: { low: stats.lowest_price_24h, high: stats.highest_price_24h },
-    };
+    // Compare 24h to 7d to determine trend
+    let trend: "rising" | "falling" | "stable";
+    let riskLabel: string;
+    
+    if (vol7d === 0) {
+      trend = "stable";
+      riskLabel = level === "low" ? "Calm" : level === "med" ? "Normal" : "Volatile";
+    } else {
+      const ratio = vol24h / vol7d;
+      if (ratio > 1.3) {
+        trend = "rising";
+        riskLabel = level === "high" ? "⚠️ Elevated" : "Rising";
+      } else if (ratio < 0.7) {
+        trend = "falling";
+        riskLabel = "Calming";
+      } else {
+        trend = "stable";
+        riskLabel = level === "low" ? "Calm" : level === "med" ? "Normal" : "Active";
+      }
+    }
+
+    return { level, vol24h, vol7d, trend, riskLabel };
   };
 
   // Withdraw risk based on pool utilization
@@ -307,16 +423,42 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div>
-        <h3 className="text-base font-semibold text-white mb-0.5 flex items-center gap-2">
-          <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>
-          Backed Markets
-        </h3>
-        <p className="text-xs text-slate-500">
-          These trading pools borrow from this margin pool.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-base font-semibold text-white mb-0.5 flex items-center gap-2">
+            <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            Backed Markets
+          </h3>
+          <p className="text-xs text-slate-500">
+            These trading pools borrow from this margin pool.
+          </p>
+        </div>
+        
+        {/* Sparkline Mode Toggle */}
+        <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-0.5 border border-slate-700/40">
+          <button
+            onClick={() => setSparklineMode('price')}
+            className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
+              sparklineMode === 'price'
+                ? 'bg-slate-700 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            Price
+          </button>
+          <button
+            onClick={() => setSparklineMode('volatility')}
+            className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
+              sparklineMode === 'volatility'
+                ? 'bg-amber-500/20 text-amber-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            Volatility
+          </button>
+        </div>
       </div>
 
       {/* Summary Row */}
@@ -344,12 +486,13 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
       {/* Market Cards with Charts */}
       <div className="space-y-3">
         {tradingPairs.map((pair) => {
-          const volData = getVolatilityData(pair.poolId);
+          const volInfo = getVolatilityInfo(pair.poolId);
           const stats = marketStats[pair.poolId];
           const poolReward = pair.config?.pool_liquidation_reward 
             ? formatRewardPercent(pair.config.pool_liquidation_reward)
             : "—";
           const priceUp = (stats?.price_change_percent_24h ?? 0) >= 0;
+          const priceChange = stats?.price_change_percent_24h ?? 0;
           const hasMarketData = stats && stats.last_price > 0;
           
           // Calculate spread if available
@@ -380,67 +523,114 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
                 <ChevronRightIcon className="w-4 h-4 text-slate-600 group-hover:text-cyan-400 transition-colors" />
               </div>
 
-              {/* Main Content: Chart + Stats */}
+              {/* Main Content: Chart + Supplier Signal + Stats */}
               <div className="flex items-stretch gap-4">
-                {/* Left: Price Chart */}
+                {/* Left: Sparkline Chart */}
                 <div className="flex-shrink-0">
-                  <MiniMarketChart poolName={pair.api} priceUp={priceUp} />
+                  <MiniMarketChart 
+                    poolName={pair.api} 
+                    priceUp={priceUp} 
+                    mode={sparklineMode}
+                  />
+                  <div className="text-[9px] text-slate-600 text-center mt-0.5">
+                    {sparklineMode === 'price' ? '24h price' : '24h vol'}
+                  </div>
                 </div>
 
-                {/* Middle: Price Info */}
-                <div className="flex-1 min-w-0">
-                  {hasMarketData ? (
-                    <div className="space-y-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-bold text-white tabular-nums">
-                          ${stats.last_price.toFixed(4)}
-                        </span>
-                        <span className={`text-sm font-medium ${priceUp ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {priceUp ? '+' : ''}{volData.priceChange.toFixed(2)}%
-                        </span>
+                {/* Middle: Supplier Signal */}
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  {!pair.isEnabled ? (
+                    /* PAUSED: Show status reason */
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+                          <svg className="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-semibold text-red-400">Borrowing Disabled</span>
                       </div>
-                      <div className="text-[11px] text-slate-500">
-                        24h: ${stats.lowest_price_24h.toFixed(4)} — ${stats.highest_price_24h.toFixed(4)}
-                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        This market is paused. No new borrows are being placed against this pool.
+                      </p>
                     </div>
                   ) : (
-                    <div className="text-sm text-slate-500">No trading data</div>
+                    /* ACTIVE: Show risk heat / borrow demand signal */
+                    <div className="space-y-2">
+                      {/* Risk Heat Badge */}
+                      <div className="flex items-center gap-2">
+                        <div className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
+                          volInfo.level === 'low' 
+                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                            : volInfo.level === 'med'
+                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                            : 'bg-red-500/15 text-red-400 border border-red-500/30'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            volInfo.level === 'low' ? 'bg-emerald-400' :
+                            volInfo.level === 'med' ? 'bg-amber-400' : 'bg-red-400'
+                          }`} />
+                          {volInfo.riskLabel}
+                        </div>
+                        {/* Borrow share chip */}
+                        <div className="px-2 py-0.5 rounded-md bg-slate-700/50 text-[10px] text-slate-400">
+                          {pair.borrowShare}% of borrows
+                        </div>
+                      </div>
+                      
+                      {/* Volatility context line */}
+                      <p className="text-[11px] text-slate-500">
+                        {volInfo.vol7d > 0 && volInfo.vol7d < 100 ? (
+                          volInfo.trend === 'rising' ? (
+                            <>Above 7d avg <span className="text-amber-400">({volInfo.vol24h.toFixed(1)}% vs {volInfo.vol7d.toFixed(1)}%)</span></>
+                          ) : volInfo.trend === 'falling' ? (
+                            <>Below 7d avg <span className="text-emerald-400">({volInfo.vol24h.toFixed(1)}% vs {volInfo.vol7d.toFixed(1)}%)</span></>
+                          ) : (
+                            <>Near 7d avg <span className="text-slate-400">({volInfo.vol24h.toFixed(1)}%)</span></>
+                          )
+                        ) : volInfo.vol24h > 0 ? (
+                          <>24h volatility: <span className="text-slate-300">{volInfo.vol24h.toFixed(1)}%</span></>
+                        ) : (
+                          'Volatility data loading...'
+                        )}
+                      </p>
+                    </div>
                   )}
                 </div>
 
-                {/* Right: Stats Grid */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-                  {/* Volume */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500">Vol 24h</span>
+                {/* Right: Compact Stats */}
+                <div className="flex flex-col gap-1.5 text-[11px] min-w-[120px]">
+                  {/* Volume (24h) */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Volume</span>
                     <span className="text-slate-300 font-medium">
                       {hasMarketData ? formatVolume(stats.quote_volume) : '—'}
                     </span>
                   </div>
                   
+                  {/* Volatility (24h) */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Volatility</span>
+                    <span className={`font-medium ${
+                      volInfo.level === 'low' ? 'text-emerald-400' : 
+                      volInfo.level === 'med' ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {volInfo.vol24h > 0 ? `${volInfo.vol24h.toFixed(1)}%` : '—'}
+                    </span>
+                  </div>
+                  
+                  {/* Liq. Reward */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Liq. Reward</span>
+                    <span className="text-cyan-400 font-medium">{poolReward}</span>
+                  </div>
+                  
                   {/* Spread */}
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between">
                     <span className="text-slate-500">Spread</span>
                     <span className="text-slate-300 font-medium">
                       {spread ? `${spread}%` : '—'}
                     </span>
-                  </div>
-                  
-                  {/* Volatility */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500">Vol (24h)</span>
-                    <span className={`font-medium ${
-                      volData.level === 'low' ? 'text-emerald-400' : 
-                      volData.level === 'med' ? 'text-amber-400' : 'text-red-400'
-                    }`}>
-                      {volData.percent > 0 ? `${volData.percent.toFixed(1)}%` : '—'}
-                    </span>
-                  </div>
-                  
-                  {/* Reward */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500">Reward</span>
-                    <span className="text-cyan-400 font-medium">{poolReward}</span>
                   </div>
                 </div>
               </div>
@@ -477,10 +667,11 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
             </p>
           </div>
           <div>
-            <span className="text-white/80 font-medium">Volatility</span>
+            <span className="text-white/80 font-medium">Volatility (24h vs 7d)</span>
             <p className="mt-1">
-              The 24h price range of each market. Higher volatility means more liquidation opportunities 
-              (higher rewards) but also more potential for rapid utilization changes.
+              The average price range per candle. We compare 24h to 7d: <span className="text-amber-400">↑ Rising</span> means 
+              recent volatility is elevated vs normal, <span className="text-emerald-400">↓ Falling</span> means calmer than usual.
+              Toggle the sparkline to visualize volatility patterns.
             </p>
           </div>
           <div>
