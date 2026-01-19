@@ -62,6 +62,8 @@ export function LiquidatorLeaderboard({ className = '' }: LiquidatorLeaderboardP
       try {
         setIsLoading(true);
         setError(null);
+        // Clear old data immediately when server changes
+        setLiquidators([]);
         
         const params = timeRangeToParams(timeRange);
         const liquidations = await fetchLiquidations({ ...params, limit: 10000 });

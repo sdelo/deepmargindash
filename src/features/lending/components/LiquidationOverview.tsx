@@ -5,6 +5,8 @@ import {
   type AtRiskPosition,
 } from "../../../hooks/useAtRiskPositions";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+import type { TimeRange } from "../api/types";
+import TimeRangeSelector from "../../../components/TimeRangeSelector";
 
 interface LiquidationOverviewProps {
   onSelectTab: (tab: "positions" | "analytics" | "history" | "leaderboard") => void;
@@ -168,6 +170,8 @@ function getSystemVerdict(
 }
 
 export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
+  const [timeRange, setTimeRange] = React.useState<TimeRange>("3M");
+  
   const {
     positions,
     liquidatableCount,
@@ -234,12 +238,15 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h3 className="text-lg font-semibold text-white">Liquidation Overview</h3>
           <p className="text-sm text-white/40 mt-0.5">Click any section to explore details</p>
         </div>
-        <span className="badge badge-live">Live</span>
+        <div className="flex items-center gap-4">
+          <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+          <span className="badge badge-live">Live</span>
+        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -338,10 +345,10 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Health Factor Distribution */}
-          <div className="relative group/tile">
+          <div className="relative group/tile h-full">
             <button
               onClick={() => onSelectTab("analytics")}
-              className="text-left w-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all"
+              className="text-left w-full h-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all flex flex-col"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
@@ -380,7 +387,7 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
                 })}
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mt-auto">
                 <span className="text-lg font-semibold text-white font-mono">{positions.length}</span>
                 <span className="text-[10px] text-white/30">positions tracked</span>
               </div>
@@ -404,10 +411,10 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
           </div>
 
           {/* Price Sensitivity */}
-          <div className="relative group/tile">
+          <div className="relative group/tile h-full">
             <button
               onClick={() => onSelectTab("analytics")}
-              className="text-left w-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-amber-500/40 hover:bg-amber-500/5 transition-all"
+              className="text-left w-full h-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-amber-500/40 hover:bg-amber-500/5 transition-all flex flex-col"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
@@ -460,7 +467,7 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
                 })}
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mt-auto">
                 {distanceToLiquidation.priceDrop !== null ? (
                   <>
                     <span className="text-lg font-semibold text-amber-400 font-mono">
@@ -493,10 +500,10 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
           </div>
 
           {/* Liquidation Opportunity */}
-          <div className="relative group/tile">
+          <div className="relative group/tile h-full">
             <button
               onClick={() => onSelectTab("positions")}
-              className="text-left w-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-rose-500/40 hover:bg-rose-500/5 transition-all"
+              className="text-left w-full h-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-rose-500/40 hover:bg-rose-500/5 transition-all flex flex-col"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
@@ -522,17 +529,19 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
                 <span className="text-[10px] text-white/30">liquidatable</span>
               </div>
 
-              {liquidatableCount > 0 ? (
-                <div className="text-sm font-medium text-rose-300">
-                  {formatUsd(currentState.totalNewDebtAtRiskUsd)} opportunity
-                </div>
-              ) : (
-                <div className="text-xs text-white/40">All positions healthy</div>
-              )}
+              <div className="mt-auto">
+                {liquidatableCount > 0 ? (
+                  <div className="text-sm font-medium text-rose-300">
+                    {formatUsd(currentState.totalNewDebtAtRiskUsd)} opportunity
+                  </div>
+                ) : (
+                  <div className="text-xs text-white/40">All positions healthy</div>
+                )}
 
-              <span className="text-[10px] text-white/30 group-hover/tile:text-rose-400 transition-colors mt-2 inline-block">
-                {liquidatableCount > 0 ? "Execute now →" : "View positions →"}
-              </span>
+                <span className="text-[10px] text-white/30 group-hover/tile:text-rose-400 transition-colors mt-2 inline-block">
+                  {liquidatableCount > 0 ? "Execute now →" : "View positions →"}
+                </span>
+              </div>
             </button>
           </div>
         </div>
@@ -563,7 +572,7 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
           {/* At-Risk Breakdown */}
           <button
             onClick={() => onSelectTab("positions")}
-            className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-teal-500/40 hover:bg-teal-500/5 transition-all"
+            className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-teal-500/40 hover:bg-teal-500/5 transition-all flex flex-col h-full"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-white/50">At-Risk Positions</span>
@@ -595,7 +604,7 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
               </div>
             </div>
 
-            <span className="text-[10px] text-white/30 group-hover:text-teal-400 transition-colors mt-2 inline-block">
+            <span className="text-[10px] text-white/30 group-hover:text-teal-400 transition-colors mt-auto pt-2 inline-block">
               View breakdown →
             </span>
           </button>
@@ -603,7 +612,7 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
           {/* Leaderboard Preview */}
           <button
             onClick={() => onSelectTab("leaderboard")}
-            className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/40 hover:bg-purple-500/5 transition-all"
+            className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/40 hover:bg-purple-500/5 transition-all flex flex-col h-full"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-white/50">Liquidator Leaderboard</span>
@@ -619,7 +628,7 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
               See who's earning the most from liquidations
             </p>
 
-            <span className="text-[10px] text-white/30 group-hover:text-purple-400 transition-colors mt-2 inline-block">
+            <span className="text-[10px] text-white/30 group-hover:text-purple-400 transition-colors mt-auto pt-2 inline-block">
               View rankings →
             </span>
           </button>

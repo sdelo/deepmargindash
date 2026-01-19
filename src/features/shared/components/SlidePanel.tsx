@@ -57,9 +57,11 @@ export default function SlidePanel({
           rounded-t-2xl border-t border-cyan-500/20 shadow-2xl 
           transition-transform duration-300 ease-out flex flex-col
           max-h-[90vh]
+          ${open ? "pointer-events-auto" : "pointer-events-none"}
         `}
         style={{
           background: 'linear-gradient(180deg, #0c1a24 0%, #0a1419 100%)',
+          transform: open ? "translateY(0)" : "translateY(100%)",
         }}
         onClick={(e) => e.stopPropagation()}
       >

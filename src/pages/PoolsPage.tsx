@@ -7,21 +7,17 @@ import {
 } from "@mysten/dapp-kit";
 import { useQueryClient } from "@tanstack/react-query";
 import NavBar from "../features/shared/components/NavBar";
-import PoolCarousel from "../features/lending/components/PoolCarousel";
+import PoolCompareTable from "../features/lending/components/PoolCompareTable";
+import SnapshotStrip from "../features/lending/components/SnapshotStrip";
 import PositionsWithCalculator from "../features/lending/components/PositionsWithCalculator";
 import ActionPanel from "../features/lending/components/ActionPanel";
-import YieldCurve from "../features/lending/components/YieldCurve";
 import { OverviewTiles } from "../features/lending/components/OverviewTiles";
 import SlidePanel from "../features/shared/components/SlidePanel";
 import DepositHistory from "../features/lending/components/DepositHistory";
 import { LiquidationDashboard } from "../features/lending/components/LiquidationDashboard";
-import { APYHistory } from "../features/lending/components/APYHistory";
-import { PoolActivity } from "../features/lending/components/PoolActivity";
-import { LiquidationWall } from "../features/lending/components/LiquidationWall";
-import { WhaleWatch } from "../features/lending/components/WhaleWatch";
-import { PoolRiskOutlook } from "../features/lending/components/PoolRiskOutlook";
-import { LiquidityTab } from "../features/lending/components/LiquidityTab";
-import { BackedMarketsTab } from "../features/lending/components/BackedMarketsTab";
+import { YieldTab } from "../features/lending/components/YieldTab";
+import { RiskTab } from "../features/lending/components/RiskTab";
+import { ActivityTab } from "../features/lending/components/ActivityTab";
 import { AdminHistorySlidePanel } from "../features/lending/components/AdminHistorySlidePanel";
 import { InterestRateHistoryPanel } from "../features/lending/components/InterestRateHistoryPanel";
 import { DeepbookPoolHistoryPanel } from "../features/lending/components/DeepbookPoolHistoryPanel";
@@ -54,19 +50,18 @@ export function PoolsPage() {
 
   const [overviewTab, setOverviewTab] = React.useState<
     | "overview"
-    | "rates"
-    | "activity"
+    | "yield"
     | "risk"
-    | "liquidations"
-    | "concentration"
-    | "liquidity"
-    | "markets"
+    | "activity"
     | "howItWorks"
   >("overview");
-  
-  const [moreDropdownOpen, setMoreDropdownOpen] = React.useState(false);
+  const [isDetailsGlowing, setIsDetailsGlowing] = React.useState(false);
+  const detailsRef = React.useRef<HTMLDivElement>(null);
   
   const [pendingDepositAmount, setPendingDepositAmount] = React.useState<string>("");
+  
+  // Right rail collapse state
+  const [isRailCollapsed, setIsRailCollapsed] = React.useState(false);
 
   const { pools, userPositions, isLoading, error: poolsError, refetch: refetchPools } = useAllPools(account?.address);
 
@@ -319,29 +314,36 @@ export function PoolsPage() {
 
   const hasError = poolsError;
 
-  // Tab configuration - reduced to max 4-5 top-level tabs
-  type TabKey = "overview" | "rates" | "activity" | "risk" | "liquidations" | "concentration" | "liquidity" | "markets" | "howItWorks";
-  const primaryTabs: readonly { key: TabKey; label: string }[] = [
-    { key: "overview", label: "Overview" },
-    { key: "rates", label: "Rates" },
-    { key: "risk", label: "Risk" },
-    { key: "activity", label: "Activity" },
+  // Tab configuration - consolidated to 3 main tabs + overview
+  type TabKey = "overview" | "yield" | "risk" | "activity" | "howItWorks";
+  const mainTabs: readonly { key: TabKey; label: string; description: string }[] = [
+    { key: "yield", label: "Yield", description: "Rates, APY history & markets" },
+    { key: "risk", label: "Risk", description: "Liquidity, concentration & liquidations" },
+    { key: "activity", label: "Activity", description: "Deposits, withdrawals & flows" },
   ];
   
-  const moreTabs: readonly { key: TabKey; label: string }[] = [
-    { key: "liquidity", label: "Liquidity" },
-    { key: "markets", label: "Markets" },
-    { key: "concentration", label: "Concentration" },
-    { key: "liquidations", label: "Liquidations" },
-  ];
-  
-  // Check if current tab is in More menu
-  const isMoreTabActive = moreTabs.some(t => t.key === overviewTab);
-  
-  // Get human-readable tab name for breadcrumb
   const getTabLabel = (tab: TabKey): string => {
-    const all = [...primaryTabs, ...moreTabs];
-    return all.find(t => t.key === tab)?.label || tab;
+    if (tab === "overview") return "Overview";
+    if (tab === "howItWorks") return "How It Works";
+    return mainTabs.find(t => t.key === tab)?.label || tab;
+  };
+
+  const handleTabClick = (tab: TabKey) => {
+    setOverviewTab(tab);
+    // Scroll to details section and trigger glow
+    setTimeout(() => {
+      detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setIsDetailsGlowing(true);
+      setTimeout(() => setIsDetailsGlowing(false), 400);
+    }, 50);
+  };
+
+  const handlePoolSelect = (poolId: string) => {
+    if (poolId !== selectedPoolId) {
+      setPoolSwitchKey((prev) => prev + 1);
+      setSelectedPoolId(poolId);
+      setPendingDepositAmount("");
+    }
   };
 
   return (
@@ -355,85 +357,10 @@ export function PoolsPage() {
       {selectedSection === "pools" && (
         <>
           {/* ═══════════════════════════════════════════════════════════════════
-              STICKY HEADER: Nav + Pool Selector + Metrics
+              STICKY HEADER: Nav only
               ═══════════════════════════════════════════════════════════════════ */}
           <header className="sticky-stack">
             <NavBar />
-
-            {/* Pool Header Strip */}
-            <div className="max-w-[1440px] mx-auto px-6 lg:px-8 py-4">
-              <div className="flex items-center gap-6">
-                {/* Pool Selector Pills */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">Choose Market</span>
-                  <div className="flex items-center gap-2">
-                  {pools.map((pool) => {
-                    const isActive = pool.id === selectedPoolId;
-                    const utilization = pool.state.supply > 0 
-                      ? (pool.state.borrow / pool.state.supply) * 100 
-                      : 0;
-                    return (
-                      <button
-                        key={pool.id}
-                        onClick={() => {
-                          if (!isActive) {
-                            setPoolSwitchKey((prev) => prev + 1);
-                            setSelectedPoolId(pool.id);
-                            setPendingDepositAmount("");
-                          }
-                        }}
-                        className={`
-                          flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium
-                          transition-all duration-200
-                          ${isActive
-                            ? "bg-[#2dd4bf] text-[#0d1a1f] shadow-lg shadow-[#2dd4bf]/20"
-                            : "bg-white/[0.04] text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/[0.06]"
-                          }
-                        `}
-                      >
-                        <img 
-                          src={pool.ui.iconUrl || `https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png`}
-                          alt={pool.asset}
-                          className="w-6 h-6 rounded-full"
-                        />
-                        <div className="text-left">
-                          <div className="font-semibold">{pool.asset}</div>
-                          {/* Mini-stat chips */}
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`text-[10px] font-medium ${isActive ? "text-emerald-700" : "text-emerald-400/80"}`}
-                            >
-                              {pool.ui.aprSupplyPct.toFixed(1)}% APY
-                            </span>
-                            <span className={`text-[10px] ${isActive ? "text-[#0d1a1f]/40" : "text-white/30"}`}>·</span>
-                            <span
-                              className={`text-[10px] ${isActive ? "text-[#0d1a1f]/70" : "text-white/50"}`}
-                            >
-                              {utilization.toFixed(0)}% util
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                  </div>
-                </div>
-
-                {/* Stats Strip */}
-                <PoolCarousel
-                  pools={pools}
-                  selectedPoolId={selectedPoolId}
-                  onSelectPool={(id) => {
-                    if (id !== selectedPoolId) {
-                      setPoolSwitchKey((prev) => prev + 1);
-                      setSelectedPoolId(id);
-                      setPendingDepositAmount("");
-                    }
-                  }}
-                  isLoading={isLoading}
-                />
-              </div>
-            </div>
           </header>
 
           {/* Status Messages */}
@@ -452,22 +379,85 @@ export function PoolsPage() {
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════
-              MAIN CONTENT: Two-column layout
+              MAIN CONTENT: Unified right rail layout
               ═══════════════════════════════════════════════════════════════════ */}
           <main className="max-w-[1440px] mx-auto px-6 lg:px-8 py-6 pb-16">
             {selectedPool ? (
-              <div key={poolSwitchKey} className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
-                
-                {/* ═══ LEFT COLUMN: Content (8 cols) ═══ */}
-                <div className="lg:col-span-8 space-y-5">
-                  
-                  {/* Two-Mode Navigation: Overview mode hides tabs, Detail mode shows back button */}
-                  {overviewTab === "overview" ? (
-                    /* Mode 1: Overview - No tab bar, tiles navigate */
-                    null
-                  ) : (
-                    /* Mode 2: Detail view - Show back button + breadcrumb */
-                    <div className="flex items-center gap-3 mb-2">
+              <div 
+                key={poolSwitchKey} 
+                className={`animate-fade-in grid gap-6 transition-all duration-300 ${
+                  isRailCollapsed 
+                    ? "grid-cols-1 lg:grid-cols-[1fr_72px]" 
+                    : "grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]"
+                }`}
+              >
+                {/* ═══════════════════════════════════════════════════════════════
+                    LEFT COLUMN: Pool Selection + Main Content
+                    ═══════════════════════════════════════════════════════════════ */}
+                <div className="min-w-0 space-y-6">
+                  {/* Pool Selection + Quick Compare */}
+                  <div className="surface-elevated p-4">
+                    {/* Step Indicator + Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[9px] font-semibold text-[#2dd4bf] bg-[#2dd4bf]/10 px-2 py-1 rounded-full uppercase tracking-wider">
+                          Step 1 of 2
+                        </span>
+                        <div>
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">Choose Asset</span>
+                          <p className="text-xs text-white/50 mt-0.5">Pick a market to supply liquidity</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pool Pills */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b border-white/[0.06]">
+                      {pools.map((pool) => {
+                        const isActive = pool.id === selectedPoolId;
+                        return (
+                          <button
+                            key={pool.id}
+                            onClick={() => handlePoolSelect(pool.id)}
+                            className={`
+                              flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+                              transition-all duration-200
+                              ${isActive
+                                ? "bg-[#2dd4bf] text-[#0d1a1f] shadow-lg shadow-[#2dd4bf]/20"
+                                : "bg-white/[0.04] text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/[0.06]"
+                              }
+                            `}
+                          >
+                            <img 
+                              src={pool.ui.iconUrl || `https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png`}
+                              alt={pool.asset}
+                              className="w-5 h-5 rounded-full"
+                            />
+                            <span className="font-semibold">{pool.asset}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Quick Compare Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium">Quick Compare</span>
+                        <span className="text-[10px] text-white/30 italic">Click a row to switch market</span>
+                      </div>
+                      <PoolCompareTable
+                        pools={pools}
+                        selectedPoolId={selectedPoolId}
+                        onSelectPool={handlePoolSelect}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Snapshot Strip */}
+                  <SnapshotStrip pool={selectedPool} />
+
+                  {/* Navigation for detail views */}
+                  {overviewTab !== "overview" && (
+                    <div className="flex items-center gap-3">
                       <button
                         onClick={() => setOverviewTab("overview")}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg transition-all"
@@ -487,154 +477,71 @@ export function PoolsPage() {
                     </div>
                   )}
                   
-                  {/* Tab bar - only visible in Detail mode for quick tab switching */}
+                  {/* Tab bar - STICKY Layer 1: sticks below main navbar (~56px) */}
                   {overviewTab !== "overview" && (
-                    <div className="tab-bar relative">
-                      {primaryTabs.filter(t => t.key !== "overview").map((tab) => (
-                        <button
-                          key={tab.key}
-                          onClick={() => setOverviewTab(tab.key)}
-                          className={`tab-item ${overviewTab === tab.key ? "active" : ""}`}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                      
-                      {/* More dropdown */}
-                      <div className="relative">
-                        <button
-                          onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
-                          className={`tab-item flex items-center gap-1 ${isMoreTabActive ? "active" : ""}`}
-                        >
-                          {isMoreTabActive ? getTabLabel(overviewTab) : "More"}
-                          <svg className={`w-3.5 h-3.5 transition-transform ${moreDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                        
-                        {moreDropdownOpen && (
-                          <>
-                            {/* Backdrop to close dropdown */}
-                            <div 
-                              className="fixed inset-0 z-10" 
-                              onClick={() => setMoreDropdownOpen(false)}
-                            />
-                            <div className="absolute top-full left-0 mt-1 py-1 bg-slate-800 border border-white/[0.1] rounded-lg shadow-xl z-20 min-w-[140px]">
-                              {moreTabs.map((tab) => (
-                                <button
-                                  key={tab.key}
-                                  onClick={() => {
-                                    setOverviewTab(tab.key);
-                                    setMoreDropdownOpen(false);
-                                  }}
-                                  className={`w-full text-left px-4 py-2 text-sm hover:bg-white/[0.06] transition-colors ${
-                                    overviewTab === tab.key ? "text-[#2dd4bf]" : "text-white/70 hover:text-white"
-                                  }`}
-                                >
-                                  {tab.label}
-                                </button>
-                              ))}
-                            </div>
-                          </>
-                        )}
+                    <div className="sticky top-[56px] z-40 -mx-6 px-6 py-2 bg-[#0d1a1f] backdrop-blur-xl border-b border-white/[0.08] shadow-lg shadow-black/30">
+                      <div className="tab-bar relative">
+                        {mainTabs.map((tab) => (
+                          <button
+                            key={tab.key}
+                            onClick={() => handleTabClick(tab.key)}
+                            className={`tab-item ${overviewTab === tab.key ? "active" : ""}`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   )}
 
+                  {/* Details Anchor */}
+                  <div 
+                    ref={detailsRef} 
+                    className="flex items-center gap-2 scroll-mt-16"
+                  >
+                    <span className="text-[10px] uppercase tracking-wider font-medium text-white/40">Details</span>
+                    <div className="flex-1 h-px bg-white/[0.06]" />
+                  </div>
+
                   {/* Tab Content */}
-                  <div className="surface-elevated p-6">
+                  <div className={`surface-elevated p-6 transition-all duration-300 ${isDetailsGlowing ? "ring-2 ring-[#2dd4bf]/50 shadow-lg shadow-[#2dd4bf]/10" : ""}`}>
                     {overviewTab === "overview" && (
                       <OverviewTiles
                         pool={selectedPool}
-                        onSelectTab={(tab) => setOverviewTab(tab as TabKey)}
+                        onSelectTab={(tab) => {
+                          // Map old tab names to new consolidated tabs
+                          const tabMapping: Record<string, TabKey> = {
+                            rates: "yield",
+                            markets: "yield",
+                            liquidity: "risk",
+                            concentration: "risk",
+                            liquidations: "risk",
+                            risk: "risk",
+                            activity: "activity",
+                          };
+                          handleTabClick(tabMapping[tab] || (tab as TabKey));
+                        }}
                       />
                     )}
-                    {overviewTab === "rates" && (
-                      <div className="space-y-6">
-                        {/* Rates Header */}
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold text-white">Rates & Yield</h3>
-                            <p className="text-sm text-white/50 mt-0.5">Supply APY, Borrow APY, and utilization dynamics</p>
-                          </div>
-                        </div>
-                        
-                        {/* Quick Stats Row */}
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.06]">
-                            <span className="text-xs text-white/50">Supply APY</span>
-                            <div className="text-2xl font-semibold text-[#2dd4bf] mt-1 font-mono">
-                              {selectedPool.ui?.aprSupplyPct?.toFixed(2) || "0.00"}%
-                            </div>
-                          </div>
-                          <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.06]">
-                            <span className="text-xs text-white/50">Borrow APY</span>
-                            <div className="text-2xl font-semibold text-amber-400 mt-1 font-mono">
-                              {selectedPool.ui?.aprBorrowPct?.toFixed(2) || "0.00"}%
-                            </div>
-                          </div>
-                          <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.06]">
-                            <span className="text-xs text-white/50">Utilization</span>
-                            <div className="text-2xl font-semibold text-white mt-1 font-mono">
-                              {selectedPool.state.supply > 0 
-                                ? ((selectedPool.state.borrow / selectedPool.state.supply) * 100).toFixed(1) 
-                                : "0.0"}%
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Interest Rate Model */}
-                        <div className="border-t border-white/[0.06] pt-6">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-sm font-semibold text-white">Interest Rate Model</h4>
-                            <button
-                              onClick={() => {
-                                setInterestRateHistoryPoolId(selectedPool.contracts?.marginPoolId || null);
-                                setInterestRateHistoryOpen(true);
-                              }}
-                              className="text-xs text-[#2dd4bf] hover:text-[#5eead4] transition-colors"
-                            >
-                              View History →
-                            </button>
-                          </div>
-                          <YieldCurve
-                            pool={selectedPool}
-                            onShowHistory={() => {
-                              setInterestRateHistoryPoolId(selectedPool.contracts?.marginPoolId || null);
-                              setInterestRateHistoryOpen(true);
-                            }}
-                          />
-                        </div>
-                        
-                        {/* APY History */}
-                        <div className="border-t border-white/[0.06] pt-6">
-                          <h4 className="text-sm font-semibold text-white mb-4">APY History</h4>
-                          <APYHistory pool={selectedPool} />
-                        </div>
-                      </div>
-                    )}
-                    {overviewTab === "activity" && <PoolActivity pool={selectedPool} />}
-                    {overviewTab === "liquidations" && (
-                      <LiquidationWall poolId={selectedPool.contracts?.marginPoolId} asset={selectedPool.asset} />
-                    )}
-                    {overviewTab === "risk" && (
-                      <PoolRiskOutlook pool={selectedPool} onSelectTab={setOverviewTab} />
-                    )}
-                    {overviewTab === "concentration" && (
-                      <WhaleWatch poolId={selectedPool.contracts?.marginPoolId} decimals={selectedPool.contracts?.coinDecimals} asset={selectedPool.asset} />
-                    )}
-                    {overviewTab === "liquidity" && (
-                      <LiquidityTab pool={selectedPool} />
-                    )}
-                    {overviewTab === "markets" && (
-                      <BackedMarketsTab
+                    {overviewTab === "yield" && (
+                      <YieldTab
                         pool={selectedPool}
                         pools={pools}
+                        onShowInterestHistory={() => {
+                          setInterestRateHistoryPoolId(selectedPool.contracts?.marginPoolId || null);
+                          setInterestRateHistoryOpen(true);
+                        }}
                         onMarketClick={(id) => {
                           setDeepbookPoolHistoryPoolId(id);
                           setDeepbookPoolHistoryOpen(true);
                         }}
                       />
+                    )}
+                    {overviewTab === "risk" && (
+                      <RiskTab pool={selectedPool} />
+                    )}
+                    {overviewTab === "activity" && (
+                      <ActivityTab pool={selectedPool} />
                     )}
                     {overviewTab === "howItWorks" && (
                       <HowItWorksPanel />
@@ -642,11 +549,51 @@ export function PoolsPage() {
                   </div>
                 </div>
 
-                {/* ═══ RIGHT COLUMN: Actions (4 cols) - STICKY ═══ */}
-                <div className="lg:col-span-4">
-                  <div className="lg:sticky lg:top-[140px] space-y-5">
+                {/* ═══════════════════════════════════════════════════════════════
+                    RIGHT RAIL: Sticky aside with Deposit + Earnings
+                    ═══════════════════════════════════════════════════════════════ */}
+                {isRailCollapsed ? (
+                  /* Collapsed Gutter - clicking any action expands the rail */
+                  <aside className="hidden lg:block sticky top-20 self-start">
+                    <div className="flex flex-col items-center gap-3 py-4 px-2 surface-elevated rounded-xl">
+                      {/* Deposit / Withdraw - primary action, expands rail */}
+                      <button
+                        onClick={() => setIsRailCollapsed(false)}
+                        className="w-11 h-11 flex items-center justify-center rounded-xl bg-[#2dd4bf]/10 hover:bg-[#2dd4bf]/20 border border-[#2dd4bf]/20 hover:border-[#2dd4bf]/40 transition-all group"
+                        title="Deposit / Withdraw"
+                      >
+                        <svg className="w-5 h-5 text-[#2dd4bf]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m0 0l-4-4m4 4l4-4" />
+                        </svg>
+                      </button>
+                      
+                      {/* History - opens slide panel directly */}
+                      <button
+                        onClick={() => setHistoryOpen(true)}
+                        className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 transition-all group"
+                        title="History"
+                      >
+                        <svg className="w-5 h-5 text-white/50 group-hover:text-white/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </aside>
+                ) : (
+                  /* Expanded Rail */
+                  <aside className="relative sticky top-20 self-start space-y-4">
+                    {/* Collapse Handle - thin pill straddling the divider between columns */}
+                    <button
+                      onClick={() => setIsRailCollapsed(true)}
+                      className="absolute -left-[14px] top-6 w-3.5 h-8 flex items-center justify-center rounded-full bg-[#0d1a1f]/90 border border-white/[0.12] hover:border-[#2dd4bf]/50 hover:bg-[#2dd4bf]/10 transition-all group z-10 shadow-sm"
+                      title="Collapse panel"
+                    >
+                      <svg className="w-2.5 h-2.5 text-white/30 group-hover:text-[#2dd4bf] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                     
-                    {/* Action Panel */}
+                    {/* Deposit Card */}
                     <ActionPanel
                       pool={selectedPool}
                       onDeposit={handleDeposit}
@@ -658,19 +605,19 @@ export function PoolsPage() {
                       txStatus={txStatus}
                       onAmountChange={setPendingDepositAmount}
                       currentPositionBalance={selectedPoolDepositedBalance}
-                      onShowHowItWorks={() => setOverviewTab("howItWorks")}
+                      onShowHowItWorks={() => handleTabClick("howItWorks")}
                     />
-
-                    {/* Your Positions & Earnings Projection */}
+                    
+                    {/* Earnings Preview Card */}
                     <div className="surface-elevated p-5">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]" />
                           <h3 className="text-sm font-semibold text-white">
-                            {account ? "Your Positions" : "Earnings Preview"}
+                            Earnings Preview
                           </h3>
                         </div>
-                        <span className="text-label">{account ? "Summary" : "Calculator"}</span>
+                        <span className="text-label">Calculator</span>
                       </div>
                       <PositionsWithCalculator
                         userAddress={account?.address}
@@ -681,8 +628,8 @@ export function PoolsPage() {
                         onViewAllHistory={() => setHistoryOpen(true)}
                       />
                     </div>
-                  </div>
-                </div>
+                  </aside>
+                )}
               </div>
             ) : (
               <div className="py-20 text-center">

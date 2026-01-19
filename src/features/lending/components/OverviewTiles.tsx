@@ -227,29 +227,18 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
   const Card = ({ 
     onClick, 
     children, 
-    accentColor = "teal",
     className = ""
   }: { 
     onClick: () => void; 
     children: React.ReactNode; 
-    accentColor?: "teal" | "emerald" | "amber" | "red" | "purple" | "blue";
     className?: string;
   }) => {
-    const borderColors = {
-      teal: "hover:border-[#2dd4bf]/30",
-      emerald: "hover:border-emerald-500/30",
-      amber: "hover:border-amber-500/30",
-      red: "hover:border-red-500/30",
-      purple: "hover:border-purple-500/30",
-      blue: "hover:border-blue-500/30",
-    };
-    
     return (
       <button
         onClick={onClick}
         className={`
           surface-interactive p-5 text-left w-full
-          ${borderColors[accentColor]}
+          hover:border-[#2dd4bf]/30
           ${className}
         `}
       >
@@ -295,16 +284,16 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
           <div className="relative group/tile">
             <button 
               onClick={() => onSelectTab("concentration")} 
-              className="text-left w-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-purple-500/40 hover:bg-purple-500/5 transition-all"
+              className="text-left w-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-[#2dd4bf]/40 hover:bg-[#2dd4bf]/5 transition-all"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-1.5 min-w-0 shrink-0">
                   <span className="text-xs text-white/50">Concentration</span>
-                  <svg className="w-3 h-3 text-white/30 group-hover/tile:text-purple-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3 text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <div className={`badge text-[9px] ${
+                <div className={`badge text-[9px] whitespace-nowrap flex-shrink-0 ${
                   tileData.whales.dominanceLevel === "diversified" ? "badge-success" :
                   tileData.whales.dominanceLevel === "moderate" ? "badge-warning" :
                   "badge-danger"
@@ -312,7 +301,7 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
                   {tileData.whales.dominanceLevel === "diversified" && "Diversified"}
                   {tileData.whales.dominanceLevel === "moderate" && "Moderate"}
                   {tileData.whales.dominanceLevel === "concentrated" && "Concentrated"}
-                  {tileData.whales.dominanceLevel === "dominated" && "High concentration"}
+                  {tileData.whales.dominanceLevel === "dominated" && "High"}
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
@@ -321,12 +310,12 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
                 </span>
                 <span className="text-[10px] text-white/30">top supplier</span>
               </div>
-              <span className="text-[10px] text-white/30 group-hover/tile:text-purple-400 transition-colors">
+              <span className="text-[10px] text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors">
                 {tileData.whales.supplierCount} suppliers · View →
               </span>
             </button>
             {/* Hover tooltip */}
-            <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 border border-purple-500/30 rounded-lg shadow-xl opacity-0 group-hover/tile:opacity-100 transition-opacity pointer-events-none z-20">
+            <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 border border-[#2dd4bf]/30 rounded-lg shadow-xl opacity-0 group-hover/tile:opacity-100 transition-opacity pointer-events-none z-20">
               <p className="text-[11px] text-white/70 leading-relaxed">
                 {RISK_DEFINITIONS.concentration[tileData.whales.dominanceLevel]}
               </p>
@@ -342,20 +331,20 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
               onClick={() => onSelectTab("liquidity")} 
               className="text-left w-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-[#2dd4bf]/40 hover:bg-[#2dd4bf]/5 transition-all"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-1.5 min-w-0 shrink-0">
                   <span className="text-xs text-white/50">Liquidity</span>
-                  <svg className="w-3 h-3 text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3 text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <div className={`badge text-[9px] ${
+                <div className={`badge text-[9px] whitespace-nowrap flex-shrink-0 ${
                   tileData.withdrawAvailability.availablePctOfSupply > 50 ? "badge-success" :
                   tileData.withdrawAvailability.availablePctOfSupply > 20 ? "badge-warning" :
                   "badge-danger"
                 }`}>
                   {tileData.withdrawAvailability.availablePctOfSupply > 50 && "High"}
-                  {tileData.withdrawAvailability.availablePctOfSupply <= 50 && tileData.withdrawAvailability.availablePctOfSupply > 20 && "Constrained"}
+                  {tileData.withdrawAvailability.availablePctOfSupply <= 50 && tileData.withdrawAvailability.availablePctOfSupply > 20 && "Tight"}
                   {tileData.withdrawAvailability.availablePctOfSupply <= 20 && "Low"}
                 </div>
               </div>
@@ -402,17 +391,17 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
           <div className="relative group/tile">
             <button 
               onClick={() => onSelectTab("liquidations")} 
-              className="text-left w-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all"
+              className="text-left w-full p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-[#2dd4bf]/40 hover:bg-[#2dd4bf]/5 transition-all"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-1.5 min-w-0 shrink-0">
                   <span className="text-xs text-white/50">Bad Debt</span>
-                  <svg className="w-3 h-3 text-white/30 group-hover/tile:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3 text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <div className={`badge text-[9px] ${tileData.risk.badDebt === 0 ? "badge-success" : "badge-danger"}`}>
-                  {tileData.risk.badDebt === 0 ? "None" : "At risk"}
+                <div className={`badge text-[9px] whitespace-nowrap flex-shrink-0 ${tileData.risk.badDebt === 0 ? "badge-success" : "badge-danger"}`}>
+                  {tileData.risk.badDebt === 0 ? "None" : "At Risk"}
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
@@ -421,12 +410,12 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
                 </span>
                 <span className="text-[10px] text-white/30">{pool.asset}</span>
               </div>
-              <span className="text-[10px] text-white/30 group-hover/tile:text-emerald-400 transition-colors">
+              <span className="text-[10px] text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors">
                 {tileData.risk.liquidationCount} liquidations (30d) · View →
               </span>
             </button>
             {/* Hover tooltip */}
-            <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 border border-emerald-500/30 rounded-lg shadow-xl opacity-0 group-hover/tile:opacity-100 transition-opacity pointer-events-none z-20">
+            <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 border border-[#2dd4bf]/30 rounded-lg shadow-xl opacity-0 group-hover/tile:opacity-100 transition-opacity pointer-events-none z-20">
               <p className="text-[11px] text-white/70 leading-relaxed">
                 {tileData.risk.badDebt === 0 ? RISK_DEFINITIONS.badDebt.none : RISK_DEFINITIONS.badDebt.atRisk}
               </p>
@@ -463,11 +452,11 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
           {/* APY Stability */}
           <button 
             onClick={() => onSelectTab("rates")} 
-            className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all"
+            className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-[#2dd4bf]/40 hover:bg-[#2dd4bf]/5 transition-all"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-white/50">APY Stability</span>
-              <div className={`badge text-[9px] ${
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <span className="text-xs text-white/50 shrink-0">APY Stability</span>
+              <div className={`badge text-[9px] whitespace-nowrap flex-shrink-0 ${
                 tileData.apyHistory.volatility === "stable" ? "badge-success" :
                 tileData.apyHistory.volatility === "moderate" ? "badge-warning" :
                 "badge-danger"
@@ -480,7 +469,7 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             <div className="text-lg font-semibold text-white font-mono">
               {tileData.apyHistory.min7d.toFixed(2)}% — {tileData.apyHistory.max7d.toFixed(2)}%
             </div>
-            <span className="text-[10px] text-white/30 group-hover:text-emerald-400 transition-colors">
+            <span className="text-[10px] text-white/30 group-hover:text-[#2dd4bf] transition-colors">
               7-day range · View →
             </span>
           </button>
@@ -488,11 +477,11 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
           {/* Capital Flow */}
           <button 
             onClick={() => onSelectTab("activity")} 
-            className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-blue-500/40 hover:bg-blue-500/5 transition-all"
+            className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-[#2dd4bf]/40 hover:bg-[#2dd4bf]/5 transition-all"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-white/50">Capital Flow (30d)</span>
-              <div className={`badge text-[9px] ${
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <span className="text-xs text-white/50 shrink-0">Capital Flow (30d)</span>
+              <div className={`badge text-[9px] whitespace-nowrap flex-shrink-0 ${
                 tileData.activity.netFlow > 0 ? "badge-success" : 
                 tileData.activity.netFlow < 0 ? "badge-danger" : "bg-white/5 text-white/50"
               }`}>
@@ -505,7 +494,7 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             }`}>
               {tileData.activity.netFlow > 0 ? "+" : ""}{formatNumber(tileData.activity.netFlow)} {pool.asset}
             </div>
-            <span className="text-[10px] text-white/30 group-hover:text-blue-400 transition-colors">
+            <span className="text-[10px] text-white/30 group-hover:text-[#2dd4bf] transition-colors">
               {tileData.activity.depositDays}d deposits · {tileData.activity.withdrawDays}d withdraws · View →
             </span>
           </button>
@@ -515,10 +504,10 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             onClick={() => onSelectTab("rates")} 
             className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-[#2dd4bf]/40 hover:bg-[#2dd4bf]/5 transition-all"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-white/50">Rate Model</span>
-              <div className={`badge text-[9px] ${tileData.yieldCurve.isAboveOptimal ? "badge-warning" : "badge-success"}`}>
-                {tileData.yieldCurve.isAboveOptimal ? "Above kink" : "Below kink"}
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <span className="text-xs text-white/50 shrink-0">Rate Model</span>
+              <div className={`badge text-[9px] whitespace-nowrap flex-shrink-0 ${tileData.yieldCurve.isAboveOptimal ? "badge-warning" : "badge-success"}`}>
+                {tileData.yieldCurve.isAboveOptimal ? "Above Kink" : "Below Kink"}
               </div>
             </div>
             <div className="space-y-1.5">
@@ -554,22 +543,22 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
       <div className="flex items-center gap-2 pt-2">
         <span className="text-[10px] text-white/30 uppercase tracking-wider">Explore:</span>
         <button 
-          onClick={() => onSelectTab("risk")} 
-          className="px-3 py-1.5 text-[11px] font-medium bg-white/[0.03] hover:bg-amber-500/10 border border-white/[0.06] hover:border-amber-500/30 rounded-lg text-white/50 hover:text-amber-400 transition-all"
-        >
-          Risk Simulator
-        </button>
-        <button 
-          onClick={() => onSelectTab("liquidity")} 
+          onClick={() => onSelectTab("rates")} 
           className="px-3 py-1.5 text-[11px] font-medium bg-white/[0.03] hover:bg-[#2dd4bf]/10 border border-white/[0.06] hover:border-[#2dd4bf]/30 rounded-lg text-white/50 hover:text-[#2dd4bf] transition-all"
         >
-          Liquidity Details
+          Yield & Rates
         </button>
         <button 
-          onClick={() => onSelectTab("markets")} 
-          className="px-3 py-1.5 text-[11px] font-medium bg-white/[0.03] hover:bg-blue-500/10 border border-white/[0.06] hover:border-blue-500/30 rounded-lg text-white/50 hover:text-blue-400 transition-all"
+          onClick={() => onSelectTab("risk")} 
+          className="px-3 py-1.5 text-[11px] font-medium bg-white/[0.03] hover:bg-[#2dd4bf]/10 border border-white/[0.06] hover:border-[#2dd4bf]/30 rounded-lg text-white/50 hover:text-[#2dd4bf] transition-all"
         >
-          Backed Markets
+          Risk & Liquidity
+        </button>
+        <button 
+          onClick={() => onSelectTab("activity")} 
+          className="px-3 py-1.5 text-[11px] font-medium bg-white/[0.03] hover:bg-[#2dd4bf]/10 border border-white/[0.06] hover:border-[#2dd4bf]/30 rounded-lg text-white/50 hover:text-[#2dd4bf] transition-all"
+        >
+          Activity
         </button>
       </div>
     </div>

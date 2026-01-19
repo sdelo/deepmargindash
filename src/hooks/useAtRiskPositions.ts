@@ -114,6 +114,8 @@ export function useAtRiskPositions(
     try {
       setIsLoading(true);
       setError(null);
+      // Clear old data immediately when fetching (handles network switch)
+      setPositions([]);
 
       // Fetch margin manager states with risk ratio filter
       const states = await fetchMarginManagerStates({

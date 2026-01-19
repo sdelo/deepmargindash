@@ -32,6 +32,103 @@ function formatUsd(value: number): string {
 }
 
 /**
+ * Calculate liquidation details for a position
+ */
+function calculateLiquidationDetails(position: AtRiskPosition): {
+  maxRepayUsd: number;
+  maxRepayAsset: string;
+  maxRepayAmount: number;
+  seizeAsset: string;
+  seizeAmountUsd: number;
+  liquidationBonus: number;
+  grossReward: number;
+  estimatedGas: number;
+  estimatedSlippage: number;
+  netProfit: number;
+  confidence: 'high' | 'medium' | 'low';
+  confidenceReasons: string[];
+} {
+  // Max repay is typically 50% of debt or the full debt if underwater
+  const closeFactorPct = position.riskRatio < 1.0 ? 1.0 : 0.5;
+  const maxRepayUsd = position.totalDebtUsd * closeFactorPct;
+  
+  // Determine repay asset (the one with debt)
+  const hasBaseDebt = position.baseDebtUsd > 0;
+  const hasQuoteDebt = position.quoteDebtUsd > 0;
+  
+  let maxRepayAsset = position.quoteAssetSymbol;
+  let maxRepayAmount = position.quoteDebt / 1e6;
+  
+  if (hasBaseDebt && (!hasQuoteDebt || position.baseDebtUsd > position.quoteDebtUsd)) {
+    maxRepayAsset = position.baseAssetSymbol;
+    maxRepayAmount = position.baseDebt / 1e9;
+  }
+  
+  // Seize asset (the collateral)
+  const hasBaseCollateral = position.baseAssetUsd > 0;
+  const seizeAsset = hasBaseCollateral ? position.baseAssetSymbol : position.quoteAssetSymbol;
+  const seizeAmountUsd = hasBaseCollateral ? position.baseAssetUsd : position.quoteAssetUsd;
+  
+  // Bonus is typically 3-5% (user reward + pool reward)
+  const liquidationBonus = (position.userLiquidationRewardPct + position.poolLiquidationRewardPct) * 100;
+  const grossReward = position.estimatedRewardUsd;
+  
+  // Costs
+  const estimatedGas = 0.50; // ~$0.50 in gas on SUI
+  const estimatedSlippage = position.totalDebtUsd * 0.003; // ~0.3% slippage estimate
+  const netProfit = grossReward - estimatedGas - estimatedSlippage;
+  
+  // Confidence assessment
+  const confidenceReasons: string[] = [];
+  let confidence: 'high' | 'medium' | 'low' = 'high';
+  
+  if (!position.isLiquidatable) {
+    confidence = 'low';
+    confidenceReasons.push('Position not yet liquidatable');
+  } else {
+    // Check profitability
+    if (netProfit > 10) {
+      confidenceReasons.push('Good profit margin');
+    } else if (netProfit > 0) {
+      confidence = 'medium';
+      confidenceReasons.push('Marginal profit');
+    } else {
+      confidence = 'low';
+      confidenceReasons.push('Unprofitable after costs');
+    }
+    
+    // Check position size
+    if (position.totalDebtUsd < 100) {
+      if (confidence === 'high') confidence = 'medium';
+      confidenceReasons.push('Small position size');
+    } else if (position.totalDebtUsd > 10000) {
+      confidenceReasons.push('Large position');
+    }
+    
+    // Check how underwater
+    if (position.riskRatio < 0.95) {
+      confidence = 'high';
+      confidenceReasons.push('Deeply underwater');
+    }
+  }
+  
+  return {
+    maxRepayUsd,
+    maxRepayAsset,
+    maxRepayAmount: maxRepayAmount * closeFactorPct,
+    seizeAsset,
+    seizeAmountUsd,
+    liquidationBonus,
+    grossReward,
+    estimatedGas,
+    estimatedSlippage,
+    netProfit,
+    confidence,
+    confidenceReasons,
+  };
+}
+
+/**
  * Simulate what happens to a single position if prices change
  */
 function simulatePositionWithPriceChange(
@@ -68,7 +165,46 @@ function simulatePositionWithPriceChange(
 }
 
 /**
- * Position Detail Drawer - Slide-in panel with position details and simulator
+ * Confidence Badge Component
+ */
+function ConfidenceBadge({ confidence, reasons }: { confidence: 'high' | 'medium' | 'low'; reasons: string[] }) {
+  const styles = {
+    high: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    medium: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    low: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+  };
+  
+  const labels = {
+    high: 'High Confidence',
+    medium: 'Medium Confidence',
+    low: 'Low Confidence',
+  };
+  
+  return (
+    <div className="group relative">
+      <span className={`px-2 py-1 text-[10px] font-bold rounded border ${styles[confidence]}`}>
+        {labels[confidence]}
+      </span>
+      {/* Tooltip */}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+        <div className="bg-slate-900 border border-white/20 rounded-lg px-3 py-2 shadow-xl min-w-[150px]">
+          <div className="text-[10px] text-white/60 mb-1">Confidence factors:</div>
+          <ul className="text-[10px] text-white/80 space-y-0.5">
+            {reasons.map((reason, idx) => (
+              <li key={idx} className="flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-white/40" />
+                {reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Position Detail Drawer - Slide-in panel with position details, execution breakdown, and simulator
  */
 export function PositionDetailDrawer({
   position,
@@ -87,12 +223,7 @@ export function PositionDetailDrawer({
   
   const simulatedPrice = currentBasePrice * (1 + priceChangePct / 100);
   const simulation = simulatePositionWithPriceChange(position, priceChangePct);
-  
-  // Calculate estimated net profit
-  const grossReward = position.estimatedRewardUsd;
-  const estimatedGasCost = 0.50; // ~$0.50 in gas on SUI
-  const estimatedSlippage = position.totalDebtUsd * 0.003; // ~0.3% slippage estimate
-  const netProfit = grossReward - estimatedGasCost - estimatedSlippage;
+  const liqDetails = calculateLiquidationDetails(position);
   
   // Reset price slider when position changes
   React.useEffect(() => {
@@ -114,14 +245,20 @@ export function PositionDetailDrawer({
         {/* Header */}
         <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 p-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white">Position Details</h2>
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-lg font-semibold text-white">Position Details</h2>
+              <ConfidenceBadge confidence={liqDetails.confidence} reasons={liqDetails.confidenceReasons} />
+            </div>
             <a
               href={`https://suivision.xyz/object/${position.marginManagerId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-cyan-400 hover:text-cyan-300 font-mono"
+              className="text-sm text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1"
             >
-              {formatAddress(position.marginManagerId)} ↗
+              {formatAddress(position.marginManagerId)}
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
             </a>
           </div>
           <button
@@ -154,6 +291,9 @@ export function PositionDetailDrawer({
                 WATCHING
               </span>
             )}
+            <span className="text-sm text-white/40">
+              {position.baseAssetSymbol}/{position.quoteAssetSymbol}
+            </span>
           </div>
 
           {/* Key Metrics */}
@@ -185,6 +325,120 @@ export function PositionDetailDrawer({
               </div>
               <div className="text-xs text-white/40 mt-1">
                 Until liquidation
+              </div>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════
+              EXECUTION BREAKDOWN - The liquidator brain
+          ═══════════════════════════════════════════════════════════════════ */}
+          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 rounded-xl p-4 border border-white/10 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Execution Breakdown
+              </h3>
+            </div>
+            
+            {/* Execution steps */}
+            <div className="space-y-3">
+              {/* Step 1: Repay */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-bold text-cyan-400">1</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-white/50">Repay Debt</div>
+                  <div className="text-sm font-medium text-white">
+                    {liqDetails.maxRepayAmount.toFixed(4)} {liqDetails.maxRepayAsset}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-cyan-400 tabular-nums">
+                    {formatUsd(liqDetails.maxRepayUsd)}
+                  </div>
+                  <div className="text-[10px] text-white/40">max repay</div>
+                </div>
+              </div>
+              
+              {/* Step 2: Seize */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-bold text-emerald-400">2</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-white/50">Seize Collateral</div>
+                  <div className="text-sm font-medium text-white">
+                    {liqDetails.seizeAsset}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-emerald-400 tabular-nums">
+                    {formatUsd(liqDetails.seizeAmountUsd)}
+                  </div>
+                  <div className="text-[10px] text-white/40">collateral value</div>
+                </div>
+              </div>
+              
+              {/* Step 3: Bonus */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-bold text-amber-400">3</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-white/50">Liquidation Bonus</div>
+                  <div className="text-sm font-medium text-white">
+                    {liqDetails.liquidationBonus.toFixed(1)}% discount
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-amber-400 tabular-nums">
+                    +{formatUsd(liqDetails.grossReward)}
+                  </div>
+                  <div className="text-[10px] text-white/40">gross reward</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Profit Summary */}
+            <div className="pt-3 border-t border-white/10 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">Gross Reward</span>
+                <span className="text-emerald-400 font-medium tabular-nums">+{formatUsd(liqDetails.grossReward)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">Est. Gas Cost</span>
+                <span className="text-rose-400 tabular-nums">-{formatUsd(liqDetails.estimatedGas)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">Est. Slippage (~0.3%)</span>
+                <span className="text-rose-400 tabular-nums">-{formatUsd(liqDetails.estimatedSlippage)}</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-white/10">
+                <span className="text-white font-medium">Est. Net Profit</span>
+                <span className={`font-bold text-lg tabular-nums ${liqDetails.netProfit > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {liqDetails.netProfit > 0 ? '+' : ''}{formatUsd(liqDetails.netProfit)}
+                </span>
+              </div>
+            </div>
+            
+            {/* Confidence indicator */}
+            <div className={`p-3 rounded-lg ${
+              liqDetails.confidence === 'high' ? 'bg-emerald-500/10 border border-emerald-500/20' :
+              liqDetails.confidence === 'medium' ? 'bg-amber-500/10 border border-amber-500/20' :
+              'bg-rose-500/10 border border-rose-500/20'
+            }`}>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  liqDetails.confidence === 'high' ? 'bg-emerald-500' :
+                  liqDetails.confidence === 'medium' ? 'bg-amber-500' :
+                  'bg-rose-500'
+                }`} />
+                <span className="text-xs text-white/80">
+                  {liqDetails.confidenceReasons.join(' · ')}
+                </span>
               </div>
             </div>
           </div>
@@ -357,43 +611,6 @@ export function PositionDetailDrawer({
               </div>
             )}
           </div>
-
-          {/* Profit Breakdown (for liquidatable positions) */}
-          {position.isLiquidatable && (
-            <div className="bg-emerald-500/10 rounded-xl p-4 border border-emerald-500/30 space-y-3">
-              <h3 className="text-sm font-semibold text-emerald-300 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Profit Breakdown
-              </h3>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-white/60">Liquidation Incentive</span>
-                  <span className="text-emerald-400">+{formatUsd(grossReward)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-white/60">Est. Gas Cost</span>
-                  <span className="text-rose-400">-{formatUsd(estimatedGasCost)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-white/60">Est. Slippage (~0.3%)</span>
-                  <span className="text-rose-400">-{formatUsd(estimatedSlippage)}</span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-white/10">
-                  <span className="text-white font-medium">Est. Net Profit</span>
-                  <span className={`font-bold ${netProfit > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {netProfit > 0 ? '+' : ''}{formatUsd(netProfit)}
-                  </span>
-                </div>
-              </div>
-              
-              <p className="text-xs text-white/40">
-                Estimates based on current market conditions. Actual results may vary.
-              </p>
-            </div>
-          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t border-white/10">

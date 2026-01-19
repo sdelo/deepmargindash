@@ -62,6 +62,12 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
     async function fetchData() {
       try {
         setIsLoading(true);
+        setError(null);
+        // Clear old data immediately when server changes
+        setSuppliedEvents([]);
+        setWithdrawnEvents([]);
+        setBorrowedEvents([]);
+        setRepaidEvents([]);
         const params = {
           ...timeRangeToParams(timeRange),
           ...(poolId && { margin_pool_id: poolId }),

@@ -34,6 +34,10 @@ export function SupplierAnalytics({ poolId }: { poolId?: string }) {
     async function fetchData() {
       try {
         setIsLoading(true);
+        setError(null);
+        // Clear old data immediately when server changes
+        setSuppliedEvents([]);
+        setWithdrawnEvents([]);
         const params = {
           ...timeRangeToParams(timeRange),
           ...(poolId && { margin_pool_id: poolId }),

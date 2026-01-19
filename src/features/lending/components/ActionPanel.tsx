@@ -1,13 +1,23 @@
 import React from "react";
 import { ConnectModal, useCurrentAccount } from "@mysten/dapp-kit";
-import { ArrowTopRightOnSquareIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowTopRightOnSquareIcon, InformationCircleIcon, CheckBadgeIcon } from "@heroicons/react/24/outline";
 import { TransactionDetailsModal } from "../../../components/TransactionButton/TransactionDetailsModal";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 import {
   createSupplyTransactionInfo,
   createWithdrawTransactionInfo,
 } from "../../../utils/transactionInfo";
+import { fetchPairSummary, type MarketSummary } from "../api/marketData";
 import type { PoolOverview } from "../types";
+
+// Fallback icons for when dynamic iconUrl is not available
+const FALLBACK_ICONS: Record<string, string> = {
+  SUI: "https://assets.coingecko.com/coins/images/26375/standard/sui-ocean-square.png?1727791290",
+  DBUSDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  USDC: "https://assets.coingecko.com/coins/images/6319/standard/usdc.png?1696506694",
+  DEEP: "https://assets.coingecko.com/coins/images/38087/standard/deep.png?1728614086",
+  WAL: "https://assets.coingecko.com/coins/images/54016/standard/walrus.jpg?1737525627",
+};
 
 interface ActionPanelProps {
   pool: PoolOverview | null;
@@ -37,12 +47,56 @@ export function ActionPanel({
   onShowHowItWorks,
 }: ActionPanelProps) {
   const account = useCurrentAccount();
-  const { network } = useAppNetwork();
+  const { network, explorerUrl } = useAppNetwork();
   const [connectOpen, setConnectOpen] = React.useState(false);
   const [mode, setMode] = React.useState<"deposit" | "withdraw">("deposit");
   const [inputAmount, setInputAmount] = React.useState<string>("");
   const [isWithdrawMax, setIsWithdrawMax] = React.useState(false);
   const [showReviewModal, setShowReviewModal] = React.useState(false);
+  const [showUsd, setShowUsd] = React.useState(true);
+  const [marketPrice, setMarketPrice] = React.useState<number | null>(null);
+
+  // Fetch current market price for USD conversion
+  React.useEffect(() => {
+    async function fetchPrice() {
+      if (!pool) return;
+      try {
+        // For stablecoins, price is ~1
+        if (pool.asset === "DBUSDC" || pool.asset === "USDC") {
+          setMarketPrice(1);
+          return;
+        }
+        // Try to fetch from market API using trading pair
+        const tradingPair = pool.contracts?.tradingPair || `${pool.asset}_DBUSDC`;
+        const summary = await fetchPairSummary(tradingPair);
+        if (summary?.last_price) {
+          setMarketPrice(summary.last_price);
+        }
+      } catch (err) {
+        console.error("Error fetching market price:", err);
+      }
+    }
+    fetchPrice();
+    // Refresh price every 30 seconds
+    const interval = setInterval(fetchPrice, 30000);
+    return () => clearInterval(interval);
+  }, [pool]);
+
+  // Format amount with optional USD value
+  const formatWithUsd = (amount: number, forceUsd = showUsd) => {
+    const formatted = amount.toLocaleString(undefined, { maximumFractionDigits: 4 });
+    if (forceUsd && marketPrice) {
+      const usdValue = amount * marketPrice;
+      const usdFormatted = usdValue >= 1000 
+        ? `$${(usdValue / 1000).toFixed(1)}K` 
+        : `$${usdValue.toFixed(2)}`;
+      return `${formatted} (${usdFormatted})`;
+    }
+    return formatted;
+  };
+
+  // Get pool icon
+  const poolIcon = pool?.ui?.iconUrl || FALLBACK_ICONS[pool?.asset || "SUI"] || FALLBACK_ICONS.SUI;
 
   // Parse balances
   const walletBalanceNum = React.useMemo(() => {
@@ -165,14 +219,50 @@ export function ActionPanel({
   // Min deposit based on pool (10 USDC for DBUSDC, 0.1 SUI for SUI)
   const minDeposit = pool.asset === "DBUSDC" ? 10 : 0.1;
 
+  // Determine if user has no position yet (for pulse animation)
+  const hasNoPosition = depositedBalance === 0 || depositedBalance === undefined;
+
+  // APY for display (utilizationPct already declared above)
+  const apyPct = pool.ui?.aprSupplyPct || 0;
+
   return (
-    <div className="surface-elevated">
+    <div className="surface-elevated overflow-hidden">
+      {/* Pool Header with Accent Bar - Mirrors selected row styling */}
+      <div className="relative">
+        {/* Accent bar on left */}
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#2dd4bf]" />
+        
+        <div className="pl-5 pr-4 py-3 bg-[#2dd4bf]/[0.08] border-b border-[#2dd4bf]/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img
+                src={poolIcon}
+                alt={pool.asset}
+                className="w-7 h-7 rounded-full ring-2 ring-[#2dd4bf]/30"
+              />
+              <div>
+                <div className="text-xs text-white/50 font-medium">
+                  {mode === "deposit" ? "Deposit & Earn" : "Withdraw from"}
+                </div>
+                <div className="text-sm font-semibold text-white">
+                  {pool.asset} Margin Pool
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-[#2dd4bf] font-bold text-lg font-mono">{apyPct.toFixed(2)}%</div>
+              <div className="text-[10px] text-white/40">{utilizationPct.toFixed(0)}% utilized</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Mode Toggle with How It Works Link */}
       <div className="flex items-center border-b border-white/[0.06]">
         <div className="flex flex-1">
           <button
             onClick={() => setMode("deposit")}
-            className={`flex-1 py-3.5 text-sm font-semibold transition-all relative ${
+            className={`flex-1 py-3 text-sm font-semibold transition-all relative ${
               mode === "deposit"
                 ? "text-[#2dd4bf]"
                 : "text-white/50 hover:text-white/70"
@@ -185,10 +275,12 @@ export function ActionPanel({
           </button>
           <button
             onClick={() => setMode("withdraw")}
-            className={`flex-1 py-3.5 text-sm font-semibold transition-all relative ${
+            className={`flex-1 py-3 text-sm transition-all relative ${
               mode === "withdraw"
-                ? "text-white"
-                : "text-white/50 hover:text-white/70"
+                ? "text-white font-semibold"
+                : hasNoPosition 
+                  ? "text-white/30 hover:text-white/50" 
+                  : "text-white/50 hover:text-white/70"
             }`}
           >
             Withdraw
@@ -197,29 +289,62 @@ export function ActionPanel({
             )}
           </button>
         </div>
-        {/* How it works link */}
-        {onShowHowItWorks && (
+        {/* USD Toggle + How it works tooltip */}
+        <div className="flex items-center gap-1 pr-2">
           <button
-            onClick={onShowHowItWorks}
-            className="px-3 py-3.5 flex items-center gap-1 text-[11px] text-white/40 hover:text-[#2dd4bf] transition-colors"
+            onClick={() => setShowUsd(!showUsd)}
+            className={`px-2 py-1 text-[10px] font-semibold rounded transition-all ${
+              showUsd 
+                ? "bg-[#2dd4bf]/20 text-[#2dd4bf] border border-[#2dd4bf]/30" 
+                : "bg-white/5 text-white/40 border border-white/10 hover:text-white/60"
+            }`}
+            title="Toggle USD values"
           >
-            <InformationCircleIcon className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">How it works</span>
+            $
           </button>
-        )}
+          <div className="relative group">
+            <button
+              className="px-2 py-2 flex items-center gap-1 text-[11px] text-white/40 hover:text-[#2dd4bf] transition-colors"
+            >
+              <InformationCircleIcon className="w-3.5 h-3.5" />
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-64 p-3 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <p className="text-[11px] text-white/90 leading-relaxed">
+                Supplied assets are allocated to DeepBook margin traders and earn yield from borrow interest.
+              </p>
+              <div className="absolute -top-1.5 right-4 w-3 h-3 bg-slate-800 border-l border-t border-slate-700 rotate-45"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="p-5 space-y-5">
-        {/* Token & Balance Info */}
-        <div className="flex items-center justify-between">
+        {/* Balance Info with USD */}
+        <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
           <div>
-            <span className="text-label">Token</span>
-            <div className="text-sm font-medium text-white mt-0.5">{pool.asset}</div>
+            <span className="text-label">{mode === "deposit" ? "Wallet Balance" : "Your Position"}</span>
+            <div className="text-sm font-mono text-white mt-0.5">
+              {maxBalanceFormatted} {pool.asset}
+            </div>
+            {showUsd && marketPrice && (
+              <div className="text-xs font-mono text-[#2dd4bf]/70">
+                ${(maxBalance * marketPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            )}
           </div>
-          <div className="text-right">
-            <span className="text-label">{mode === "deposit" ? "Wallet" : "Deposited"}</span>
-            <div className="text-sm font-mono text-white/80 mt-0.5">{maxBalanceFormatted} {pool.asset}</div>
-          </div>
+          {mode === "deposit" && depositedBalance > 0 && (
+            <div className="text-right">
+              <span className="text-label">Already Supplied</span>
+              <div className="text-sm font-mono text-white/80 mt-0.5">
+                {depositedBalance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {pool.asset}
+              </div>
+              {showUsd && marketPrice && (
+                <div className="text-xs font-mono text-[#2dd4bf]/70">
+                  ${(depositedBalance * marketPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Deposit Section */}
@@ -237,7 +362,9 @@ export function ActionPanel({
               className={`flex items-center rounded-xl overflow-hidden transition-all ${
                 insufficientBalanceInfo
                   ? "ring-1 ring-red-500/50"
-                  : "ring-1 ring-white/[0.08] focus-within:ring-[#2dd4bf]/40"
+                  : mode === "deposit" && hasNoPosition && !inputAmount
+                    ? "ring-2 ring-[#2dd4bf]/40 animate-pulse-ring"
+                    : "ring-1 ring-white/[0.08] focus-within:ring-[#2dd4bf]/40"
               }`}
               style={{
                 background: "rgba(0, 0, 0, 0.25)",
@@ -257,6 +384,12 @@ export function ActionPanel({
                 {pool.asset}
               </div>
             </div>
+            {/* USD value of input amount */}
+            {showUsd && marketPrice && inputAmount && parseFloat(inputAmount) > 0 && (
+              <div className="absolute -bottom-5 left-4 text-xs font-mono text-[#2dd4bf]/70">
+                ≈ ${(parseFloat(inputAmount) * marketPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            )}
           </div>
 
           {/* Quick % Buttons */}
@@ -350,6 +483,26 @@ export function ActionPanel({
           </div>
         )}
 
+        {/* DeepBook Trust Line */}
+        <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+          <CheckBadgeIcon className="w-4 h-4 text-emerald-400" />
+          <span className="text-[11px] text-white/70">
+            Powered by <span className="font-semibold text-white">DeepBook Margin Pool</span>
+          </span>
+          <span className="text-white/20">·</span>
+          <span className="text-[11px] text-emerald-400 font-medium">Verified</span>
+          <span className="text-white/20">·</span>
+          <a
+            href={`${explorerUrl}/object/${pool.contracts?.marginPoolId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-white/50 hover:text-[#2dd4bf] transition-colors flex items-center gap-0.5"
+          >
+            View on Explorer
+            <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+          </a>
+        </div>
+
         {/* Submit Button */}
         {account ? (
           <>
@@ -362,26 +515,6 @@ export function ActionPanel({
             >
               {getButtonText()}
             </button>
-            
-            {/* What happens to funds - contextual explainer */}
-            {mode === "deposit" && (
-              <div className="flex items-start gap-2 px-2 py-2 bg-white/[0.02] rounded-lg border border-white/[0.04]">
-                <svg className="w-3.5 h-3.5 text-white/30 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-[10px] text-white/40 leading-relaxed">
-                  Supplied assets are allocated to DeepBook margin traders and earn yield from borrow interest.{" "}
-                  {onShowHowItWorks && (
-                    <button 
-                      onClick={onShowHowItWorks}
-                      className="text-[#2dd4bf] hover:text-[#5eead4] transition-colors"
-                    >
-                      Learn more →
-                    </button>
-                  )}
-                </p>
-              </div>
-            )}
 
             {transactionInfo && (
               <TransactionDetailsModal
@@ -419,28 +552,31 @@ export function ActionPanel({
           </div>
         )}
 
-        {/* Trust Info */}
-        <div className="space-y-2 pt-3 border-t border-white/[0.06]">
+        {/* Contract Details */}
+        <div className="space-y-1.5 pt-3 border-t border-white/[0.06]">
+          <div className="text-[10px] text-white/30 uppercase tracking-wider font-medium mb-2">Contract Details</div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-white/40">Depositing to</span>
-            <span className="text-[#2dd4bf] font-medium">{pool.asset} Margin Pool</span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-white/40">Contract</span>
+            <span className="text-white/40">Pool Contract</span>
             <a
-              href={`https://suiscan.xyz/${network}/object/${pool.contracts?.marginPoolId}`}
+              href={`${explorerUrl}/object/${pool.contracts?.marginPoolId}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-white/50 hover:text-[#2dd4bf] flex items-center gap-1 font-mono text-[11px] transition-colors"
             >
-              {pool.contracts?.marginPoolId?.slice(0, 8)}...
+              {pool.contracts?.marginPoolId?.slice(0, 8)}...{pool.contracts?.marginPoolId?.slice(-6)}
               <ArrowTopRightOnSquareIcon className="w-3 h-3" />
             </a>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-white/40">Withdrawals</span>
+            <span className="text-white/40">Withdrawal Status</span>
             <span className={withdrawStatusColor}>{withdrawStatus}</span>
           </div>
+          {showUsd && marketPrice && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-white/40">{pool.asset} Price</span>
+              <span className="text-white/60 font-mono">${marketPrice.toFixed(pool.asset === "SUI" ? 4 : 2)}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
