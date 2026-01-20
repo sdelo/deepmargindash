@@ -5,36 +5,12 @@ export interface NetworkConfig {
   explorerUrl: string;
 }
 
-export interface IndexerOption {
-  label: string;
-  url: string;
-}
-
-// Available testnet indexers
-// The first one in this list will be used as the default
-export const TESTNET_INDEXERS: IndexerOption[] = [
-  {
-    label: "Deepbook Indexer Testnet",
-    url: "https://deepbook-indexer.testnet.mystenlabs.com",
-  },
-  {
-    label: "Local Dev Server",
-    url: "http://localhost:9008",
-  },
-  {
-    label: "Dummy Data (Remote)",
-    url: "https://deepmargindash.duckdns.org",
-  },
-];
-
-// Default to the first indexer in the list for consistency across all environments
-const DEFAULT_TESTNET_SERVER_URL = TESTNET_INDEXERS[0]?.url || "https://deepbook-indexer.testnet.mystenlabs.com";
-
+const TESTNET_SERVER_URL = "https://deepbook-indexer.testnet.mystenlabs.com";
 const MAINNET_SERVER_URL = "https://deepbook-indexer.mainnet.mystenlabs.com";
 
 export const NETWORK_CONFIGS: Record<AppNetwork, NetworkConfig> = {
   testnet: {
-    serverUrl: DEFAULT_TESTNET_SERVER_URL,
+    serverUrl: TESTNET_SERVER_URL,
     explorerUrl: "https://testnet.suivision.xyz",
   },
   mainnet: {
@@ -43,5 +19,27 @@ export const NETWORK_CONFIGS: Record<AppNetwork, NetworkConfig> = {
   },
 };
 
-export const DEFAULT_NETWORK: AppNetwork = "testnet";
+export const DEFAULT_NETWORK: AppNetwork = "mainnet";
+
+const NETWORK_STORAGE_KEY = "deepdashboard:selectedNetwork";
+
+export function getPersistedNetwork(): AppNetwork {
+  try {
+    const stored = localStorage.getItem(NETWORK_STORAGE_KEY);
+    if (stored === "testnet" || stored === "mainnet") {
+      return stored;
+    }
+  } catch {
+    // localStorage not available
+  }
+  return DEFAULT_NETWORK;
+}
+
+export function persistNetwork(network: AppNetwork): void {
+  try {
+    localStorage.setItem(NETWORK_STORAGE_KEY, network);
+  } catch {
+    // localStorage not available
+  }
+}
 

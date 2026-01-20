@@ -72,7 +72,7 @@ export const MarketActivity: FC<Props> = ({ poolId, limit = 10 }) => {
         type: "borrow",
         timestamp: event.checkpoint_timestamp_ms,
         amount: convertFromSmallestUnits(event.loan_amount, 9),
-        asset: "SUI", // TODO: Determine from pool
+        asset: "SUI",
         transactionDigest: event.digest,
         marginManagerId: event.margin_manager_id,
         marginPoolId: event.margin_pool_id,

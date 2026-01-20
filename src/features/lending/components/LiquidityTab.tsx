@@ -20,6 +20,7 @@ import { type TimeRange, timeRangeToParams } from "../api/types";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 import type { PoolOverview } from "../types";
 import { calculatePoolRates } from "../../../utils/interestRates";
+import { useChartFirstRender, useStableGradientId } from "../../../components/charts/StableChart";
 
 interface LiquidityTabProps {
   pool: PoolOverview;
@@ -36,10 +37,14 @@ interface DailyDataPoint {
 
 export function LiquidityTab({ pool }: LiquidityTabProps) {
   const { serverUrl } = useAppNetwork();
-  const [timeRange, setTimeRange] = React.useState<"7D" | "1M">("7D");
+  const [timeRange, setTimeRange] = React.useState<TimeRange>("1M");
   const [dailyData, setDailyData] = React.useState<DailyDataPoint[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
+  
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(dailyData.length > 0);
+  const gradientId = useStableGradientId('liquidityGradient');
 
   const decimals = pool.contracts?.coinDecimals ?? 9;
   const poolId = pool.contracts?.marginPoolId;
@@ -57,7 +62,7 @@ export function LiquidityTab({ pool }: LiquidityTabProps) {
       try {
         setIsLoading(true);
         setError(null);
-        setDailyData([]);
+        // Don't clear dailyData - preserve previous data to prevent flicker
 
         const params = {
           ...timeRangeToParams(timeRange),
@@ -116,7 +121,20 @@ export function LiquidityTab({ pool }: LiquidityTabProps) {
 
         // Create a date range for all days in the selected period
         const now = new Date();
-        const daysToShow = timeRange === "7D" ? 7 : 30;
+        const getDaysForRange = (range: TimeRange): number => {
+          switch (range) {
+            case "1W": return 7;
+            case "1M": return 30;
+            case "3M": return 90;
+            case "YTD": {
+              const startOfYear = new Date(now.getFullYear(), 0, 1);
+              return Math.ceil((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
+            }
+            case "ALL": return 365; // Default to 1 year for ALL
+            default: return 30;
+          }
+        };
+        const daysToShow = getDaysForRange(timeRange);
         const startDate = new Date(now);
         startDate.setDate(startDate.getDate() - daysToShow);
         startDate.setHours(0, 0, 0, 0);
@@ -284,76 +302,77 @@ export function LiquidityTab({ pool }: LiquidityTabProps) {
     );
   };
 
+  // Time range toggle component for header - matches Historical Activity style
+  const timeRangeControls = (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-cyan-100/80">Range</span>
+      <div className="rounded-xl bg-white/10 border border-cyan-300/30 overflow-hidden">
+        {(["1W", "1M", "3M", "YTD", "ALL"] as TimeRange[]).map((rk) => (
+          <button
+            key={rk}
+            onClick={() => setTimeRange(rk)}
+            className={`px-3 py-1 transition-all ${
+              timeRange === rk
+                ? "bg-gradient-to-r from-cyan-400/20 to-blue-600/20 text-white border-l border-cyan-300/30"
+                : "text-cyan-100/80 hover:text-white"
+            }`}
+          >
+            {rk}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header - matches Activity tab style */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <svg className="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
-            Available Liquidity Over Time
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Track how much liquidity is available for withdrawals
+          <h2 className="text-2xl font-bold text-white mb-1">
+            Available Liquidity
+          </h2>
+          <p className="text-sm text-white/60">
+            Track how much liquidity is available for withdrawals for {pool.asset}
           </p>
         </div>
-
-        {/* Time Range Toggle */}
-        <div className="flex items-center gap-1 p-0.5 bg-slate-800/60 rounded-lg border border-slate-700/50">
-          {(["7D", "1M"] as const).map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                timeRange === range
-                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
-                  : "text-slate-400 hover:text-white hover:bg-slate-700/50"
-              }`}
-            >
-              {range === "7D" ? "7 Days" : "30 Days"}
-            </button>
-          ))}
-        </div>
+        {timeRangeControls}
       </div>
 
-      {/* Current Status Banner */}
-      <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-cyan-500/10 to-emerald-500/5 rounded-xl border border-cyan-500/20">
-        <div className="flex-1">
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
-            Available Now
+      {/* Stats Cards - matches Activity tab style */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="bg-white/5 rounded-2xl p-4 border border-teal-500/30">
+          <div className="text-sm text-white/60 mb-1">Available Now</div>
+          <div className="text-xl font-bold text-teal-400">
+            {formatNumber(currentAvailable)}
           </div>
-          <div className="text-2xl font-bold text-cyan-400">
-            {formatNumber(currentAvailable)} <span className="text-sm text-slate-400">{pool.asset}</span>
-          </div>
+          <div className="text-xs text-white/40 mt-1">{pool.asset}</div>
         </div>
-        <div className="w-px h-10 bg-slate-700" />
-        <div className="flex-1">
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
-            Current Utilization
-          </div>
-          <div className={`text-2xl font-bold ${
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+          <div className="text-sm text-white/60 mb-1">Current Utilization</div>
+          <div className={`text-xl font-bold ${
             currentUtilization > 80 ? "text-red-400" :
             currentUtilization > 50 ? "text-amber-400" :
             "text-emerald-400"
           }`}>
             {currentUtilization.toFixed(1)}%
           </div>
-        </div>
-        <div className="w-px h-10 bg-slate-700" />
-        <div className="flex-1">
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
-            % of Supply Available
+          <div className="text-xs text-white/40 mt-1">
+            {currentUtilization > 80 ? "High utilization" :
+             currentUtilization > 50 ? "Moderate" : "Low utilization"}
           </div>
-          <div className="text-2xl font-bold text-white">
+        </div>
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+          <div className="text-sm text-white/60 mb-1">% of Supply Available</div>
+          <div className="text-xl font-bold text-white">
             {pool.state.supply > 0 ? ((currentAvailable / pool.state.supply) * 100).toFixed(0) : 0}%
           </div>
+          <div className="text-xs text-white/40 mt-1">Ready for withdrawal</div>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="bg-slate-900/40 rounded-xl border border-slate-700/50 p-4">
+      <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         {isLoading ? (
           <div className="h-64 flex items-center justify-center">
             <div className="flex items-center gap-3 text-slate-400">
@@ -380,7 +399,7 @@ export function LiquidityTab({ pool }: LiquidityTabProps) {
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={dailyData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="liquidityGradient" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
                   </linearGradient>
@@ -417,8 +436,9 @@ export function LiquidityTab({ pool }: LiquidityTabProps) {
                   dataKey="availableLiquidity"
                   stroke="#22d3ee"
                   strokeWidth={2}
-                  fill="url(#liquidityGradient)"
+                  fill={`url(#${gradientId})`}
                   name="Available Liquidity"
+                  {...animationProps}
                 />
                 <Line
                   yAxisId="utilization"
@@ -430,6 +450,7 @@ export function LiquidityTab({ pool }: LiquidityTabProps) {
                   strokeDasharray="4 4"
                   dot={false}
                   name="Utilization %"
+                  {...animationProps}
                 />
               </ComposedChart>
             </ResponsiveContainer>
@@ -437,7 +458,7 @@ export function LiquidityTab({ pool }: LiquidityTabProps) {
         )}
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-6 mt-4 pt-3 border-t border-slate-700/50">
+        <div className="flex items-center justify-center gap-6 mt-4 pt-3 border-t border-white/10">
           <div className="flex items-center gap-2 text-xs">
             <div className="w-3 h-3 rounded-sm bg-cyan-500" />
             <span className="text-slate-400">Available Liquidity ({pool.asset})</span>
@@ -450,121 +471,78 @@ export function LiquidityTab({ pool }: LiquidityTabProps) {
       </div>
 
       {/* Stress / What-If Scenarios */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <h4 className="text-sm font-semibold text-white">Stress Scenarios</h4>
-          <span className="text-[10px] text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded-full">Rough estimates</span>
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-bold text-cyan-200 mb-1">Stress Scenarios</h3>
+          <p className="text-xs text-white/40">How much {pool.asset} would be available for withdrawal under different conditions</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Scenario 1: Utilization to 80% */}
-          <div className={`p-4 rounded-xl border transition-all ${
+          <div className={`bg-white/5 rounded-2xl p-4 border ${
             stressScenarios.util80.isRelevant
-              ? "bg-amber-500/5 border-amber-500/20"
-              : "bg-slate-800/30 border-slate-700/30 opacity-60"
+              ? "border-amber-500/30"
+              : "border-white/10 opacity-60"
           }`}>
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="text-xs text-slate-400 mb-1">If utilization rises to 80%</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-bold text-amber-400">
-                    ~{formatNumber(stressScenarios.util80.available)}
-                  </span>
-                  <span className="text-xs text-slate-500">{pool.asset} available</span>
-                </div>
-                {stressScenarios.util80.isRelevant ? (
-                  <div className="text-[10px] text-slate-500 mt-1">
-                    Currently at {currentUtilization.toFixed(1)}% → would drop by {formatNumber(currentAvailable - stressScenarios.util80.available)} {pool.asset}
-                  </div>
-                ) : (
-                  <div className="text-[10px] text-amber-400/70 mt-1">
-                    Already above 80% utilization
-                  </div>
-                )}
-              </div>
+            <div className="text-sm text-white/60 mb-1">If utilization rises to 80%</div>
+            <div className="text-xl font-bold text-amber-400">
+              ~{formatNumber(stressScenarios.util80.available)} <span className="text-sm font-normal text-white/50">{pool.asset} available</span>
+            </div>
+            <div className="text-xs text-white/40 mt-1">
+              {stressScenarios.util80.isRelevant ? (
+                <>Currently at {currentUtilization.toFixed(1)}% utilization</>
+              ) : (
+                <>Already above 80%</>
+              )}
             </div>
           </div>
 
           {/* Scenario 2: Borrow demand +20% */}
-          <div className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/20">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-rose-500/10">
-                <svg className="w-4 h-4 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="text-xs text-slate-400 mb-1">If borrow demand +20%</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-bold text-rose-400">
-                    ~{formatNumber(stressScenarios.borrowPlus20.available)}
-                  </span>
-                  <span className="text-xs text-slate-500">{pool.asset} available</span>
-                </div>
-                <div className="text-[10px] text-slate-500 mt-1">
-                  Utilization would reach {stressScenarios.borrowPlus20.newUtil.toFixed(1)}%
-                  {stressScenarios.borrowPlus20.newUtil >= 100 && (
-                    <span className="text-red-400 ml-1">⚠ Pool would be fully utilized</span>
-                  )}
-                </div>
-              </div>
+          <div className="bg-white/5 rounded-2xl p-4 border border-red-500/30">
+            <div className="text-sm text-white/60 mb-1">If borrow demand increases 20%</div>
+            <div className="text-xl font-bold text-red-400">
+              ~{formatNumber(stressScenarios.borrowPlus20.available)} <span className="text-sm font-normal text-white/50">{pool.asset} available</span>
+            </div>
+            <div className="text-xs text-white/40 mt-1">
+              Utilization would be {stressScenarios.borrowPlus20.newUtil.toFixed(1)}%
+              {stressScenarios.borrowPlus20.newUtil >= 100 && (
+                <span className="text-red-400 ml-1">⚠ Fully utilized</span>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Disclaimer */}
-        <p className="text-[10px] text-slate-500 italic text-center">
-          These are simplified scenarios based on current supply. Actual outcomes depend on market conditions and user behavior.
-        </p>
       </div>
 
-      {/* Insight Box */}
-      <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/30">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-cyan-500/10 shrink-0">
-            <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h5 className="text-sm font-medium text-white mb-1">Is {formatNumber(currentAvailable)} {pool.asset} normal?</h5>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              {currentUtilization < 30 ? (
-                <>
-                  This pool has <span className="text-emerald-400 font-medium">very high liquidity</span>. 
-                  Withdrawals should be instant with no issues. The low utilization ({currentUtilization.toFixed(0)}%) 
-                  means most supplied assets are sitting idle.
-                </>
-              ) : currentUtilization < 60 ? (
-                <>
-                  This pool has <span className="text-cyan-400 font-medium">healthy liquidity</span>. 
-                  Most withdrawal sizes should be processed smoothly. The pool is being used efficiently 
-                  with a balanced utilization rate.
-                </>
-              ) : currentUtilization < 80 ? (
-                <>
-                  This pool has <span className="text-amber-400 font-medium">moderate liquidity</span>. 
-                  Large withdrawals may need to wait for borrowers to repay. Consider the time it might 
-                  take for full liquidity to become available.
-                </>
-              ) : (
-                <>
-                  This pool has <span className="text-red-400 font-medium">low available liquidity</span>. 
-                  Withdrawals may be delayed or partial. The high utilization indicates strong borrow 
-                  demand—you may need to wait for repayments.
-                </>
-              )}
-            </p>
-          </div>
-        </div>
+      {/* Liquidity Status */}
+      <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+        <h3 className="text-lg font-bold text-cyan-200 mb-2">Is {formatNumber(currentAvailable)} {pool.asset} normal?</h3>
+        <p className="text-sm text-white/60 leading-relaxed">
+          {currentUtilization < 30 ? (
+            <>
+              This pool has <span className="text-emerald-400 font-medium">very high liquidity</span>. 
+              Withdrawals should be instant with no issues. The low utilization ({currentUtilization.toFixed(0)}%) 
+              means most supplied assets are sitting idle.
+            </>
+          ) : currentUtilization < 60 ? (
+            <>
+              This pool has <span className="text-cyan-400 font-medium">healthy liquidity</span>. 
+              Most withdrawal sizes should be processed smoothly. The pool is being used efficiently 
+              with a balanced utilization rate.
+            </>
+          ) : currentUtilization < 80 ? (
+            <>
+              This pool has <span className="text-amber-400 font-medium">moderate liquidity</span>. 
+              Large withdrawals may need to wait for borrowers to repay. Consider the time it might 
+              take for full liquidity to become available.
+            </>
+          ) : (
+            <>
+              This pool has <span className="text-red-400 font-medium">low available liquidity</span>. 
+              Withdrawals may be delayed or partial. The high utilization indicates strong borrow 
+              demand—you may need to wait for repayments.
+            </>
+          )}
+        </p>
       </div>
 
       {/* What This Tells You */}

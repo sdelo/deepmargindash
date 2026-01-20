@@ -76,21 +76,20 @@ const AT_RISK_BUFFER = 0.20; // 20% buffer above liquidation threshold
 
 /**
  * Convert Pyth price to USD value
+ * Note: The API returns amounts already in human-readable units (e.g., 46.21 SUI, not smallest units)
  */
 function pythPriceToUsd(
   amount: number,
   pythPrice: number,
-  pythDecimals: number,
-  assetDecimals: number = 9
+  pythDecimals: number
 ): number {
-  if (!pythPrice || pythDecimals === null) return 0;
+  if (!pythPrice || pythDecimals === null || pythDecimals === undefined) return 0;
   
   // Pyth prices are scaled by 10^pythDecimals
-  // Amount is in smallest units (scaled by 10^assetDecimals)
+  // Amount is already in human-readable form from the API
   const price = pythPrice / Math.pow(10, Math.abs(pythDecimals));
-  const normalizedAmount = amount / Math.pow(10, assetDecimals);
   
-  return normalizedAmount * price;
+  return amount * price;
 }
 
 /**
@@ -164,30 +163,26 @@ export function useAtRiskPositions(
           const baseDebt = state.base_debt ? parseFloat(state.base_debt) : 0;
           const quoteDebt = state.quote_debt ? parseFloat(state.quote_debt) : 0;
           
-          // Calculate USD values
+          // Calculate USD values (API returns amounts already in human-readable form)
           const baseAssetUsd = pythPriceToUsd(
             baseAsset,
             state.base_pyth_price || 0,
-            state.base_pyth_decimals || 0,
-            9 // SUI decimals
+            state.base_pyth_decimals ?? 0
           );
           const quoteAssetUsd = pythPriceToUsd(
             quoteAsset,
             state.quote_pyth_price || 0,
-            state.quote_pyth_decimals || 0,
-            6 // USDC decimals
+            state.quote_pyth_decimals ?? 0
           );
           const baseDebtUsd = pythPriceToUsd(
             baseDebt,
             state.base_pyth_price || 0,
-            state.base_pyth_decimals || 0,
-            9
+            state.base_pyth_decimals ?? 0
           );
           const quoteDebtUsd = pythPriceToUsd(
             quoteDebt,
             state.quote_pyth_price || 0,
-            state.quote_pyth_decimals || 0,
-            6
+            state.quote_pyth_decimals ?? 0
           );
           
           const totalDebtUsd = baseDebtUsd + quoteDebtUsd;

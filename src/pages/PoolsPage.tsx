@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import NavBar from "../features/shared/components/NavBar";
 import PoolCompareTable from "../features/lending/components/PoolCompareTable";
 import SnapshotStrip from "../features/lending/components/SnapshotStrip";
-import PositionsWithCalculator from "../features/lending/components/PositionsWithCalculator";
+import PositionStrip from "../features/lending/components/PositionStrip";
 import ActionPanel from "../features/lending/components/ActionPanel";
 import { OverviewTiles } from "../features/lending/components/OverviewTiles";
 import SlidePanel from "../features/shared/components/SlidePanel";
@@ -23,11 +23,18 @@ import { InterestRateHistoryPanel } from "../features/lending/components/Interes
 import { DeepbookPoolHistoryPanel } from "../features/lending/components/DeepbookPoolHistoryPanel";
 import { HowItWorksPanel } from "../features/lending/components/HowItWorksPanel";
 import {
+  TransactionToast,
+  type TransactionToastState,
+  type TransactionActionType,
+} from "../components/TransactionToast";
+import {
   SectionNav,
   type DashboardSection,
 } from "../features/shared/components/SectionNav";
+import { RailDivider } from "../features/shared/components/RailDivider";
 import { useCoinBalance } from "../hooks/useCoinBalance";
 import { useAllPools } from "../hooks/useAllPools";
+import { useAppNetwork } from "../context/AppNetworkContext";
 import {
   ONE_BILLION,
   GAS_AMOUNT_MIST,
@@ -55,6 +62,8 @@ export function PoolsPage() {
     | "activity"
     | "howItWorks"
   >("overview");
+  // Track which section within a tab to scroll to (for deep linking from tiles)
+  const [initialSection, setInitialSection] = React.useState<string | null>(null);
   const [isDetailsGlowing, setIsDetailsGlowing] = React.useState(false);
   const detailsRef = React.useRef<HTMLDivElement>(null);
   
@@ -108,6 +117,14 @@ export function PoolsPage() {
   const [interestRateHistoryPoolId, setInterestRateHistoryPoolId] = React.useState<string | null>(null);
   const [txStatus, setTxStatus] = React.useState<"idle" | "pending" | "success" | "error">("idle");
   const [txError, setTxError] = React.useState<string | null>(null);
+  
+  // Transaction toast state
+  const [txToastVisible, setTxToastVisible] = React.useState(false);
+  const [txToastState, setTxToastState] = React.useState<TransactionToastState>("pending");
+  const [txDigest, setTxDigest] = React.useState<string>("");
+  const [txActionType, setTxActionType] = React.useState<TransactionActionType>("deposit");
+  const [txAmount, setTxAmount] = React.useState<string>("");
+  const { explorerUrl } = useAppNetwork();
   
   const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction({
     execute: async ({ bytes, signature }) =>
@@ -167,6 +184,14 @@ export function PoolsPage() {
       try {
         setTxStatus("pending");
         setTxError(null);
+        
+        // Show pending toast immediately
+        setTxActionType("deposit");
+        setTxAmount(amount.toLocaleString(undefined, { maximumFractionDigits: 4 }));
+        setTxDigest("");
+        setTxToastState("pending");
+        setTxToastVisible(true);
+        
         const poolContracts = selectedPool.contracts;
         const decimals = poolContracts.coinDecimals;
         const finalAmount = BigInt(Math.round(amount * 10 ** decimals));
@@ -183,6 +208,11 @@ export function PoolsPage() {
         });
 
         const result = await signAndExecute({ transaction: tx, chain: `sui:${network}` });
+        
+        // Transition to submitted state with tx digest
+        setTxDigest(result.digest);
+        setTxToastState("submitted");
+        
         const txResponse = await suiClient.waitForTransaction({
           digest: result.digest,
           options: { showEffects: true, showEvents: true },
@@ -191,9 +221,12 @@ export function PoolsPage() {
         if (txResponse.effects?.status?.status !== "success") {
           setTxStatus("error");
           setTxError(txResponse.effects?.status?.error || "Transaction failed");
+          setTxToastState("error");
           return;
         }
 
+        // Transition to finalized state
+        setTxToastState("finalized");
         setTxStatus("success");
         setPendingDepositAmount("");
         await Promise.all([refetchPools(), coinBalance.refetch(), suiBalance.refetch()]);
@@ -203,7 +236,9 @@ export function PoolsPage() {
         }, 3000);
       } catch (error) {
         setTxStatus("error");
-        setTxError(error instanceof Error ? error.message : "Transaction failed");
+        const errorMsg = error instanceof Error ? error.message : "Transaction failed";
+        setTxError(errorMsg);
+        setTxToastState("error");
       }
     },
     [account, selectedPool, signAndExecute, suiClient, network, suiBalance, coinBalance, queryClient, refetchPools]
@@ -223,6 +258,14 @@ export function PoolsPage() {
       try {
         setTxStatus("pending");
         setTxError(null);
+        
+        // Show pending toast immediately
+        setTxActionType("withdraw");
+        setTxAmount(amount.toLocaleString(undefined, { maximumFractionDigits: 4 }));
+        setTxDigest("");
+        setTxToastState("pending");
+        setTxToastVisible(true);
+        
         const poolContracts = selectedPool.contracts;
         const decimals = poolContracts.coinDecimals;
         const finalAmount = BigInt(Math.round(amount * 10 ** decimals));
@@ -237,6 +280,11 @@ export function PoolsPage() {
         });
         
         const result = await signAndExecute({ transaction: tx, chain: `sui:${network}` });
+        
+        // Transition to submitted state with tx digest
+        setTxDigest(result.digest);
+        setTxToastState("submitted");
+        
         const txResponse = await suiClient.waitForTransaction({
           digest: result.digest,
           options: { showEffects: true, showEvents: true },
@@ -245,9 +293,12 @@ export function PoolsPage() {
         if (txResponse.effects?.status?.status !== "success") {
           setTxStatus("error");
           setTxError(txResponse.effects?.status?.error || "Transaction failed");
+          setTxToastState("error");
           return;
         }
 
+        // Transition to finalized state
+        setTxToastState("finalized");
         setTxStatus("success");
         await Promise.all([refetchPools(), coinBalance.refetch(), suiBalance.refetch()]);
         setTimeout(() => {
@@ -256,7 +307,9 @@ export function PoolsPage() {
         }, 3000);
       } catch (error) {
         setTxStatus("error");
-        setTxError(error instanceof Error ? error.message : "Transaction failed");
+        const errorMsg = error instanceof Error ? error.message : "Transaction failed";
+        setTxError(errorMsg);
+        setTxToastState("error");
       }
     },
     [account, selectedPool, signAndExecute, network, suiBalance, suiClient, queryClient, refetchPools, coinBalance]
@@ -276,6 +329,14 @@ export function PoolsPage() {
       try {
         setTxStatus("pending");
         setTxError(null);
+        
+        // Show pending toast immediately
+        setTxActionType("withdraw");
+        setTxAmount("all");
+        setTxDigest("");
+        setTxToastState("pending");
+        setTxToastVisible(true);
+        
         const poolContracts = selectedPool.contracts;
 
         const tx = await buildWithdrawAllTransaction({
@@ -287,6 +348,11 @@ export function PoolsPage() {
         });
         
         const result = await signAndExecute({ transaction: tx, chain: `sui:${network}` });
+        
+        // Transition to submitted state with tx digest
+        setTxDigest(result.digest);
+        setTxToastState("submitted");
+        
         const txResponse = await suiClient.waitForTransaction({
           digest: result.digest,
           options: { showEffects: true, showEvents: true },
@@ -295,9 +361,12 @@ export function PoolsPage() {
         if (txResponse.effects?.status?.status !== "success") {
           setTxStatus("error");
           setTxError(txResponse.effects?.status?.error || "Transaction failed");
+          setTxToastState("error");
           return;
         }
 
+        // Transition to finalized state
+        setTxToastState("finalized");
         setTxStatus("success");
         await Promise.all([refetchPools(), coinBalance.refetch(), suiBalance.refetch()]);
         setTimeout(() => {
@@ -306,7 +375,9 @@ export function PoolsPage() {
         }, 3000);
       } catch (error) {
         setTxStatus("error");
-        setTxError(error instanceof Error ? error.message : "Transaction failed");
+        const errorMsg = error instanceof Error ? error.message : "Transaction failed";
+        setTxError(errorMsg);
+        setTxToastState("error");
       }
     },
     [account, selectedPool, signAndExecute, network, suiBalance, suiClient, queryClient, refetchPools, coinBalance]
@@ -328,14 +399,36 @@ export function PoolsPage() {
     return mainTabs.find(t => t.key === tab)?.label || tab;
   };
 
-  const handleTabClick = (tab: TabKey) => {
+  const handleTabClick = (tab: TabKey, section?: string) => {
     setOverviewTab(tab);
-    // Scroll to details section and trigger glow
-    setTimeout(() => {
-      detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setIsDetailsGlowing(true);
-      setTimeout(() => setIsDetailsGlowing(false), 400);
-    }, 50);
+    // Set section for deep navigation within the tab
+    setInitialSection(section || null);
+    
+    if (!section) {
+      // No specific section - just scroll to the details/tab content area
+      setTimeout(() => {
+        detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setIsDetailsGlowing(true);
+        setTimeout(() => setIsDetailsGlowing(false), 400);
+      }, 50);
+    } else {
+      // Section navigation: First scroll to make sure tab content is visible,
+      // then let the tab component handle scrolling to the specific section.
+      // We scroll to detailsRef instantly (no smooth) to set up the right context,
+      // then the tab component's useEffect will handle the smooth scroll to section.
+      if (detailsRef.current) {
+        const headerOffset = 172;
+        const elementRect = detailsRef.current.getBoundingClientRect();
+        const absoluteElementTop = elementRect.top + window.scrollY;
+        const targetScrollPosition = absoluteElementTop - headerOffset;
+        
+        // Instant scroll to position the tab content area in view
+        window.scrollTo({
+          top: Math.max(0, targetScrollPosition),
+          behavior: 'auto' // instant, not smooth - the section scroll will be smooth
+        });
+      }
+    }
   };
 
   const handlePoolSelect = (poolId: string) => {
@@ -385,10 +478,10 @@ export function PoolsPage() {
             {selectedPool ? (
               <div 
                 key={poolSwitchKey} 
-                className={`animate-fade-in grid gap-6 transition-all duration-300 ${
+                className={`animate-fade-in grid transition-all duration-300 ${
                   isRailCollapsed 
-                    ? "grid-cols-1 lg:grid-cols-[1fr_72px]" 
-                    : "grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px]"
+                    ? "gap-0 grid-cols-1 lg:grid-cols-[1fr_auto]" 
+                    : "gap-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto_400px]"
                 }`}
               >
                 {/* ═══════════════════════════════════════════════════════════════
@@ -452,6 +545,23 @@ export function PoolsPage() {
                     </div>
                   </div>
 
+                  {/* Mobile Only: Deposit Card - shows after pool selection on mobile */}
+                  <div className="lg:hidden">
+                    <ActionPanel
+                      pool={selectedPool}
+                      onDeposit={handleDeposit}
+                      onWithdraw={handleWithdraw}
+                      onWithdrawAll={handleWithdrawAll}
+                      walletBalance={coinBalance?.formatted}
+                      depositedBalance={selectedPoolDepositedBalance}
+                      suiBalance={suiBalance?.formatted}
+                      txStatus={txStatus}
+                      onAmountChange={setPendingDepositAmount}
+                      currentPositionBalance={selectedPoolDepositedBalance}
+                      onShowHowItWorks={() => handleTabClick("howItWorks")}
+                    />
+                  </div>
+
                   {/* Snapshot Strip */}
                   <SnapshotStrip pool={selectedPool} />
 
@@ -479,7 +589,7 @@ export function PoolsPage() {
                   
                   {/* Tab bar - STICKY Layer 1: sticks below main navbar (~56px) */}
                   {overviewTab !== "overview" && (
-                    <div className="sticky top-[56px] z-40 -mx-6 px-6 py-2 bg-[#0d1a1f] backdrop-blur-xl border-b border-white/[0.08] shadow-lg shadow-black/30">
+                    <div className="sticky top-[56px] z-40 py-2 bg-[#0d1a1f] backdrop-blur-xl border-b border-white/[0.08] shadow-lg shadow-black/30 rounded-lg">
                       <div className="tab-bar relative">
                         {mainTabs.map((tab) => (
                           <button
@@ -509,17 +619,23 @@ export function PoolsPage() {
                       <OverviewTiles
                         pool={selectedPool}
                         onSelectTab={(tab) => {
-                          // Map old tab names to new consolidated tabs
-                          const tabMapping: Record<string, TabKey> = {
-                            rates: "yield",
-                            markets: "yield",
-                            liquidity: "risk",
-                            concentration: "risk",
-                            liquidations: "risk",
-                            risk: "risk",
-                            activity: "activity",
+                          // Map old tab names to new consolidated tabs, preserving section for deep navigation
+                          const tabMapping: Record<string, { tab: TabKey; section?: string }> = {
+                            rates: { tab: "yield", section: "rates" },
+                            history: { tab: "yield", section: "history" },
+                            markets: { tab: "yield", section: "markets" },
+                            liquidity: { tab: "risk", section: "liquidity" },
+                            concentration: { tab: "risk", section: "concentration" },
+                            liquidations: { tab: "risk", section: "liquidations" },
+                            risk: { tab: "risk", section: "overview" },
+                            activity: { tab: "activity" },
                           };
-                          handleTabClick(tabMapping[tab] || (tab as TabKey));
+                          const mapping = tabMapping[tab];
+                          if (mapping) {
+                            handleTabClick(mapping.tab, mapping.section);
+                          } else {
+                            handleTabClick(tab as TabKey);
+                          }
                         }}
                       />
                     )}
@@ -527,10 +643,7 @@ export function PoolsPage() {
                       <YieldTab
                         pool={selectedPool}
                         pools={pools}
-                        onShowInterestHistory={() => {
-                          setInterestRateHistoryPoolId(selectedPool.contracts?.marginPoolId || null);
-                          setInterestRateHistoryOpen(true);
-                        }}
+                        initialSection={initialSection}
                         onMarketClick={(id) => {
                           setDeepbookPoolHistoryPoolId(id);
                           setDeepbookPoolHistoryOpen(true);
@@ -538,10 +651,10 @@ export function PoolsPage() {
                       />
                     )}
                     {overviewTab === "risk" && (
-                      <RiskTab pool={selectedPool} />
+                      <RiskTab pool={selectedPool} initialSection={initialSection} />
                     )}
                     {overviewTab === "activity" && (
-                      <ActivityTab pool={selectedPool} />
+                      <ActivityTab pool={selectedPool} initialSection={initialSection} />
                     )}
                     {overviewTab === "howItWorks" && (
                       <HowItWorksPanel />
@@ -550,49 +663,18 @@ export function PoolsPage() {
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════
+                    SEAM DIVIDER: Lives between main content and right rail
+                    ═══════════════════════════════════════════════════════════════ */}
+                <RailDivider
+                  isCollapsed={isRailCollapsed}
+                  onToggle={() => setIsRailCollapsed(!isRailCollapsed)}
+                />
+
+                {/* ═══════════════════════════════════════════════════════════════
                     RIGHT RAIL: Sticky aside with Deposit + Earnings
                     ═══════════════════════════════════════════════════════════════ */}
-                {isRailCollapsed ? (
-                  /* Collapsed Gutter - clicking any action expands the rail */
-                  <aside className="hidden lg:block sticky top-20 self-start">
-                    <div className="flex flex-col items-center gap-3 py-4 px-2 surface-elevated rounded-xl">
-                      {/* Deposit / Withdraw - primary action, expands rail */}
-                      <button
-                        onClick={() => setIsRailCollapsed(false)}
-                        className="w-11 h-11 flex items-center justify-center rounded-xl bg-[#2dd4bf]/10 hover:bg-[#2dd4bf]/20 border border-[#2dd4bf]/20 hover:border-[#2dd4bf]/40 transition-all group"
-                        title="Deposit / Withdraw"
-                      >
-                        <svg className="w-5 h-5 text-[#2dd4bf]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m0 0l-4-4m4 4l4-4" />
-                        </svg>
-                      </button>
-                      
-                      {/* History - opens slide panel directly */}
-                      <button
-                        onClick={() => setHistoryOpen(true)}
-                        className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 transition-all group"
-                        title="History"
-                      >
-                        <svg className="w-5 h-5 text-white/50 group-hover:text-white/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </aside>
-                ) : (
-                  /* Expanded Rail */
-                  <aside className="relative sticky top-20 self-start space-y-4">
-                    {/* Collapse Handle - thin pill straddling the divider between columns */}
-                    <button
-                      onClick={() => setIsRailCollapsed(true)}
-                      className="absolute -left-[14px] top-6 w-3.5 h-8 flex items-center justify-center rounded-full bg-[#0d1a1f]/90 border border-white/[0.12] hover:border-[#2dd4bf]/50 hover:bg-[#2dd4bf]/10 transition-all group z-10 shadow-sm"
-                      title="Collapse panel"
-                    >
-                      <svg className="w-2.5 h-2.5 text-white/30 group-hover:text-[#2dd4bf] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    
+                {!isRailCollapsed && (
+                  <aside className="sticky top-20 self-start space-y-4 pl-4">
                     {/* Deposit Card */}
                     <ActionPanel
                       pool={selectedPool}
@@ -608,26 +690,14 @@ export function PoolsPage() {
                       onShowHowItWorks={() => handleTabClick("howItWorks")}
                     />
                     
-                    {/* Earnings Preview Card */}
-                    <div className="surface-elevated p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]" />
-                          <h3 className="text-sm font-semibold text-white">
-                            Earnings Preview
-                          </h3>
-                        </div>
-                        <span className="text-label">Calculator</span>
-                      </div>
-                      <PositionsWithCalculator
-                        userAddress={account?.address}
-                        pools={pools}
-                        selectedPool={selectedPool}
-                        positions={userPositions}
-                        pendingDepositAmount={pendingDepositAmount}
-                        onViewAllHistory={() => setHistoryOpen(true)}
-                      />
-                    </div>
+                    {/* Your Position Strip */}
+                    <PositionStrip
+                      userAddress={account?.address}
+                      pools={pools}
+                      selectedPool={selectedPool}
+                      positions={userPositions}
+                      onViewAllHistory={() => setHistoryOpen(true)}
+                    />
                   </aside>
                 )}
               </div>
@@ -675,6 +745,33 @@ export function PoolsPage() {
       <SlidePanel open={deepbookPoolHistoryOpen} onClose={() => { setDeepbookPoolHistoryOpen(false); setDeepbookPoolHistoryPoolId(null); }} title="" width={"60vw"}>
         <DeepbookPoolHistoryPanel poolId={deepbookPoolHistoryPoolId || undefined} onClose={() => { setDeepbookPoolHistoryOpen(false); setDeepbookPoolHistoryPoolId(null); }} />
       </SlidePanel>
+
+      {/* Transaction Toast */}
+      <TransactionToast
+        isVisible={txToastVisible}
+        onDismiss={() => {
+          setTxToastVisible(false);
+          // Reset tx status when toast is dismissed
+          if (txToastState === "finalized" || txToastState === "error") {
+            setTxStatus("idle");
+            setTxError(null);
+            setTxDigest("");
+            setTxAmount("");
+          }
+        }}
+        state={txToastState}
+        actionType={txActionType}
+        amount={txAmount}
+        asset={selectedPool?.asset}
+        poolName={selectedPool ? `${selectedPool.asset} Margin Pool` : undefined}
+        txDigest={txDigest}
+        explorerUrl={explorerUrl}
+        error={txError}
+        onViewActivity={() => {
+          setOverviewTab("activity");
+          setHistoryOpen(true);
+        }}
+      />
     </div>
   );
 }

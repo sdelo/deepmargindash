@@ -17,10 +17,10 @@ import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 import {
-  LiquidationIcon,
   CheckIcon,
   ErrorIcon,
 } from "../../../components/ThemedIcons";
+import { useChartFirstRender } from "../../../components/charts/StableChart";
 
 interface LiquidationWallProps {
   poolId?: string;
@@ -111,6 +111,9 @@ export function LiquidationWall({ poolId, asset = "" }: LiquidationWallProps) {
     );
   }, [liquidations]);
 
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(dailyData.length > 0);
+
   // Calculate summary stats
   const stats = React.useMemo(() => {
     const totalLiquidations = liquidations.length;
@@ -135,48 +138,52 @@ export function LiquidationWall({ poolId, asset = "" }: LiquidationWallProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header - matches Activity tab style */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <LiquidationIcon size={32} /> Liquidation Wall
+          <h2 className="text-2xl font-bold text-white mb-1">
+            Liquidation Wall
           </h2>
           <p className="text-sm text-white/60">
-            Historical liquidation activity and system health
+            Historical liquidation activity and system health{asset ? ` for ${asset}` : ""}
           </p>
         </div>
         <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-          <div className="text-xs text-white/50 mb-1">Total Liquidations</div>
-          <div className="text-xl font-bold text-white">{stats.totalLiquidations}</div>
+      {/* Stats Cards - matches Activity tab style */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white/5 rounded-2xl p-4 border border-teal-500/30">
+          <div className="text-sm text-white/60 mb-1">Total Liquidations</div>
+          <div className="text-xl font-bold text-teal-400">{stats.totalLiquidations}</div>
+          <div className="text-xs text-white/40 mt-1">Events</div>
         </div>
-        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-          <div className="text-xs text-white/50 mb-1">Total Volume{asset ? ` (${asset})` : ""}</div>
-          <div className="text-xl font-bold text-teal-400">
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+          <div className="text-sm text-white/60 mb-1">Total Volume</div>
+          <div className="text-xl font-bold text-cyan-400">
             {stats.totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
+          <div className="text-xs text-white/40 mt-1">{asset || "tokens"}</div>
         </div>
-        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-          <div className="text-xs text-white/50 mb-1">Avg. Size</div>
-          <div className="text-xl font-bold text-cyan-400">
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+          <div className="text-sm text-white/60 mb-1">Avg. Size</div>
+          <div className="text-xl font-bold text-white">
             {stats.avgLiquidationSize.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
+          <div className="text-xs text-white/40 mt-1">{asset || "tokens"} per event</div>
         </div>
-        <div className={`bg-white/5 rounded-lg p-3 border ${stats.totalBadDebt > 0 ? "border-red-500/40" : "border-white/10"}`}>
-          <div className="text-xs text-white/50 mb-1">Bad Debt</div>
+        <div className={`bg-white/5 rounded-2xl p-4 border ${stats.totalBadDebt > 0 ? "border-red-500/30" : "border-emerald-500/30"}`}>
+          <div className="text-sm text-white/60 mb-1">Bad Debt</div>
           <div className={`text-xl font-bold ${stats.totalBadDebt > 0 ? "text-red-400" : "text-emerald-400"}`}>
             {stats.totalBadDebt.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           </div>
+          <div className="text-xs text-white/40 mt-1">{stats.totalBadDebt > 0 ? "Needs attention" : "All covered"}</div>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-        <h3 className="text-sm font-medium text-white/80 mb-3">Liquidations Over Time</h3>
+      <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+        <h3 className="text-lg font-bold text-cyan-200 mb-4">Liquidations Over Time</h3>
 
         {isLoading ? (
           <div className="h-48 flex items-center justify-center">
@@ -236,8 +243,8 @@ export function LiquidationWall({ poolId, asset = "" }: LiquidationWallProps) {
                   <span className="text-white/60">{value === "healthyAmount" ? "Healthy" : "Bad Debt"}</span>
                 )}
               />
-              <Bar dataKey="healthyAmount" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="badDebt" stackId="a" fill="#ef4444" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="healthyAmount" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} {...animationProps} />
+              <Bar dataKey="badDebt" stackId="a" fill="#ef4444" radius={[2, 2, 0, 0]} {...animationProps} />
             </BarChart>
           </ResponsiveContainer>
         )}

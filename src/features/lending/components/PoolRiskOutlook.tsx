@@ -12,10 +12,21 @@ interface PoolRiskOutlookProps {
   onSelectTab?: (tab: string) => void;
 }
 
+interface SimulatedPosition {
+  marginManagerId: string;
+  originalHF: number;
+  simulatedHF: number;
+  isLiquidatable: boolean;
+  debtUsd: number;
+  liquidationThreshold: number;
+}
+
 interface SimulationResult {
   priceChange: number;
   liquidatableCount: number;
   totalDebtAtRiskUsd: number;
+  worstHF: number | null;
+  positions: SimulatedPosition[];
 }
 
 /**
@@ -30,6 +41,7 @@ function getPositionValues(position: AtRiskPosition) {
 /**
  * Simulate what happens to positions if prices change
  * Returns TOTAL counts/values at that price level (not deltas)
+ * Also tracks individual position HFs for transparency
  */
 function simulatePositionsWithPriceChange(
   positions: AtRiskPosition[],
@@ -37,6 +49,8 @@ function simulatePositionsWithPriceChange(
 ): SimulationResult {
   let liquidatableCount = 0;
   let totalDebtAtRiskUsd = 0;
+  let worstHF: number | null = null;
+  const simulatedPositions: SimulatedPosition[] = [];
 
   positions.forEach((position) => {
     const basePriceMultiplier = 1 + basePriceChangePct / 100;
@@ -53,6 +67,22 @@ function simulatePositionsWithPriceChange(
     const newRiskRatio = newDebtUsd > 0 ? newCollateralUsd / newDebtUsd : 999;
     const isNowLiquidatable = newRiskRatio <= position.liquidationThreshold;
 
+    // Track worst HF across all positions
+    if (newDebtUsd > 0) {
+      if (worstHF === null || newRiskRatio < worstHF) {
+        worstHF = newRiskRatio;
+      }
+    }
+
+    simulatedPositions.push({
+      marginManagerId: position.marginManagerId,
+      originalHF: position.riskRatio,
+      simulatedHF: newRiskRatio,
+      isLiquidatable: isNowLiquidatable,
+      debtUsd: newDebtUsd,
+      liquidationThreshold: position.liquidationThreshold,
+    });
+
     if (isNowLiquidatable) {
       liquidatableCount++;
       totalDebtAtRiskUsd += newDebtUsd;
@@ -63,6 +93,8 @@ function simulatePositionsWithPriceChange(
     priceChange: basePriceChangePct,
     liquidatableCount,
     totalDebtAtRiskUsd,
+    worstHF,
+    positions: simulatedPositions,
   };
 }
 
@@ -236,6 +268,367 @@ function calculateDistanceToFirstLiquidation(
 }
 
 /**
+ * Redesigned Price Shock Simulator Component
+ * Clear, intuitive interface for understanding liquidation risk under price changes
+ */
+interface PriceShockSimulatorProps {
+  pool: PoolOverview;
+  poolPositions: AtRiskPosition[];
+  currentState: { liquidatableCount: number; totalDebtAtRiskUsd: number };
+  distanceToLiquidation: { priceDrop: number | null; priceIncrease: number | null };
+  priceChangePct: number;
+  setPriceChangePct: (pct: number) => void;
+  simulatedState: SimulationResult;
+  scenarios: SimulationResult[];
+}
+
+function PriceShockSimulator({
+  pool,
+  poolPositions,
+  currentState,
+  distanceToLiquidation,
+  priceChangePct,
+  setPriceChangePct,
+  simulatedState,
+  scenarios,
+}: PriceShockSimulatorProps) {
+  const [hoveredIdx, setHoveredIdx] = React.useState<number | null>(null);
+  
+  // Calculate current base price from first position
+  const currentBasePrice = poolPositions[0]?.basePythPrice 
+    ? poolPositions[0].basePythPrice / Math.pow(10, Math.abs(poolPositions[0].basePythDecimals || 0))
+    : 0;
+  
+  const simulatedPrice = currentBasePrice * (1 + priceChangePct / 100);
+  const liquidatableDelta = simulatedState.liquidatableCount - currentState.liquidatableCount;
+  
+  // Find first liquidation threshold (the killer metric)
+  const firstLiquidationAt = distanceToLiquidation.priceDrop !== null 
+    ? Math.abs(distanceToLiquidation.priceDrop)
+    : null;
+  
+  // Chart calculations
+  const maxLiquidatable = Math.max(...scenarios.map((s) => s.liquidatableCount), 1);
+  
+  // Presets for quick selection
+  const presets = [-30, -20, -10, -5, 0, 5, 10];
+  
+  // Find indices
+  const currentIdx = scenarios.findIndex(s => s.priceChange === 0);
+  const selectedIdx = scenarios.findIndex(s => s.priceChange === priceChangePct);
+
+  // Get liquidation threshold from positions
+  const liquidationThreshold = poolPositions[0]?.liquidationThreshold ?? 1.10;
+  
+  // Get liquidatable positions at current simulation for the proof list
+  const liquidatableAtShock = simulatedState.positions
+    .filter(p => p.isLiquidatable)
+    .sort((a, b) => a.simulatedHF - b.simulatedHF);
+
+  return (
+    <div className="bg-slate-800/50 border border-amber-400/10 rounded-xl p-4 backdrop-blur-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <div className="p-1.5 bg-amber-500/20 rounded-lg">
+              <AlertIcon size={16} variant="warning" />
+            </div>
+            Price Shock Simulator
+          </h3>
+          <p className="text-[11px] text-white/50 mt-0.5 ml-8">
+            What happens if {pool.asset} moves?
+          </p>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SECTION 1: SLIDER + SHOCK PILLS
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="bg-black/20 rounded-lg p-3 mb-3 border border-white/5">
+        {/* Price display inline with slider */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-white/50">{pool.asset}</span>
+            <span className="font-mono text-white/70">${currentBasePrice.toFixed(4)}</span>
+            <span className="text-white/30">→</span>
+            <span className={`font-mono font-semibold ${
+              priceChangePct < 0 ? "text-rose-400" : priceChangePct > 0 ? "text-emerald-400" : "text-white"
+            }`}>
+              ${simulatedPrice.toFixed(4)}
+            </span>
+          </div>
+          <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+            priceChangePct < 0 
+              ? "bg-rose-500/20 text-rose-300" 
+              : priceChangePct > 0 
+                ? "bg-emerald-500/20 text-emerald-300" 
+                : "bg-white/10 text-white/60"
+          }`}>
+            {priceChangePct > 0 ? "+" : ""}{priceChangePct}%
+          </span>
+        </div>
+
+        {/* Slider */}
+        <input
+          type="range"
+          min={-30}
+          max={20}
+          step={1}
+          value={priceChangePct}
+          onChange={(e) => setPriceChangePct(Number(e.target.value))}
+          className="w-full h-1.5 bg-gradient-to-r from-rose-500/40 via-slate-600/40 to-emerald-500/40 rounded-lg appearance-none cursor-pointer
+            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 
+            [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-400 
+            [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-cyan-400/50
+            [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/20
+            [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing"
+        />
+        <div className="flex justify-between text-[9px] text-white/40 mt-0.5 mb-2">
+          <span className="text-rose-400/60">−30%</span>
+          <span>0%</span>
+          <span className="text-emerald-400/60">+20%</span>
+        </div>
+        
+        {/* Preset Chips */}
+        <div className="flex items-center justify-center gap-1 flex-wrap">
+          {presets.map((preset) => (
+            <button
+              key={preset}
+              onClick={() => setPriceChangePct(preset)}
+              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
+                priceChangePct === preset
+                  ? "bg-cyan-500 text-slate-900 shadow-lg shadow-cyan-500/30"
+                  : preset < 0
+                    ? "bg-rose-500/10 text-rose-300/70 hover:bg-rose-500/20 border border-rose-500/20"
+                    : preset > 0
+                      ? "bg-emerald-500/10 text-emerald-300/70 hover:bg-emerald-500/20 border border-emerald-500/20"
+                      : "bg-white/5 text-white/50 hover:bg-white/10 border border-white/10"
+              }`}
+            >
+              {preset > 0 ? "+" : ""}{preset}%
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SECTION 2: TWO KPI CARDS (with shock level in label + worst HF proof)
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        {/* Liquidatable at X% */}
+        <div className={`rounded-lg p-3 border transition-colors ${
+          simulatedState.liquidatableCount > 0 
+            ? "bg-rose-500/10 border-rose-500/30" 
+            : "bg-black/20 border-white/5"
+        }`}>
+          <div className="text-[10px] text-white/50 uppercase tracking-wide mb-0.5">
+            Liquidatable at <span className={priceChangePct !== 0 ? (priceChangePct < 0 ? "text-rose-300" : "text-emerald-300") : "text-white/70"}>
+              {priceChangePct > 0 ? "+" : ""}{priceChangePct}%
+            </span>
+          </div>
+          <div className={`text-2xl font-bold tabular-nums ${
+            simulatedState.liquidatableCount > 0 ? "text-rose-400" : "text-emerald-400"
+          }`}>
+            {simulatedState.liquidatableCount}
+          </div>
+          {liquidatableDelta !== 0 ? (
+            <div className={`text-[10px] ${liquidatableDelta > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+              {liquidatableDelta > 0 ? "+" : ""}{liquidatableDelta} from current
+            </div>
+          ) : (
+            <div className="text-[10px] text-white/30">
+              {priceChangePct === 0 ? "current state" : "no change"}
+            </div>
+          )}
+          {/* Worst HF proof line */}
+          {simulatedState.worstHF !== null && (
+            <div className={`text-[9px] mt-1 pt-1 border-t border-white/10 font-mono ${
+              simulatedState.worstHF < liquidationThreshold ? "text-rose-300" : "text-white/40"
+            }`}>
+              Worst HF: {simulatedState.worstHF.toFixed(3)} 
+              <span className="text-white/30"> (liq @ {liquidationThreshold.toFixed(2)})</span>
+            </div>
+          )}
+        </div>
+
+        {/* Debt at Risk at X% */}
+        <div className={`rounded-lg p-3 border transition-colors ${
+          simulatedState.totalDebtAtRiskUsd > 0 
+            ? "bg-amber-500/10 border-amber-500/30" 
+            : "bg-black/20 border-white/5"
+        }`}>
+          <div className="text-[10px] text-white/50 uppercase tracking-wide mb-0.5">
+            Debt at Risk at <span className={priceChangePct !== 0 ? (priceChangePct < 0 ? "text-rose-300" : "text-emerald-300") : "text-white/70"}>
+              {priceChangePct > 0 ? "+" : ""}{priceChangePct}%
+            </span>
+          </div>
+          <div className={`text-2xl font-bold tabular-nums ${
+            simulatedState.totalDebtAtRiskUsd > 0 ? "text-amber-400" : "text-white/50"
+          }`}>
+            {formatUsd(simulatedState.totalDebtAtRiskUsd)}
+          </div>
+          <div className="text-[10px] text-white/30">
+            {simulatedState.liquidatableCount > 0 
+              ? `sum of ${simulatedState.liquidatableCount} position${simulatedState.liquidatableCount > 1 ? 's' : ''} debt` 
+              : "no positions at risk"}
+          </div>
+        </div>
+      </div>
+
+      {/* First Liquidation Threshold Alert */}
+      {currentState.liquidatableCount === 0 && firstLiquidationAt !== null && firstLiquidationAt > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 to-transparent rounded-lg px-3 py-2 mb-3 border-l-2 border-amber-400">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-amber-300/90">⚡ First liquidation at</span>
+            <span className="font-bold text-amber-400">−{firstLiquidationAt.toFixed(1)}%</span>
+            <span className="text-white/40 text-[10px]">
+              (${(currentBasePrice * (1 - firstLiquidationAt / 100)).toFixed(4)})
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SECTION 3: LIQUIDATABLE POSITIONS BY SHOCK CHART
+          Bar chart showing position count that would be liquidatable at each shock
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-[10px] text-white/50 uppercase tracking-wide">
+            Liquidatable Positions by Shock
+          </div>
+          <div className="text-[9px] text-white/30">
+            {poolPositions.length} total position{poolPositions.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+        
+        {/* Bar chart with count labels */}
+        <div className="flex items-end gap-0.5 h-20">
+          {scenarios.map((s, i) => {
+            const heightPct = maxLiquidatable > 0 ? (s.liquidatableCount / maxLiquidatable) * 100 : 0;
+            const isSelected = s.priceChange === priceChangePct;
+            const isCurrent = s.priceChange === 0;
+            const isNegative = s.priceChange < 0;
+            const showCount = s.liquidatableCount > 0 || isSelected;
+            
+            return (
+              <button
+                key={i}
+                onClick={() => setPriceChangePct(s.priceChange)}
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+                className={`flex-1 relative transition-all rounded-t group flex flex-col items-center ${
+                  isSelected 
+                    ? "ring-2 ring-cyan-400 ring-offset-1 ring-offset-black/50 z-10" 
+                    : "hover:opacity-80"
+                }`}
+                style={{ 
+                  height: `${Math.max(heightPct, 8)}%`,
+                  minHeight: 8,
+                }}
+              >
+                {/* Count label on bar */}
+                {showCount && (
+                  <span className={`absolute -top-3.5 text-[8px] font-bold ${
+                    isSelected ? "text-cyan-300" : s.liquidatableCount > 0 ? "text-rose-300" : "text-white/30"
+                  }`}>
+                    {s.liquidatableCount}
+                  </span>
+                )}
+                
+                {/* Bar fill */}
+                <div 
+                  className={`absolute inset-0 rounded-t transition-colors ${
+                    isSelected
+                      ? "bg-cyan-400 shadow-lg shadow-cyan-400/30"
+                      : isCurrent
+                        ? "bg-white/40"
+                        : isNegative
+                          ? s.liquidatableCount > 0 ? "bg-rose-500" : "bg-rose-500/20"
+                          : s.liquidatableCount > 0 ? "bg-emerald-500" : "bg-emerald-500/20"
+                  }`}
+                />
+                
+                {/* Enhanced hover tooltip with HF info */}
+                {hoveredIdx === i && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-5 px-2 py-1.5 bg-slate-900 border border-white/20 rounded text-[9px] whitespace-nowrap z-20 shadow-xl">
+                    <div className="font-semibold text-white mb-0.5">
+                      At {s.priceChange > 0 ? "+" : ""}{s.priceChange}%
+                    </div>
+                    <div className={s.liquidatableCount > 0 ? "text-rose-400" : "text-emerald-400"}>
+                      {s.liquidatableCount}/{poolPositions.length} liquidatable
+                    </div>
+                    {s.worstHF !== null && (
+                      <div className="text-white/50 mt-0.5">
+                        Worst HF: {s.worstHF.toFixed(3)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        
+        {/* X-axis labels */}
+        <div className="flex justify-between mt-1 text-[9px]">
+          <span className="text-rose-400/60">{scenarios[0]?.priceChange}%</span>
+          {currentIdx !== -1 && (
+            <span className="text-white/50">0%</span>
+          )}
+          <span className="text-emerald-400/60">+{scenarios[scenarios.length - 1]?.priceChange}%</span>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SECTION 4: LIQUIDATABLE POSITIONS LIST (PROOF)
+          Shows exactly which positions would be liquidated with their HF
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {liquidatableAtShock.length > 0 && (
+        <div className="mt-3 bg-rose-500/5 border border-rose-500/20 rounded-lg p-3">
+          <div className="text-[10px] text-rose-300/80 uppercase tracking-wide mb-2 flex items-center justify-between">
+            <span>
+              Liquidatable positions at {priceChangePct > 0 ? "+" : ""}{priceChangePct}% ({liquidatableAtShock.length})
+            </span>
+            <span className="text-rose-400/60 normal-case">
+              threshold: {liquidationThreshold.toFixed(2)}
+            </span>
+          </div>
+          <div className="space-y-1.5 max-h-32 overflow-y-auto">
+            {liquidatableAtShock.slice(0, 5).map((pos) => (
+              <div 
+                key={pos.marginManagerId}
+                className="flex items-center justify-between text-[10px] bg-black/20 rounded px-2 py-1.5"
+              >
+                <code className="text-white/60 font-mono">
+                  {pos.marginManagerId.slice(0, 10)}…{pos.marginManagerId.slice(-4)}
+                </code>
+                <div className="flex items-center gap-3">
+                  <span className="text-white/40">
+                    HF: <span className="text-white/60">{pos.originalHF.toFixed(3)}</span>
+                    <span className="text-white/30 mx-1">→</span>
+                    <span className="text-rose-400 font-semibold">{pos.simulatedHF.toFixed(3)}</span>
+                  </span>
+                  <span className="text-amber-400/80">
+                    {formatUsd(pos.debtUsd)}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {liquidatableAtShock.length > 5 && (
+              <div className="text-[9px] text-white/30 text-center pt-1">
+                +{liquidatableAtShock.length - 5} more positions
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Pool-specific forward-looking risk outlook
  */
 export function PoolRiskOutlook({ pool, onSelectTab }: PoolRiskOutlookProps) {
@@ -247,7 +640,6 @@ export function PoolRiskOutlook({ pool, onSelectTab }: PoolRiskOutlookProps) {
     positions: allPositions,
     isLoading,
     error,
-    lastUpdated,
   } = useAtRiskPositions();
 
   // Filter positions for this pool
@@ -290,9 +682,9 @@ export function PoolRiskOutlook({ pool, onSelectTab }: PoolRiskOutlookProps) {
     [poolPositions, priceChangePct]
   );
 
-  // All scenarios for the chart
+  // All scenarios for the chart (extended range for slider)
   const scenarios = React.useMemo(() => {
-    const changes = [-20, -15, -10, -5, 0, 5, 10];
+    const changes = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20];
     return changes.map((change) =>
       simulatePositionsWithPriceChange(poolPositions, change)
     );
@@ -563,233 +955,16 @@ export function PoolRiskOutlook({ pool, onSelectTab }: PoolRiskOutlookProps) {
 
         {/* RIGHT: PRICE SHOCK SIMULATOR */}
         {totalPositions > 0 ? (
-          <div className="bg-slate-800/50 border border-amber-400/10 rounded-xl p-4 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-amber-500/20 rounded-lg">
-                  <AlertIcon size={16} variant="warning" />
-                </div>
-                <h3 className="text-sm font-semibold text-white">
-                  Price Shock Simulator
-                </h3>
-                <div className="relative group">
-                  <QuestionMarkCircleIcon className="w-4 h-4 text-white/40 hover:text-white/60 cursor-help" />
-                  <div className="absolute left-0 bottom-full mb-1 w-56 p-2 bg-slate-900 border border-amber-400/20 rounded-lg text-[11px] text-white/70 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
-                    Simulates how {pool.asset} price changes affect liquidations.
-                    Negative = {pool.asset} drops, positive = {pool.asset} rises.
-                  </div>
-                </div>
-              </div>
-              <span className="text-xs text-white/50 bg-white/5 px-2 py-0.5 rounded">
-                {pool.asset} price Δ
-              </span>
-            </div>
-
-            {/* Price change selector */}
-            <div className="flex items-center justify-center gap-1 mb-3">
-              {[-20, -15, -10, -5, 0, 5, 10].map((change) => (
-                <button
-                  key={change}
-                  onClick={() => setPriceChangePct(change)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                    priceChangePct === change
-                      ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-900 shadow-lg shadow-cyan-500/25"
-                      : change < 0
-                        ? "bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/20"
-                        : change > 0
-                          ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/20"
-                          : "bg-white/10 text-white/70 hover:bg-white/15 border border-white/20"
-                  }`}
-                >
-                  {change > 0 ? "+" : ""}
-                  {change}%
-                </button>
-              ))}
-            </div>
-
-            {/* Result display */}
-            <div className="bg-black/30 rounded-lg px-4 py-3 mb-3 border border-white/5">
-              <div className="text-center mb-2">
-                <span className="text-xs text-white/50">
-                  If {pool.asset} {priceChangePct >= 0 ? "rises" : "drops"}{" "}
-                  <span className="font-semibold text-white">
-                    {Math.abs(priceChangePct)}%
-                  </span>
-                  :
-                </span>
-              </div>
-              <div className="flex items-center justify-center gap-6">
-                <div className="text-center">
-                  <div
-                    className={`text-2xl font-bold ${simulatedState.liquidatableCount > currentState.liquidatableCount ? "text-rose-400" : simulatedState.liquidatableCount > 0 ? "text-amber-400" : "text-emerald-400"}`}
-                  >
-                    {simulatedState.liquidatableCount}
-                  </div>
-                  <div className="text-[10px] text-white/50">
-                    liquidatable
-                    {liquidatableDelta !== 0 && (
-                      <span
-                        className={`ml-1 ${liquidatableDelta > 0 ? "text-rose-400" : "text-emerald-400"}`}
-                      >
-                        ({liquidatableDelta > 0 ? "+" : ""}
-                        {liquidatableDelta} vs now)
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="w-px h-8 bg-white/10" />
-                <div className="text-center">
-                  <div
-                    className={`text-2xl font-bold ${simulatedState.totalDebtAtRiskUsd > currentState.totalDebtAtRiskUsd ? "text-rose-400" : "text-white"}`}
-                  >
-                    {formatUsd(simulatedState.totalDebtAtRiskUsd)}
-                  </div>
-                  <div className="text-[10px] text-white/50">debt at risk</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Chart */}
-            <div className="relative h-24">
-              {/* Y-axis label */}
-              <div className="absolute left-0 top-0 bottom-4 w-8 flex flex-col justify-between text-[9px] text-white/40 font-mono text-right pr-1">
-                <span>{Math.max(...scenarios.map((s) => s.liquidatableCount))}</span>
-                <span className="text-[8px]">liq</span>
-                <span>0</span>
-              </div>
-
-              <div className="ml-9 h-full relative">
-                {/* Grid */}
-                <div className="absolute inset-x-0 top-0 h-px bg-white/5" />
-                <div className="absolute inset-x-0 top-1/2 h-px bg-white/5" />
-                <div className="absolute inset-x-0 bottom-5 h-px bg-white/10" />
-
-                {/* 0% reference line */}
-                <div
-                  className="absolute bottom-5 top-0"
-                  style={{ left: `${(4 / 6) * 100}%` }}
-                >
-                  <div className="w-px h-full bg-cyan-400/40" />
-                  <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] text-cyan-400">
-                    now
-                  </span>
-                </div>
-
-                {/* Chart area */}
-                <div className="relative w-full" style={{ height: "calc(100% - 20px)" }}>
-                  <svg
-                    className="absolute inset-0 w-full h-full overflow-visible"
-                    viewBox="0 0 100 100"
-                    preserveAspectRatio="none"
-                  >
-                    {(() => {
-                      const maxCount = Math.max(
-                        ...scenarios.map((s) => s.liquidatableCount),
-                        1
-                      );
-                      const points = scenarios.map((s, i) => {
-                        const x = (i / (scenarios.length - 1)) * 100;
-                        const y = 100 - (s.liquidatableCount / maxCount) * 100;
-                        return { x, y };
-                      });
-
-                      const pathD = points
-                        .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
-                        .join(" ");
-
-                      return (
-                        <>
-                          <defs>
-                            <linearGradient
-                              id="lineGradientRisk"
-                              x1="0%"
-                              y1="0%"
-                              x2="100%"
-                              y2="0%"
-                            >
-                              <stop offset="0%" stopColor="#f43f5e" />
-                              <stop offset="60%" stopColor="#f43f5e" />
-                              <stop offset="70%" stopColor="#64748b" />
-                              <stop offset="100%" stopColor="#10b981" />
-                            </linearGradient>
-                          </defs>
-                          <path
-                            d={pathD}
-                            fill="none"
-                            stroke="url(#lineGradientRisk)"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            vectorEffect="non-scaling-stroke"
-                            style={{
-                              filter: "drop-shadow(0 0 4px rgba(244,63,94,0.3))",
-                            }}
-                          />
-                        </>
-                      );
-                    })()}
-                  </svg>
-
-                  {/* Dots */}
-                  {(() => {
-                    const maxCount = Math.max(
-                      ...scenarios.map((s) => s.liquidatableCount),
-                      1
-                    );
-                    return scenarios.map((scenario, i) => {
-                      const xPct = (i / (scenarios.length - 1)) * 100;
-                      const yPct = 100 - (scenario.liquidatableCount / maxCount) * 100;
-                      const isSelected = scenario.priceChange === priceChangePct;
-
-                      return (
-                        <div
-                          key={i}
-                          className="absolute"
-                          style={{
-                            left: `${xPct}%`,
-                            top: `${yPct}%`,
-                            transform: "translate(-50%, -50%)",
-                          }}
-                        >
-                          {isSelected && (
-                            <span
-                              className="absolute left-1/2 -translate-x-1/2 text-cyan-300 font-bold text-[11px] whitespace-nowrap"
-                              style={{ bottom: "100%", marginBottom: 4 }}
-                            >
-                              {scenario.liquidatableCount}
-                            </span>
-                          )}
-                          <button
-                            onClick={() => setPriceChangePct(scenario.priceChange)}
-                            className={`rounded-full transition-all ${
-                              isSelected
-                                ? "w-3 h-3 bg-cyan-400 ring-2 ring-cyan-400/50"
-                                : scenario.priceChange < 0
-                                  ? "w-2.5 h-2.5 bg-rose-400/60 hover:bg-rose-400"
-                                  : scenario.priceChange > 0
-                                    ? "w-2.5 h-2.5 bg-emerald-400/60 hover:bg-emerald-400"
-                                    : "w-2.5 h-2.5 bg-white/40 hover:bg-white/70"
-                            }`}
-                            style={{
-                              boxShadow: isSelected
-                                ? "0 0 8px rgba(34,211,238,0.5)"
-                                : undefined,
-                            }}
-                          />
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-
-                {/* X-axis labels */}
-                <div className="flex justify-between text-[9px] text-white/40 mt-1">
-                  <span className="text-rose-400/70">-20%</span>
-                  <span className="text-emerald-400/70">+10%</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PriceShockSimulator
+            pool={pool}
+            poolPositions={poolPositions}
+            currentState={currentState}
+            distanceToLiquidation={distanceToLiquidation}
+            priceChangePct={priceChangePct}
+            setPriceChangePct={setPriceChangePct}
+            simulatedState={simulatedState}
+            scenarios={scenarios}
+          />
         ) : (
           <div className="bg-slate-800/50 border border-white/10 rounded-xl p-4 flex items-center justify-center backdrop-blur-sm">
             <div className="text-center py-6">
@@ -843,14 +1018,6 @@ export function PoolRiskOutlook({ pool, onSelectTab }: PoolRiskOutlookProps) {
         </div>
       )}
 
-      {/* Timestamp */}
-      <p className="text-[10px] text-white/25 text-center">
-        Updated{" "}
-        {lastUpdated?.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }) || "—"}
-      </p>
     </div>
   );
 }

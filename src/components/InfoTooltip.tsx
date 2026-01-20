@@ -40,6 +40,12 @@ export const TOOLTIP_DEFINITIONS = {
   highLiquidity: "Pool has low utilization with ample available funds for withdrawal.",
   optimalLiquidity: "Pool is operating at target utilization with balanced supply and demand.",
   lowLiquidity: "High utilization may cause withdrawal delays. Consider the exit risk.",
+  
+  // Activity metrics (7d)
+  netFlow7d: "Net capital flow over 7 days. Deposits minus withdrawals—positive means the pool is growing.",
+  borrowVolume7d: "Total borrow turnover in 7 days. Shows how actively borrowers are cycling in/out.",
+  activeUsers7d: "Unique users active in 7 days. Format: Suppliers / Borrowers.",
+  lastActivity: "Time since the most recent pool activity (supply, withdraw, borrow, or repay).",
 } as const;
 
 export type TooltipKey = keyof typeof TOOLTIP_DEFINITIONS;

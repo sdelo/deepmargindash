@@ -4,7 +4,6 @@ import { useSuiClientContext } from "@mysten/dapp-kit";
 import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { brand } from "../config/brand";
 import { NetworkSwitcher } from "./NetworkSwitcher";
-import { IndexerSwitcher } from "./IndexerSwitcher";
 
 export function LandingNavBar() {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
@@ -66,14 +65,10 @@ export function LandingNavBar() {
                 <div className="px-4 py-3 border-b border-white/[0.06]">
                   <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider">Settings</h3>
                 </div>
-                <div className="p-4 space-y-4">
+                <div className="p-4">
                   <div>
                     <label className="text-xs text-white/50 block mb-2">Network</label>
                     <NetworkSwitcher />
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/50 block mb-2">Indexer</label>
-                    <IndexerSwitcher />
                   </div>
                 </div>
               </div>

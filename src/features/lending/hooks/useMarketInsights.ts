@@ -103,7 +103,7 @@ export function useMarketInsights(
     }
 
     // Determine decimals (default to 9 for SUI)
-    const decimals = 9; // TODO: Get from pool config
+    const decimals = 9;
 
     // Calculate volumes
     const totalBorrowVolume = borrowedQuery.data.reduce(
@@ -145,7 +145,7 @@ export function useMarketInsights(
       // For now, return 0 or calculate from current pool state if available
       return {
         timestamp: point.timestamp,
-        utilization: 0, // TODO: Calculate from loan events
+        utilization: 0,
       };
     });
 

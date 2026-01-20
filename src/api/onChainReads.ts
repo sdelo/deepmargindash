@@ -21,13 +21,6 @@ export async function fetchUserCurrentSupply(
   assetType: string,
   packageId: string
 ): Promise<bigint | null> {
-  console.log('[fetchUserCurrentSupply] Starting with:', {
-    poolId,
-    supplierCapId,
-    assetType,
-    packageId,
-  });
-  
   try {
     // Create a transaction to call the view function
     const tx = new Transaction();
@@ -44,66 +37,39 @@ export async function fetchUserCurrentSupply(
       typeArguments: [assetType],
     });
     
-    console.log('[fetchUserCurrentSupply] Calling devInspectTransactionBlock...');
-    
     // Execute the transaction in dev inspect mode (read-only, no gas cost)
     const result = await suiClient.devInspectTransactionBlock({
       transactionBlock: tx,
       sender: '0x0000000000000000000000000000000000000000000000000000000000000000', // Dummy sender for dev inspect
     });
     
-    console.log('[fetchUserCurrentSupply] devInspect result:', {
-      status: result.effects?.status,
-      resultsCount: result.results?.length,
-      error: result.error,
-    });
-    
     // Check if the transaction was successful
     if (result.effects.status.status !== 'success') {
-      console.error('[fetchUserCurrentSupply] Dev inspect failed:', result.effects.status.error);
       return null;
     }
     
     // Parse the return value from the first result
-    // The return value is a u64
     if (!result.results || result.results.length === 0) {
-      console.error('[fetchUserCurrentSupply] No results returned from dev inspect');
       return null;
     }
     
-    console.log('[fetchUserCurrentSupply] Full results structure:', JSON.stringify(result.results, null, 2));
-    
     const returnValues = result.results[0]?.returnValues;
-    console.log('[fetchUserCurrentSupply] returnValues:', returnValues);
     
     if (!returnValues || returnValues.length === 0) {
-      console.error('[fetchUserCurrentSupply] No return values in result');
       return null;
     }
     
     // The return value is a BCS-encoded u64
     // Structure: [[bytes, typeTag], ...]
     const firstReturnValue = returnValues[0];
-    console.log('[fetchUserCurrentSupply] firstReturnValue:', firstReturnValue);
-    
     const returnValueBytes = firstReturnValue[0];
-    console.log('[fetchUserCurrentSupply] returnValueBytes:', returnValueBytes);
     
     const currentSupplyRaw = bcs.U64.parse(new Uint8Array(returnValueBytes));
     // Ensure we always return a BigInt (bcs.U64.parse may return number in some SDK versions)
     const currentSupply = BigInt(currentSupplyRaw);
     
-    console.log('[fetchUserCurrentSupply] Success, currentSupply:', currentSupply.toString());
-    
     return currentSupply;
-  } catch (error) {
-    console.error('[fetchUserCurrentSupply] Error:', error);
-    // Log more details about the error
-    if (error instanceof Error) {
-      console.error('[fetchUserCurrentSupply] Error message:', error.message);
-      console.error('[fetchUserCurrentSupply] Error stack:', error.stack);
-    }
+  } catch {
     return null;
   }
 }
-

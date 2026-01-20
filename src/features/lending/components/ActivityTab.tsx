@@ -9,6 +9,7 @@ import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 interface ActivityTabProps {
   pool: PoolOverview;
+  initialSection?: string | null;
 }
 
 const SECTIONS: SectionConfig[] = [
@@ -27,9 +28,14 @@ const SECTIONS: SectionConfig[] = [
  * 
  * Each section includes "What This Tells You" interpretation guides.
  */
-export function ActivityTab({ pool }: ActivityTabProps) {
-  const [activeSection, setActiveSection] = React.useState("supply-withdraw");
+export function ActivityTab({ pool, initialSection }: ActivityTabProps) {
+  const [activeSection, setActiveSection] = React.useState(initialSection || "supply-withdraw");
   const [isChipsSticky, setIsChipsSticky] = React.useState(false);
+  const [flashingSection, setFlashingSection] = React.useState<string | null>(null);
+  
+  // Track programmatic navigation to temporarily disable scrollspy
+  const isNavigatingRef = React.useRef(false);
+  const navigationTimeoutRef = React.useRef<ReturnType<typeof setTimeout>>();
 
   // Refs for each section
   const supplyWithdrawRef = React.useRef<HTMLDivElement>(null);
@@ -45,13 +51,74 @@ export function ActivityTab({ pool }: ActivityTabProps) {
     composition: compositionRef,
   };
 
+  // Helper to scroll to section with proper positioning and flash effect
+  const scrollToSection = React.useCallback((sectionId: string, shouldFlash = false) => {
+    const ref = sectionRefs[sectionId];
+    if (!ref?.current) return;
+    
+    // Mark as navigating to prevent scrollspy from overriding
+    isNavigatingRef.current = true;
+    setActiveSection(sectionId);
+    
+    // Clear any existing navigation timeout
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+    
+    // Get the element's position relative to the document
+    const element = ref.current;
+    const elementRect = element.getBoundingClientRect();
+    const absoluteElementTop = elementRect.top + window.scrollY;
+    
+    // Calculate target scroll position to put element near top of viewport
+    // Account for: navbar (~56px) + tab bar (~52px) + section chips (~44px) + some padding (~20px)
+    const totalHeaderHeight = 172;
+    const targetScrollPosition = absoluteElementTop - totalHeaderHeight;
+    
+    window.scrollTo({
+      top: Math.max(0, targetScrollPosition),
+      behavior: "smooth"
+    });
+    
+    // Trigger flash effect after scroll animation starts
+    if (shouldFlash) {
+      setTimeout(() => {
+        setFlashingSection(sectionId);
+        setTimeout(() => setFlashingSection(null), 600);
+      }, 300);
+    }
+    
+    // Re-enable scrollspy after scroll animation completes
+    navigationTimeoutRef.current = setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 1000);
+  }, []);
+
+  // Navigate to section when initialSection changes (e.g., from tile click)
+  React.useEffect(() => {
+    if (initialSection && sectionRefs[initialSection]) {
+      // Use a longer delay to ensure the new tab content is fully rendered and measured
+      const timeoutId = setTimeout(() => {
+        requestAnimationFrame(() => {
+          scrollToSection(initialSection, true);
+        });
+      }, 150);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [initialSection, scrollToSection]);
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Scroll to section when clicking chips
   const handleSectionClick = (sectionId: string) => {
-    setActiveSection(sectionId);
-    const ref = sectionRefs[sectionId];
-    if (ref?.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    scrollToSection(sectionId, true);
   };
 
   // Smart sticky: detect when we've scrolled past the sentinel
@@ -81,12 +148,13 @@ export function ActivityTab({ pool }: ActivityTabProps) {
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+            // Only update if not currently navigating programmatically
+            if (!isNavigatingRef.current && entry.isIntersecting && entry.intersectionRatio > 0.2) {
               setActiveSection(id);
             }
           });
         },
-        { threshold: [0.3, 0.5, 0.7], rootMargin: "-100px 0px -50% 0px" }
+        { threshold: [0.2, 0.4, 0.6], rootMargin: "-180px 0px -40% 0px" }
       );
 
       observer.observe(ref.current);
@@ -182,28 +250,56 @@ export function ActivityTab({ pool }: ActivityTabProps) {
       {/* ═══════════════════════════════════════════════════════════════════
           SECTION: Supply & Withdraw Activity
       ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={supplyWithdrawRef} className="scroll-mt-36 pb-8">
+      <section 
+        ref={supplyWithdrawRef} 
+        className={`scroll-mt-44 pb-8 rounded-xl transition-all duration-300 ${
+          flashingSection === "supply-withdraw" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
         <PoolActivity pool={pool} />
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           SECTION: Borrow & Repay Activity
       ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={borrowRepayRef} className="scroll-mt-36 pb-8 border-t border-slate-700/30 pt-6">
+      <section 
+        ref={borrowRepayRef} 
+        className={`scroll-mt-44 pb-8 border-t border-slate-700/30 pt-6 rounded-xl transition-all duration-300 ${
+          flashingSection === "borrow-repay" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
         <BorrowRepayActivity pool={pool} />
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           SECTION: Unified Event Feed
       ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={eventFeedRef} className="scroll-mt-36 pb-8 border-t border-slate-700/30 pt-6">
+      <section 
+        ref={eventFeedRef} 
+        className={`scroll-mt-44 pb-8 border-t border-slate-700/30 pt-6 rounded-xl transition-all duration-300 ${
+          flashingSection === "event-feed" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
         <UnifiedEventFeed pool={pool} />
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           SECTION: Whale & Composition
       ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={compositionRef} className="scroll-mt-36 pb-4 border-t border-slate-700/30 pt-6">
+      <section 
+        ref={compositionRef} 
+        className={`scroll-mt-44 pb-4 border-t border-slate-700/30 pt-6 rounded-xl transition-all duration-300 ${
+          flashingSection === "composition" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
         <WhaleComposition pool={pool} />
       </section>
     </div>

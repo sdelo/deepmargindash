@@ -53,15 +53,7 @@ export function useEnrichedUserPositions(
   const retryTimeoutsRef = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   React.useEffect(() => {
-    // Create a unique run ID for debugging
-    const runId = Math.random().toString(36).slice(2, 8);
-    console.log(`[useEnrichedUserPositions][${runId}] Effect starting`, {
-      positionsCount: positions.length,
-      poolsCount: pools.length,
-    });
-
     if (positions.length === 0 || pools.length === 0) {
-      console.log(`[useEnrichedUserPositions][${runId}] Skipping - no positions or pools`);
       return;
     }
 
@@ -71,7 +63,6 @@ export function useEnrichedUserPositions(
       
       // Skip if already in flight
       if (inFlightRef.current.has(key)) {
-        console.log(`[useEnrichedUserPositions][${runId}] Skipping ${key} - already in flight`);
         continue;
       }
 
@@ -80,24 +71,18 @@ export function useEnrichedUserPositions(
       if (existingData && !existingData.isLoading && existingData.currentValue !== null && existingData.originalValue !== null && !existingData.error) {
         // Check if shares changed (deposit/withdraw happened)
         if (existingData.shares === position.shares) {
-          console.log(`[useEnrichedUserPositions][${runId}] Skipping ${key} - already loaded, shares unchanged`);
           continue;
-        } else {
-          console.log(`[useEnrichedUserPositions][${runId}] Shares changed for ${key}: ${existingData.shares} -> ${position.shares}, re-fetching`);
         }
       }
 
       // Find the pool for this position
       const pool = pools.find(p => p.asset === position.asset);
       if (!pool) {
-        console.log(`[useEnrichedUserPositions][${runId}] Pool not found for ${position.asset}`);
         continue;
       }
 
       // Mark as in-flight
       inFlightRef.current.add(key);
-
-      console.log(`[useEnrichedUserPositions][${runId}] Fetching data for ${key}`);
 
       // Async IIFE to handle each position with retry logic
       (async () => {
@@ -127,26 +112,12 @@ export function useEnrichedUserPositions(
               sharesAsBigInt
             );
 
-            // Log results (convert to string to avoid serialization issues)
-            let interestCalc = 'pending';
-            if (currentValue !== null && originalValue !== null) {
-              const currentBigInt = BigInt(currentValue);
-              const originalBigInt = BigInt(originalValue);
-              interestCalc = (currentBigInt - originalBigInt).toString();
-            }
-            console.log(`[useEnrichedUserPositions][${runId}] ${position.asset} result (attempt ${retryCount + 1}):`, {
-              currentValue: currentValue !== null ? String(currentValue) : null,
-              originalValue: originalValue !== null ? String(originalValue) : null,
-              interest: interestCalc
-            });
-
             // Ensure all values are BigInt (convert if needed)
             const currentBigInt = currentValue !== null ? BigInt(currentValue) : null;
             const originalBigInt = originalValue !== null ? BigInt(originalValue) : null;
             
             // If originalValue is null but we have currentValue, and we haven't exceeded retries, schedule a retry
             if (currentBigInt !== null && originalBigInt === null && retryCount < MAX_RETRY_COUNT) {
-              console.log(`[useEnrichedUserPositions][${runId}] Indexer pending for ${key}, scheduling retry ${retryCount + 1}/${MAX_RETRY_COUNT}`);
               
               // Update state to show loading state (but with current value available)
               setEnrichedData(prev => {
@@ -195,7 +166,6 @@ export function useEnrichedUserPositions(
               return next;
             });
           } catch (error) {
-            console.error(`[useEnrichedUserPositions][${runId}] Error for ${position.asset}:`, error);
             
             setEnrichedData(prev => {
               const next = new Map(prev);

@@ -195,34 +195,80 @@ export const PersonalPositions: FC<Props> = ({
         {uniqueCapIds.length >= 1 && (
           <div className="flex items-center gap-2 mb-2 text-xs">
             <span className="text-slate-500">Cap:</span>
-            <a
-              href={`${explorerUrl}/object/${uniqueCapIds[0]}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-            >
-              {truncateAddress(uniqueCapIds[0])}
-              <svg
-                className="w-2.5 h-2.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
-            </a>
-            <button
-              onClick={() => copyToClipboard(uniqueCapIds[0])}
-              className="px-1.5 py-0.5 bg-slate-700/50 hover:bg-slate-600/50 rounded border border-slate-600/50 text-slate-300 transition-colors"
-              title="Copy"
-            >
-              Copy
-            </button>
+            {uniqueCapIds.length > 1 ? (
+              <>
+                <select
+                  value={selectedCapId || ""}
+                  onChange={(e) => setSelectedCapId(e.target.value)}
+                  className="bg-slate-700/50 border border-slate-600/50 rounded px-2 py-0.5 text-cyan-400 text-xs font-mono focus:outline-none focus:border-cyan-500/50 cursor-pointer"
+                >
+                  {uniqueCapIds.map((capId) => (
+                    <option key={capId} value={capId}>
+                      {truncateAddress(capId)}
+                    </option>
+                  ))}
+                </select>
+                <a
+                  href={`${explorerUrl}/object/${selectedCapId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan-400 hover:text-cyan-300"
+                  title="View in explorer"
+                >
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </a>
+                <button
+                  onClick={() => selectedCapId && copyToClipboard(selectedCapId)}
+                  className="px-1.5 py-0.5 bg-slate-700/50 hover:bg-slate-600/50 rounded border border-slate-600/50 text-slate-300 transition-colors"
+                  title="Copy"
+                >
+                  Copy
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href={`${explorerUrl}/object/${uniqueCapIds[0]}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                >
+                  {truncateAddress(uniqueCapIds[0])}
+                  <svg
+                    className="w-2.5 h-2.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </a>
+                <button
+                  onClick={() => copyToClipboard(uniqueCapIds[0])}
+                  className="px-1.5 py-0.5 bg-slate-700/50 hover:bg-slate-600/50 rounded border border-slate-600/50 text-slate-300 transition-colors"
+                  title="Copy"
+                >
+                  Copy
+                </button>
+              </>
+            )}
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import type { PoolOverview } from "../types";
-import { utilizationPct } from "../../../data/synthetic/pools";
+import { utilizationPct } from "../../../utils/format";
 
 type Props = { pool: PoolOverview };
 

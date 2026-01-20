@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOHLCV, fetchPairSummary, parseCandles, type MarketSummary, type ParsedCandle } from '../api/marketData';
+import { useChartFirstRender, useStableGradientId } from '../../../components/charts/StableChart';
 
 interface MarketStatsProps {
   poolName?: string; // e.g., "SUI_DBUSDC"
@@ -32,13 +33,19 @@ export function MarketStats({ poolName = 'SUI_DBUSDC', compact = false }: Market
     refetchInterval: 30 * 1000,
   });
 
-  const isLoading = candlesLoading || summaryLoading;
-
   // Parse candles for chart
   const chartData: ParsedCandle[] = React.useMemo(() => {
     if (!candles || candles.length === 0) return [];
     return parseCandles(candles).sort((a, b) => a.timestamp - b.timestamp);
   }, [candles]);
+
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(chartData.length > 0);
+  const gradientUpId = useStableGradientId('priceGradientUp');
+  const gradientDownId = useStableGradientId('priceGradientDown');
+
+  // Only show loading on first load, not on refetches
+  const isLoading = (candlesLoading || summaryLoading) && chartData.length === 0 && !summary;
 
   // Calculate price change color
   const priceChangeColor = summary?.price_change_percent_24h 
@@ -144,11 +151,11 @@ export function MarketStats({ poolName = 'SUI_DBUSDC', compact = false }: Market
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
               <defs>
-                <linearGradient id="priceGradientUp" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={gradientUpId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
                   <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
                 </linearGradient>
-                <linearGradient id="priceGradientDown" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={gradientDownId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4} />
                   <stop offset="100%" stopColor="#ef4444" stopOpacity={0.05} />
                 </linearGradient>
@@ -170,9 +177,10 @@ export function MarketStats({ poolName = 'SUI_DBUSDC', compact = false }: Market
                 dataKey="close"
                 stroke={summary.price_change_percent_24h >= 0 ? "#10b981" : "#ef4444"}
                 strokeWidth={2}
-                fill={summary.price_change_percent_24h >= 0 ? "url(#priceGradientUp)" : "url(#priceGradientDown)"}
+                fill={summary.price_change_percent_24h >= 0 ? `url(#${gradientUpId})` : `url(#${gradientDownId})`}
                 dot={false}
                 activeDot={{ r: 3, strokeWidth: 0 }}
+                {...animationProps}
               />
             </AreaChart>
           </ResponsiveContainer>

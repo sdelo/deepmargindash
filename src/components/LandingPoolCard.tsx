@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { PoolOverview } from "../features/lending/types";
-import { formatCurrency, utilizationPct } from "../data/synthetic/pools";
+import { formatCurrency, utilizationPct } from "../utils/format";
 
 interface LandingPoolCardProps {
   pool: PoolOverview;
@@ -19,7 +19,9 @@ export function LandingPoolCard({ pool }: LandingPoolCardProps) {
   // Get icon from pool's dynamic iconUrl or fall back to static icons
   const getIcon = () => pool.ui.iconUrl || FALLBACK_ICONS[pool.asset] || "";
   const supply = Number(pool.state.supply);
+  const borrowed = Number(pool.state.borrow);
   const utilization = utilizationPct(pool.state.supply, pool.state.borrow);
+  const utilizationNum = Number(utilization);
 
   return (
     <Link
@@ -60,7 +62,7 @@ export function LandingPoolCard({ pool }: LandingPoolCardProps) {
         </div>
       </div>
 
-      {/* Metrics Row - Table-like structure */}
+      {/* Metrics Row - Utilization is the main story, it drives APY */}
       <div className="relative grid grid-cols-3 gap-3 mb-5">
         <div className="text-center p-3 rounded-xl bg-[rgba(13,26,31,0.5)] border border-white/[0.04]">
           <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">TVL</p>
@@ -68,14 +70,20 @@ export function LandingPoolCard({ pool }: LandingPoolCardProps) {
             ${formatCurrency(supply)}
           </p>
         </div>
-        <div className="text-center p-3 rounded-xl bg-[rgba(13,26,31,0.5)] border border-white/[0.04]">
+        <div className={`text-center p-3 rounded-xl border ${
+          utilizationNum > 50 
+            ? 'bg-[rgba(45,212,191,0.08)] border-[rgba(45,212,191,0.15)]' 
+            : 'bg-[rgba(13,26,31,0.5)] border-white/[0.04]'
+        }`}>
           <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Utilization</p>
-          <p className="text-sm font-semibold text-white font-mono">{utilization}%</p>
+          <p className={`text-sm font-semibold font-mono ${
+            utilizationNum > 50 ? 'text-[#2dd4bf]' : 'text-white'
+          }`}>{utilization}%</p>
         </div>
         <div className="text-center p-3 rounded-xl bg-[rgba(13,26,31,0.5)] border border-white/[0.04]">
-          <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">APY</p>
-          <p className="text-sm font-semibold text-[#2dd4bf] font-mono">
-            {Number(pool.ui.aprSupplyPct).toFixed(2)}%
+          <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Borrowed</p>
+          <p className="text-sm font-semibold text-white/80 font-mono">
+            ${formatCurrency(borrowed)}
           </p>
         </div>
       </div>

@@ -17,29 +17,31 @@ interface OverviewTilesProps {
 // Tooltip definitions for risk metrics
 const RISK_DEFINITIONS = {
   concentration: {
-    diversified: "Supply is well-distributed across many providers, reducing single-point-of-failure risk.",
-    moderate: "Some concentration exists. If a top supplier exits, utilization may increase significantly.",
-    concentrated: "High concentration: top suppliers control >50% of supply. Withdrawal by whales could stress the pool.",
-    dominated: "Extreme concentration: one address controls >80% of supply. High risk of liquidity crunch.",
+    diversified: "Low risk: Supply is well-distributed across many providers, reducing single-point-of-failure risk.",
+    moderate: "Medium risk: Some concentration exists. If a top supplier exits, utilization may increase significantly.",
+    concentrated: "High risk: Top suppliers control >50% of supply. Withdrawal by whales could stress the pool.",
+    dominated: "Critical risk: One address controls >80% of supply. High risk of liquidity crunch if they exit.",
     metric: "Measures how concentrated supply is among top depositors. Lower concentration = more resilient pool."
   },
   liquidity: {
-    high: "Plenty of idle capital available for withdrawals. Low risk of withdrawal delays.",
-    constrained: "Moderate utilization. Large withdrawals may experience delays during high demand.",
-    low: "Most capital is lent out. Withdrawals may be queued until borrowers repay.",
-    metric: "Available liquidity = Supply - Borrowed. Higher is better for instant withdrawals."
+    high: "Strong liquidity: Plenty of idle capital available for withdrawals. Low risk of delays.",
+    constrained: "Tight liquidity: Moderate utilization. Large withdrawals may experience delays during high demand.",
+    low: "Low liquidity: Most capital is lent out. Withdrawals may be queued until borrowers repay.",
+    metric: "Available liquidity = Supply - Borrowed. Higher percentage is better for instant withdrawals."
   },
   badDebt: {
-    none: "No bad debt has occurred. All liquidations have been fully covered by collateral.",
-    atRisk: "Bad debt exists—some borrower collateral didn't cover their debt. Suppliers may absorb losses.",
+    none: "No bad debt risk: All liquidations have been fully covered by collateral.",
+    atRisk: "Elevated risk: Bad debt exists—some borrower collateral didn't cover their debt. Suppliers may absorb losses.",
     metric: "Bad debt occurs when a position's collateral is worth less than their debt at liquidation time."
   }
 };
 
+type TimeWindow = "7d" | "30d";
+
 interface TileData {
   apyHistory: {
-    min7d: number;
-    max7d: number;
+    min: number;
+    max: number;
     trend: "up" | "down" | "stable";
     volatility: "stable" | "moderate" | "volatile";
   };
@@ -58,12 +60,16 @@ interface TileData {
   };
   whales: {
     topSupplierShare: number;
+    top3SupplierShare: number;
     supplierCount: number;
     dominanceLevel: "diversified" | "moderate" | "concentrated" | "dominated";
     utilizationIfWhaleExits: number;
+    hhi: number;
+    gini: number;
   };
   withdrawAvailability: {
     availableLiquidity: number;
+    totalSupply: number;
     availablePctOfSupply: number;
     utilizationPct: number;
   };
@@ -78,10 +84,23 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
   const { serverUrl } = useAppNetwork();
   const [tileData, setTileData] = React.useState<TileData | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [timeWindow, setTimeWindow] = React.useState<TimeWindow>("7d");
 
-  const decimals = pool.contracts?.coinDecimals ?? 9;
-  const poolId = pool.contracts?.marginPoolId;
-  const liveRates = React.useMemo(() => calculatePoolRates(pool), [pool]);
+  const decimals = pool?.contracts?.coinDecimals ?? 9;
+  const poolId = pool?.contracts?.marginPoolId;
+  
+  // Safely calculate pool rates with fallback
+  const liveRates = React.useMemo(() => {
+    try {
+      if (!pool?.state || !pool?.protocolConfig) {
+        return { utilizationPct: 0, borrowApr: 0, supplyApr: 0 };
+      }
+      return calculatePoolRates(pool);
+    } catch (err) {
+      console.error("Error calculating pool rates:", err);
+      return { utilizationPct: 0, borrowApr: 0, supplyApr: 0 };
+    }
+  }, [pool]);
 
   React.useEffect(() => {
     async function fetchTileData() {
@@ -90,15 +109,13 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
       try {
         setIsLoading(true);
 
-        const params7d = { ...timeRangeToParams("7D"), margin_pool_id: poolId, limit: 10000 };
-        const params30d = { ...timeRangeToParams("1M"), margin_pool_id: poolId, limit: 10000 };
+        const timeRange = timeWindow === "7d" ? "7D" : "1M";
+        const params = { ...timeRangeToParams(timeRange), margin_pool_id: poolId, limit: 10000 };
 
-        const [supplied7d, withdrawn7d, supplied30d, withdrawn30d, liquidations] = await Promise.all([
-          fetchAssetSupplied(params7d),
-          fetchAssetWithdrawn(params7d),
-          fetchAssetSupplied(params30d),
-          fetchAssetWithdrawn(params30d),
-          fetchLiquidations(params30d),
+        const [supplied, withdrawn, liquidations] = await Promise.all([
+          fetchAssetSupplied(params),
+          fetchAssetWithdrawn(params),
+          fetchLiquidations(params),
         ]);
 
         // Yield curve data
@@ -109,19 +126,19 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
         // APY History
         const currentApy = liveRates.supplyApr;
         const apyVariance = Math.random() * 2;
-        const min7d = Math.max(0, currentApy - apyVariance);
-        const max7d = currentApy + apyVariance;
-        const net7d = supplied7d.reduce((sum, e) => sum + parseFloat(e.amount), 0) - 
-                      withdrawn7d.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-        const trend: "up" | "down" | "stable" = net7d > 0 ? "up" : net7d < 0 ? "down" : "stable";
-        const range = max7d - min7d;
+        const min = Math.max(0, currentApy - apyVariance);
+        const max = currentApy + apyVariance;
+        const net = supplied.reduce((sum, e) => sum + parseFloat(e.amount), 0) - 
+                      withdrawn.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+        const trend: "up" | "down" | "stable" = net > 0 ? "up" : net < 0 ? "down" : "stable";
+        const range = max - min;
         const volatility: "stable" | "moderate" | "volatile" = range < 1 ? "stable" : range < 5 ? "moderate" : "volatile";
 
         // Activity
-        const depositDays = new Set(supplied30d.map(e => new Date(e.checkpoint_timestamp_ms).toDateString())).size;
-        const withdrawDays = new Set(withdrawn30d.map(e => new Date(e.checkpoint_timestamp_ms).toDateString())).size;
-        const netFlow = (supplied30d.reduce((sum, e) => sum + parseFloat(e.amount), 0) - 
-                        withdrawn30d.reduce((sum, e) => sum + parseFloat(e.amount), 0)) / 10 ** decimals;
+        const depositDays = new Set(supplied.map(e => new Date(e.checkpoint_timestamp_ms).toDateString())).size;
+        const withdrawDays = new Set(withdrawn.map(e => new Date(e.checkpoint_timestamp_ms).toDateString())).size;
+        const netFlow = (supplied.reduce((sum, e) => sum + parseFloat(e.amount), 0) - 
+                        withdrawn.reduce((sum, e) => sum + parseFloat(e.amount), 0)) / 10 ** decimals;
 
         // Risk
         const totalLiquidations = liquidations.length;
@@ -140,11 +157,11 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
 
         // Whale Concentration
         const supplierMap = new Map<string, number>();
-        supplied30d.forEach((e) => {
+        supplied.forEach((e) => {
           const current = supplierMap.get(e.supplier) || 0;
           supplierMap.set(e.supplier, current + parseFloat(e.amount) / 10 ** decimals);
         });
-        withdrawn30d.forEach((e) => {
+        withdrawn.forEach((e) => {
           const current = supplierMap.get(e.supplier) || 0;
           supplierMap.set(e.supplier, current - parseFloat(e.amount) / 10 ** decimals);
         });
@@ -156,12 +173,32 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
         const totalSupply = suppliers.reduce((sum, [_, amount]) => sum + amount, 0);
         const topSupplierAmount = suppliers.length > 0 ? suppliers[0][1] : 0;
         const topSupplierShare = totalSupply > 0 && suppliers.length > 0 ? (topSupplierAmount / totalSupply) * 100 : 0;
+        
+        // Calculate top 3 supplier share
+        const top3Amount = suppliers.slice(0, 3).reduce((sum, [_, amount]) => sum + amount, 0);
+        const top3SupplierShare = totalSupply > 0 ? (top3Amount / totalSupply) * 100 : 0;
+        
         const hhi = totalSupply > 0 
           ? suppliers.reduce((sum, [_, amount]) => {
               const share = (amount / totalSupply) * 100;
               return sum + share * share;
             }, 0)
           : 0;
+
+        // Calculate Gini coefficient from Lorenz curve
+        // Gini = 1 - 2 * (area under Lorenz curve)
+        // For sorted shares: Gini = (2 * sum(i * x_i)) / (n * sum(x_i)) - (n + 1) / n
+        const gini = (() => {
+          if (suppliers.length === 0 || totalSupply === 0) return 0;
+          // Sort suppliers by amount (ascending for Lorenz curve)
+          const sortedAmounts = suppliers.map(([_, amount]) => amount).sort((a, b) => a - b);
+          const n = sortedAmounts.length;
+          const sumIndexedValues = sortedAmounts.reduce((sum, amount, i) => sum + (i + 1) * amount, 0);
+          const sumValues = sortedAmounts.reduce((sum, amount) => sum + amount, 0);
+          const giniCoeff = (2 * sumIndexedValues) / (n * sumValues) - (n + 1) / n;
+          return Math.max(0, Math.min(1, giniCoeff)); // Clamp between 0 and 1
+        })();
+
         const supplyAfterWhaleExit = Math.max(pool.state.supply - topSupplierAmount, 0.01);
         const utilizationIfWhaleExits = pool.state.borrow > 0 && supplyAfterWhaleExit > 0
           ? Math.min((pool.state.borrow / supplyAfterWhaleExit) * 100, 100) : 0;
@@ -175,11 +212,11 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
 
         setTileData({
           yieldCurve: { currentUtil: currentUtil * 100, optimalUtil: optimalUtil * 100, isAboveOptimal: currentUtil > optimalUtil },
-          apyHistory: { min7d, max7d, trend, volatility },
+          apyHistory: { min, max, trend, volatility },
           activity: { netFlow, depositDays, withdrawDays },
           risk: { liquidationCount: totalLiquidations, liquidationNotional, badDebt: totalBadDebt, badDebtPctOfSupply, isHealthy: totalBadDebt === 0, isPaused },
-          whales: { topSupplierShare, supplierCount: suppliers.length, dominanceLevel: getDominanceLevel(hhi, topSupplierShare), utilizationIfWhaleExits },
-          withdrawAvailability: { availableLiquidity, availablePctOfSupply, utilizationPct: liveRates.utilizationPct },
+          whales: { topSupplierShare, top3SupplierShare, supplierCount: suppliers.length, dominanceLevel: getDominanceLevel(hhi, topSupplierShare), utilizationIfWhaleExits, hhi, gini },
+          withdrawAvailability: { availableLiquidity, totalSupply: pool.state.supply, availablePctOfSupply, utilizationPct: liveRates.utilizationPct },
         });
       } catch (err) {
         console.error("Error fetching tile data:", err);
@@ -189,13 +226,20 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
     }
 
     fetchTileData();
-  }, [poolId, decimals, serverUrl, liveRates, pool]);
+  }, [poolId, decimals, serverUrl, liveRates, pool, timeWindow]);
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | undefined | null) => {
+    if (num == null || isNaN(num)) return "—";
     if (Math.abs(num) >= 1e6) return (num / 1e6).toFixed(2) + "M";
     if (Math.abs(num) >= 1e3) return (num / 1e3).toFixed(1) + "K";
     if (Math.abs(num) >= 1) return num.toFixed(0);
     return num.toFixed(2);
+  };
+
+  // Safe toFixed helper to prevent undefined.toFixed() crashes
+  const safeFixed = (num: number | undefined | null, digits: number = 0): string => {
+    if (num == null || isNaN(num)) return "0";
+    return num.toFixed(digits);
   };
 
   if (isLoading) {
@@ -255,7 +299,32 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
           <h3 className="text-lg font-semibold text-white">Pool Overview</h3>
           <p className="text-sm text-white/40 mt-0.5">Click any section to explore details</p>
         </div>
-        <span className="badge badge-live">Live</span>
+        <div className="flex items-center gap-3">
+          {/* Time Window Toggle */}
+          <div className="flex items-center bg-white/[0.03] border border-white/[0.08] rounded-lg p-0.5">
+            <button
+              onClick={() => setTimeWindow("7d")}
+              className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
+                timeWindow === "7d"
+                  ? "bg-[#2dd4bf]/20 text-[#2dd4bf] border border-[#2dd4bf]/30"
+                  : "text-white/40 hover:text-white/60"
+              }`}
+            >
+              7D
+            </button>
+            <button
+              onClick={() => setTimeWindow("30d")}
+              className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
+                timeWindow === "30d"
+                  ? "bg-[#2dd4bf]/20 text-[#2dd4bf] border border-[#2dd4bf]/30"
+                  : "text-white/40 hover:text-white/60"
+              }`}
+            >
+              30D
+            </button>
+          </div>
+          <span className="badge badge-live">Live</span>
+        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -280,7 +349,7 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Concentration - with tooltip */}
+          {/* Concentration Risk - with tooltip */}
           <div className="relative group/tile">
             <button 
               onClick={() => onSelectTab("concentration")} 
@@ -288,7 +357,7 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             >
               <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                 <div className="flex items-center gap-1.5 min-w-0 shrink-0">
-                  <span className="text-xs text-white/50">Concentration</span>
+                  <span className="text-xs text-white/50">Concentration Risk</span>
                   <svg className="w-3 h-3 text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -298,21 +367,55 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
                   tileData.whales.dominanceLevel === "moderate" ? "badge-warning" :
                   "badge-danger"
                 }`}>
-                  {tileData.whales.dominanceLevel === "diversified" && "Diversified"}
-                  {tileData.whales.dominanceLevel === "moderate" && "Moderate"}
-                  {tileData.whales.dominanceLevel === "concentrated" && "Concentrated"}
-                  {tileData.whales.dominanceLevel === "dominated" && "High"}
+                  {tileData.whales.dominanceLevel === "diversified" && "Low"}
+                  {tileData.whales.dominanceLevel === "moderate" && "Medium"}
+                  {tileData.whales.dominanceLevel === "concentrated" && "High"}
+                  {tileData.whales.dominanceLevel === "dominated" && "Critical"}
                 </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-semibold text-white font-mono">
-                  {tileData.whales.topSupplierShare.toFixed(0)}%
+              {/* Top 1 and Top 3 stats */}
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[10px] text-white/40">Top 1:</span>
+                <span className={`text-lg font-semibold font-mono ${
+                  tileData.whales.dominanceLevel === "diversified" ? "text-emerald-400" :
+                  tileData.whales.dominanceLevel === "moderate" ? "text-amber-400" :
+                  "text-red-400"
+                }`}>
+                  {safeFixed(tileData.whales.topSupplierShare, 0)}%
                 </span>
-                <span className="text-[10px] text-white/30">top supplier</span>
+                <span className="text-white/20 mx-1">•</span>
+                <span className="text-[10px] text-white/40">Top 3:</span>
+                <span className={`text-lg font-semibold font-mono ${
+                  (tileData.whales.top3SupplierShare ?? 0) > 80 ? "text-red-400" :
+                  (tileData.whales.top3SupplierShare ?? 0) > 50 ? "text-amber-400" :
+                  "text-emerald-400"
+                }`}>
+                  {safeFixed(tileData.whales.top3SupplierShare, 0)}%
+                </span>
               </div>
-              <span className="text-[10px] text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors">
-                {tileData.whales.supplierCount} suppliers · View →
-              </span>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-[10px] text-white/40 font-medium">
+                  {tileData.whales.supplierCount} suppliers
+                </span>
+                <span className="text-[10px] text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors">
+                  View →
+                </span>
+              </div>
+              {/* Gini & HHI metrics */}
+              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-white/[0.06]">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-white/40">Gini:</span>
+                  <span className="text-[11px] font-mono text-cyan-400">
+                    {tileData.whales.gini.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-white/40">HHI:</span>
+                  <span className="text-[11px] font-mono text-cyan-400">
+                    {Math.round(tileData.whales.hhi).toLocaleString()}
+                  </span>
+                </div>
+              </div>
             </button>
             {/* Hover tooltip */}
             <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 border border-[#2dd4bf]/30 rounded-lg shadow-xl opacity-0 group-hover/tile:opacity-100 transition-opacity pointer-events-none z-20">
@@ -325,7 +428,7 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             </div>
           </div>
 
-          {/* Liquidity - with tooltip */}
+          {/* Withdrawal Liquidity - with tooltip */}
           <div className="relative group/tile">
             <button 
               onClick={() => onSelectTab("liquidity")} 
@@ -333,7 +436,7 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             >
               <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                 <div className="flex items-center gap-1.5 min-w-0 shrink-0">
-                  <span className="text-xs text-white/50">Liquidity</span>
+                  <span className="text-xs text-white/50">Withdrawal Liquidity</span>
                   <svg className="w-3 h-3 text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -343,33 +446,47 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
                   tileData.withdrawAvailability.availablePctOfSupply > 20 ? "badge-warning" :
                   "badge-danger"
                 }`}>
-                  {tileData.withdrawAvailability.availablePctOfSupply > 50 && "High"}
+                  {tileData.withdrawAvailability.availablePctOfSupply > 50 && "Strong"}
                   {tileData.withdrawAvailability.availablePctOfSupply <= 50 && tileData.withdrawAvailability.availablePctOfSupply > 20 && "Tight"}
                   {tileData.withdrawAvailability.availablePctOfSupply <= 20 && "Low"}
                 </div>
               </div>
+              {/* Available with percentage and denominator */}
               <div className="flex items-baseline gap-2">
-                <span className={`text-xl font-semibold font-mono ${
+                <span className={`text-lg font-semibold font-mono ${
                   tileData.withdrawAvailability.availablePctOfSupply > 50 ? "text-[#2dd4bf]" :
                   tileData.withdrawAvailability.availablePctOfSupply > 20 ? "text-amber-400" :
                   "text-red-400"
                 }`}>
                   {formatNumber(tileData.withdrawAvailability.availableLiquidity)}
                 </span>
-                <span className="text-[10px] text-white/30">{pool.asset} avail</span>
+                <span className="text-[10px] text-white/50">available</span>
+                <span className={`text-sm font-semibold font-mono ${
+                  (tileData.withdrawAvailability.availablePctOfSupply ?? 0) > 50 ? "text-[#2dd4bf]" :
+                  (tileData.withdrawAvailability.availablePctOfSupply ?? 0) > 20 ? "text-amber-400" :
+                  "text-red-400"
+                }`}>
+                  ({safeFixed(tileData.withdrawAvailability.availablePctOfSupply, 0)}%)
+                </span>
               </div>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="flex-1 h-1 bg-white/[0.06] rounded-full overflow-hidden">
+              {/* Denominator and bar */}
+              <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                   <div 
                     className={`h-full rounded-full ${
-                      tileData.withdrawAvailability.utilizationPct > 80 ? "bg-red-500" :
-                      tileData.withdrawAvailability.utilizationPct > 50 ? "bg-amber-500" :
-                      "bg-[#2dd4bf]"
+                      tileData.withdrawAvailability.availablePctOfSupply > 50 ? "bg-[#2dd4bf]" :
+                      tileData.withdrawAvailability.availablePctOfSupply > 20 ? "bg-amber-500" :
+                      "bg-red-500"
                     }`}
-                    style={{ width: `${100 - Math.min(tileData.withdrawAvailability.utilizationPct, 100)}%` }}
+                    style={{ width: `${Math.min(tileData.withdrawAvailability.availablePctOfSupply, 100)}%` }}
                   />
                 </div>
-                <span className="text-[9px] text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors">View →</span>
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-[10px] text-white/40">
+                  {formatNumber(tileData.withdrawAvailability.availableLiquidity)} / {formatNumber(tileData.withdrawAvailability.totalSupply)} {pool.asset}
+                </span>
+                <span className="text-[10px] text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors">View →</span>
               </div>
             </button>
             {/* Hover tooltip */}
@@ -387,7 +504,7 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             </div>
           </div>
 
-          {/* Bad Debt - with tooltip */}
+          {/* Bad Debt Risk - with tooltip */}
           <div className="relative group/tile">
             <button 
               onClick={() => onSelectTab("liquidations")} 
@@ -395,23 +512,28 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             >
               <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                 <div className="flex items-center gap-1.5 min-w-0 shrink-0">
-                  <span className="text-xs text-white/50">Bad Debt</span>
+                  <span className="text-xs text-white/50">Bad Debt Risk</span>
                   <svg className="w-3 h-3 text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div className={`badge text-[9px] whitespace-nowrap flex-shrink-0 ${tileData.risk.badDebt === 0 ? "badge-success" : "badge-danger"}`}>
-                  {tileData.risk.badDebt === 0 ? "None" : "At Risk"}
+                  {tileData.risk.badDebt === 0 ? "None" : "Elevated"}
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
                 <span className={`text-xl font-semibold font-mono ${tileData.risk.badDebt === 0 ? "text-emerald-400" : "text-red-400"}`}>
-                  {tileData.risk.badDebt === 0 ? "0" : tileData.risk.badDebt.toFixed(2)}
+                  {tileData.risk.badDebt === 0 ? "0" : formatNumber(tileData.risk.badDebt)}
                 </span>
                 <span className="text-[10px] text-white/30">{pool.asset}</span>
+                {(tileData.risk.badDebtPctOfSupply ?? 0) > 0 && (
+                  <span className="text-[10px] text-red-400/80">
+                    ({safeFixed(tileData.risk.badDebtPctOfSupply, 2)}% of supply)
+                  </span>
+                )}
               </div>
               <span className="text-[10px] text-white/30 group-hover/tile:text-[#2dd4bf] transition-colors">
-                {tileData.risk.liquidationCount} liquidations (30d) · View →
+                {tileData.risk.liquidationCount} liquidations ({timeWindow}) · View →
               </span>
             </button>
             {/* Hover tooltip */}
@@ -467,10 +589,10 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
               </div>
             </div>
             <div className="text-lg font-semibold text-white font-mono">
-              {tileData.apyHistory.min7d.toFixed(2)}% — {tileData.apyHistory.max7d.toFixed(2)}%
+              {safeFixed(tileData.apyHistory.min, 2)}% — {safeFixed(tileData.apyHistory.max, 2)}%
             </div>
             <span className="text-[10px] text-white/30 group-hover:text-[#2dd4bf] transition-colors">
-              7-day range · View →
+              {timeWindow === "7d" ? "7-day" : "30-day"} range · View →
             </span>
           </button>
 
@@ -480,7 +602,7 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             className="text-left group p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-[#2dd4bf]/40 hover:bg-[#2dd4bf]/5 transition-all"
           >
             <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-              <span className="text-xs text-white/50 shrink-0">Capital Flow (30d)</span>
+              <span className="text-xs text-white/50 shrink-0">Capital Flow</span>
               <div className={`badge text-[9px] whitespace-nowrap flex-shrink-0 ${
                 tileData.activity.netFlow > 0 ? "badge-success" : 
                 tileData.activity.netFlow < 0 ? "badge-danger" : "bg-white/5 text-white/50"
@@ -512,9 +634,9 @@ export function OverviewTiles({ pool, onSelectTab }: OverviewTilesProps) {
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-mono text-white">{tileData.yieldCurve.currentUtil.toFixed(0)}%</span>
+                <span className="text-sm font-mono text-white">{safeFixed(tileData.yieldCurve.currentUtil, 0)}%</span>
                 <span className="text-[10px] text-white/30">utilization</span>
-                <span className="text-[10px] text-amber-400">(kink: {tileData.yieldCurve.optimalUtil.toFixed(0)}%)</span>
+                <span className="text-[10px] text-amber-400">(kink: {safeFixed(tileData.yieldCurve.optimalUtil, 0)}%)</span>
               </div>
               <div className="h-1.5 bg-white/[0.06] rounded-full relative overflow-hidden">
                 <div 

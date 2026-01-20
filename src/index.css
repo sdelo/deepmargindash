@@ -2,7 +2,9 @@
 
 @import "./styles/theme.css";
 
-html, body, #root {
+html,
+body,
+#root {
   min-height: 100%;
 }
 
@@ -23,7 +25,9 @@ body {
 }
 
 /* Monospace numbers for data */
-.font-mono, .tabular-nums, [data-mono] {
+.font-mono,
+.tabular-nums,
+[data-mono] {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-feature-settings: 'ss01' on;
 }
@@ -34,7 +38,7 @@ body {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: 
+  background:
     radial-gradient(ellipse 100% 80% at 50% -20%, rgba(45, 212, 191, 0.04) 0%, transparent 60%),
     radial-gradient(ellipse 80% 60% at 100% 100%, rgba(20, 184, 166, 0.02) 0%, transparent 50%);
   z-index: -1;
@@ -42,8 +46,13 @@ body {
 
 /* Transaction Modal Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modalEnter {
@@ -51,19 +60,43 @@ body {
     opacity: 0;
     transform: scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
   }
 }
 
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shrink {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
+
 /* Pool switch animation */
 @keyframes poolSwitch {
-  0% { 
+  0% {
     opacity: 0.6;
     transform: translateY(4px);
   }
-  100% { 
+
+  100% {
     opacity: 1;
     transform: translateY(0);
   }
@@ -73,10 +106,39 @@ body {
   animation: poolSwitch 0.3s ease-out forwards;
 }
 
+/* Gentle slide-in animation for deposit preview and similar content */
+@keyframes gentleSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: translateY(4px) scale(0.99);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-gentle-slide-in {
+  animation: gentleSlideIn 0.7s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
 /* Subtle pulse for preview indicators */
 @keyframes pulseSubtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .animate-pulse-subtle {
@@ -85,10 +147,13 @@ body {
 
 /* Pulse ring animation for deposit input CTA */
 @keyframes pulseRing {
-  0%, 100% { 
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.4);
   }
-  50% { 
+
+  50% {
     box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.1);
   }
 }
@@ -97,4 +162,6 @@ body {
   animation: pulseRing 2s ease-in-out infinite;
 }
 
-a { text-decoration: none; }
+a {
+  text-decoration: none;
+}

@@ -11,20 +11,18 @@ import {
   ReferenceLine,
   ReferenceDot,
 } from "recharts";
-import { ClockIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import type { PoolOverview } from "../types";
 import { calculatePoolRates } from "../../../utils/interestRates";
 import { InfoTooltip } from "../../../components/InfoTooltip";
+import { useChartFirstRender } from "../../../components/charts/StableChart";
 
 type Props = { 
   pool: PoolOverview;
-  onShowHistory?: () => void;
 };
 
-export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
+export const YieldCurve: FC<Props> = ({ pool }) => {
   // Basic error handling for malformed data
-  const componentId = Math.random().toString(36).substr(2, 9);
-  console.log(`[${componentId}] YieldCurve rendering with pool:`, pool);
   if (
     !pool?.protocolConfig?.interest_config ||
     !pool?.protocolConfig?.margin_pool_config ||
@@ -55,17 +53,6 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
   const excessSlopePct = ic.excess_slope * 100;
   // Note: spreadPct = mc.protocol_spread * 100 is used in supply APR calculation in interestRates.ts
 
-  // Debug logging
-  console.log(`[${componentId}] YieldCurve rates:`, {
-    utilPct: utilPct.toFixed(2) + "%",
-    supplyApr: supplyApr.toFixed(2) + "%",
-    borrowApr: borrowApr.toFixed(2) + "%",
-    baseRate: baseRatePct.toFixed(1) + "%",
-    baseSlope: baseSlopePct.toFixed(1) + "%",
-    optimalUtilization: optimalUPct.toFixed(0) + "%",
-    excessSlope: excessSlopePct.toFixed(1) + "%",
-  });
-
   // Build data points to draw the piecewise linear curve in Recharts
   // APR values should be in percentage form for the chart
   const steps = 16;
@@ -80,71 +67,61 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
     return { u: Math.round(t * 100), apr };
   });
 
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(curveData.length > 0);
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* Header - matches Activity tab style */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-teal-300">Yield & Interest</h2>
-        <div className="flex items-center gap-3">
-          {onShowHistory && (
-            <button
-              onClick={onShowHistory}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-teal-400/30 hover:bg-amber-500/30 transition-all text-xs font-medium text-teal-300"
-            >
-              <ClockIcon className="w-3.5 h-3.5" />
-              <span>Rate History</span>
-            </button>
-          )}
-          <span className="text-[10px] text-white/40">From InterestConfig & State</span>
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-1">
+            Rate Model
+          </h2>
+          <p className="text-sm text-white/60">
+            How rates change with utilization for {pool.asset}
+          </p>
         </div>
       </div>
 
-      {/* KPIs - With visual hierarchy (Supply APY is hero) */}
-      <div className="grid grid-cols-3 gap-2">
-        {/* HERO METRIC: Supply APY - This is what suppliers care about most */}
-        <div className="stat-hero-metric animate-breathe">
-          <div className="text-xs text-cyan-200/80 flex items-center gap-1">
+      {/* Stats Cards - matches Activity tab style */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* HERO METRIC: Supply APY */}
+        <div className="bg-white/5 rounded-2xl p-4 border border-teal-500/30">
+          <div className="text-sm text-white/60 mb-1 flex items-center gap-1">
             Supply APY <InfoTooltip tooltip="supplyAPY" />
           </div>
-          <div className="text-2xl font-bold text-cyan-300 mt-1 animate-value-pulse">
+          <div className="text-xl font-bold text-teal-400">
             {supplyApr.toFixed(2)}%
           </div>
-          <div className="text-[10px] text-cyan-200/50">what suppliers earn</div>
+          <div className="text-xs text-white/40 mt-1">What suppliers earn</div>
         </div>
-        <div className="rounded-lg p-3 bg-white/5 border border-white/10">
-          <div className="text-xs text-white/60 flex items-center gap-1">
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+          <div className="text-sm text-white/60 mb-1 flex items-center gap-1">
             Borrow APY <InfoTooltip tooltip="borrowAPR" />
           </div>
-          <div className="text-xl font-bold text-teal-300 mt-1">
+          <div className="text-xl font-bold text-amber-400">
             {borrowApr.toFixed(2)}%
           </div>
-          <div className="text-[10px] text-white/40">what borrowers pay</div>
+          <div className="text-xs text-white/40 mt-1">What borrowers pay</div>
         </div>
-        <div className="rounded-lg p-3 bg-white/5 border border-white/10">
-          <div className="text-xs text-white/60 flex items-center gap-1">
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+          <div className="text-sm text-white/60 mb-1 flex items-center gap-1">
             Utilization <InfoTooltip tooltip="utilizationRate" />
           </div>
-          <div className="text-xl font-bold text-white mt-1">
+          <div className="text-xl font-bold text-white">
             {utilPct.toFixed(1)}%
           </div>
-          <div className="text-[10px] text-white/40">borrow / supply</div>
+          <div className="text-xs text-white/40 mt-1">Borrow / supply</div>
         </div>
       </div>
 
-      {/* Utilization Curve - Always visible with ambient life */}
-      <div className="rounded-lg p-3 bg-white/5 border border-white/10 relative overflow-hidden">
-        {/* Subtle shimmer overlay */}
-        <div className="absolute inset-0 shimmer-line pointer-events-none opacity-30"></div>
-        
-        <div className="flex items-center justify-between mb-2 relative">
-          <div className="text-xs text-white/60 flex items-center gap-2">
-            Utilization Curve
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-          </div>
-          <div className="text-[10px] text-white/40">
-            <span className="text-teal-400 font-medium">Higher utilization = higher rates</span>
-          </div>
-        </div>
+      {/* Utilization Curve */}
+      <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+        <h3 className="text-lg font-bold text-cyan-200 mb-4 flex items-center gap-2">
+          Utilization Curve
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+        </h3>
         <div className="relative">
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={curveData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
@@ -187,7 +164,7 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
               {/* Optimal utilization marker */}
               <ReferenceLine x={Math.round(optimalU * 100)} stroke="#fbbf24" strokeWidth={1.5} />
               {/* The curve with gradient */}
-              <Line type="monotone" dataKey="apr" stroke="url(#lineGradient)" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="apr" stroke="url(#lineGradient)" strokeWidth={2.5} dot={false} {...animationProps} />
               {/* Current position indicator */}
               <ReferenceLine x={Math.round(u * 100)} stroke="#67e8f9" strokeDasharray="3 3" />
               {/* Animated current position dot - using CSS class for animation */}
@@ -203,36 +180,40 @@ export const YieldCurve: FC<Props> = ({ pool, onShowHistory }) => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div className="text-[10px] text-white/40 mt-1 flex items-center gap-2 relative">
-          <span className="flex items-center gap-1.5">
-            Current: <span className="text-cyan-400 font-medium">{utilPct.toFixed(1)}%</span> utilization
-          </span>
-          {utilPct > optimalUPct && <span className="text-teal-300">↑ Above optimal — rates elevated</span>}
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-6 mt-4 pt-3 border-t border-white/10">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-white/40">Current:</span>
+            <span className="text-cyan-400 font-medium">{utilPct.toFixed(1)}%</span>
+          </div>
+          {utilPct > optimalUPct && (
+            <div className="text-xs text-teal-400">↑ Above optimal — rates elevated</div>
+          )}
         </div>
       </div>
 
-      {/* Rate Model Parameters - Collapsible for advanced users */}
+      {/* Rate Model Parameters */}
       <details className="group">
-        <summary className="flex items-center justify-between px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg cursor-pointer transition-colors list-none">
-          <span className="text-xs text-white/50 font-medium">Rate model parameters</span>
+        <summary className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl cursor-pointer transition-colors list-none">
+          <span className="text-sm text-white/60 font-medium">Rate Model Parameters</span>
           <ChevronDownIcon className="w-4 h-4 text-white/40 group-open:rotate-180 transition-transform" />
         </summary>
-        <div className="grid grid-cols-4 gap-1.5 mt-2 animate-fade-in">
-          <div className="rounded-lg p-2 bg-white/5 border border-white/10 text-center">
-            <div className="text-[9px] text-white/40">Base Rate</div>
-            <div className="text-xs font-semibold text-teal-400">{baseRatePct.toFixed(1)}%</div>
+        <div className="grid grid-cols-4 gap-4 mt-4">
+          <div className="bg-white/5 rounded-2xl p-4 border border-white/10 text-center">
+            <div className="text-sm text-white/60 mb-1">Base Rate</div>
+            <div className="text-xl font-bold text-teal-400">{baseRatePct.toFixed(1)}%</div>
           </div>
-          <div className="rounded-lg p-2 bg-white/5 border border-white/10 text-center">
-            <div className="text-[9px] text-white/40">Base Slope</div>
-            <div className="text-xs font-semibold text-teal-400">{baseSlopePct.toFixed(1)}%</div>
+          <div className="bg-white/5 rounded-2xl p-4 border border-white/10 text-center">
+            <div className="text-sm text-white/60 mb-1">Base Slope</div>
+            <div className="text-xl font-bold text-teal-400">{baseSlopePct.toFixed(1)}%</div>
           </div>
-          <div className="rounded-lg p-2 bg-white/5 border border-white/10 text-center">
-            <div className="text-[9px] text-white/40">Optimal</div>
-            <div className="text-xs font-semibold text-teal-400">{optimalUPct.toFixed(0)}%</div>
+          <div className="bg-white/5 rounded-2xl p-4 border border-white/10 text-center">
+            <div className="text-sm text-white/60 mb-1">Optimal</div>
+            <div className="text-xl font-bold text-teal-400">{optimalUPct.toFixed(0)}%</div>
           </div>
-          <div className="rounded-lg p-2 bg-white/5 border border-white/10 text-center">
-            <div className="text-[9px] text-white/40">Excess Slope</div>
-            <div className="text-xs font-semibold text-teal-400">{excessSlopePct.toFixed(1)}%</div>
+          <div className="bg-white/5 rounded-2xl p-4 border border-white/10 text-center">
+            <div className="text-sm text-white/60 mb-1">Excess Slope</div>
+            <div className="text-xl font-bold text-teal-400">{excessSlopePct.toFixed(1)}%</div>
           </div>
         </div>
       </details>

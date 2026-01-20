@@ -1,6 +1,6 @@
-# Leviathan Margin Dashboard
+# Nerid Margin Dashboard
 
-A comprehensive dashboard for monitoring and interacting with DeepBook Margin lending pools on the Sui blockchain.
+A comprehensive dashboard for monitoring and interacting with DeepBook Margin lending pools on the Sui blockchain, powered by [DeepBook V3](https://deepbook.tech).
 
 ## Features
 
@@ -12,7 +12,22 @@ A comprehensive dashboard for monitoring and interacting with DeepBook Margin le
 - **Transaction History**: Comprehensive transaction tracking and analytics
 - **Pool Administration**: Monitor pool parameters and risk metrics
 
+## Architecture
+
+The protocol enables margin trading through:
+
+1. **Lending Pools** - Users deposit assets to earn yield
+2. **Margin Accounts** - Traders borrow against collateral for leveraged positions
+3. **DeepBook Integration** - Trades execute on DeepBook's CLOB for best price discovery
+4. **Pyth Oracle** - Real-time price feeds for collateral valuation and liquidations
+
 ## Getting Started
+
+### Prerequisites
+
+- [Bun](https://bun.sh/) or [Node.js](https://nodejs.org/)
+
+### Installation
 
 1. Install dependencies:
 
@@ -44,7 +59,7 @@ A comprehensive dashboard for monitoring and interacting with DeepBook Margin le
 
 ## Project Structure
 
-- `/` - Landing page with DeepBook Margina introduction
+- `/` - Landing page with DeepBook Margin introduction
 - `/pools` - Main dashboard with pool management and analytics
 - `/dashboard` - Alternative route to the main dashboard
 
@@ -58,11 +73,24 @@ A comprehensive dashboard for monitoring and interacting with DeepBook Margin le
 - Heroicons for UI icons
 - Recharts for data visualization
 
-## DeepBook Margin
+## License
 
-DeepBook Margin is a sophisticated lending protocol built on Sui blockchain that enables users to earn yield by providing liquidity to margin trading pools. The protocol features:
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](./LICENSE) file for details.
 
-- Over-collateralized lending model
-- Real-time interest rate adjustments
-- Competitive yields on idle assets
-- Decentralized and permissionless access
+## Contributing
+
+We welcome contributions! Please ensure that:
+
+1. Your code follows the existing style conventions
+2. All tests pass
+3. You agree to license your contribution under Apache 2.0
+
+## Security
+
+If you discover a security vulnerability, please report it responsibly. Do not open public issues for security concerns.
+
+## Links
+
+- [DeepBook Documentation](https://docs.sui.io/standards/deepbookv3)
+- [DeepBook SDK](https://docs.sui.io/standards/deepbookv3-sdk)
+- [Sui Developer Portal](https://docs.sui.io/)

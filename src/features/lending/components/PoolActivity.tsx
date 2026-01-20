@@ -21,11 +21,11 @@ import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 import {
-  PoolActivityIcon,
   InsightIcon,
   ErrorIcon,
 } from "../../../components/ThemedIcons";
 import type { PoolOverview } from "../types";
+import { useChartFirstRender, useStableGradientId } from "../../../components/charts/StableChart";
 
 interface PoolActivityProps {
   pool: PoolOverview;
@@ -60,7 +60,7 @@ export function PoolActivity({ pool }: PoolActivityProps) {
       try {
         setIsLoading(true);
         setError(null);
-        setDailyData([]);
+        // Don't clear dailyData - preserve previous data to prevent flicker
 
         const params = {
           ...timeRangeToParams(timeRange),
@@ -140,25 +140,91 @@ export function PoolActivity({ pool }: PoolActivityProps) {
         );
 
         // Calculate TVL from current state working backwards
-        let currentTVL = pool.state?.supply ?? 0;
-        const reversedForTVL = [...sortedData].reverse();
-        reversedForTVL.forEach((day, idx) => {
-          if (idx === 0) {
-            day.tvl = currentTVL;
-          } else {
-            // Work backwards
-            const nextDay = reversedForTVL[idx - 1];
-            day.tvl = nextDay.tvl - nextDay.netFlow;
-          }
-        });
-
-        // Re-sort chronologically
+        const currentTVL = pool.state?.supply ?? 0;
+        
+        // Calculate the total net change from all events
+        const totalNetChange = sortedData.reduce((sum, d) => sum + d.netFlow, 0);
+        
+        // Starting TVL = current TVL - total net change from events
+        const startingTVL = currentTVL - totalNetChange;
+        
+        // Forward fill TVL from starting point
+        let runningTVL = startingTVL;
         sortedData.forEach((day) => {
-          const match = reversedForTVL.find((d) => d.date === day.date);
-          if (match) day.tvl = Math.max(0, match.tvl);
+          runningTVL += day.netFlow;
+          day.tvl = Math.max(0, runningTVL);
         });
 
-        setDailyData(sortedData);
+        // Forward fill missing days between first and last data point
+        if (sortedData.length >= 1) {
+          const filledData: DailyFlowData[] = [];
+          const firstDate = new Date(sortedData[0].timestamp);
+          const lastDate = new Date(sortedData[sortedData.length - 1].timestamp);
+          
+          // Create a map for quick lookup
+          const dataByDate = new Map<string, DailyFlowData>();
+          sortedData.forEach((d) => dataByDate.set(d.date, d));
+          
+          // Add a "day before" data point to show starting TVL (before any events)
+          // This makes the chart's visual change match the Net Change stat
+          const dayBefore = new Date(firstDate);
+          dayBefore.setDate(dayBefore.getDate() - 1);
+          const dayBeforeStr = dayBefore.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          });
+          
+          // Only add the starting point if startingTVL is meaningful (> 0 or close to it)
+          const displayStartingTVL = Math.max(0, startingTVL);
+          filledData.push({
+            date: dayBeforeStr,
+            timestamp: dayBefore.getTime(),
+            deposits: 0,
+            withdrawals: 0,
+            netFlow: 0,
+            tvl: displayStartingTVL,
+            depositCount: 0,
+            withdrawCount: 0,
+          });
+          
+          // Iterate through all days from first to last
+          let prevTVL = displayStartingTVL;
+          const currentDate = new Date(firstDate);
+          currentDate.setHours(0, 0, 0, 0);
+          lastDate.setHours(23, 59, 59, 999);
+          
+          while (currentDate <= lastDate) {
+            const dateStr = currentDate.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            });
+            
+            const existingData = dataByDate.get(dateStr);
+            if (existingData) {
+              filledData.push(existingData);
+              prevTVL = existingData.tvl;
+            } else {
+              // Forward fill with no activity
+              filledData.push({
+                date: dateStr,
+                timestamp: currentDate.getTime(),
+                deposits: 0,
+                withdrawals: 0,
+                netFlow: 0,
+                tvl: prevTVL,
+                depositCount: 0,
+                withdrawCount: 0,
+              });
+            }
+            
+            // Move to next day
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          
+          setDailyData(filledData);
+        } else {
+          setDailyData(sortedData);
+        }
       } catch (err) {
         console.error("Error fetching pool activity:", err);
         setError(err as Error);
@@ -169,6 +235,10 @@ export function PoolActivity({ pool }: PoolActivityProps) {
 
     fetchData();
   }, [timeRange, poolId, decimals, serverUrl, pool.state]);
+
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(dailyData.length > 0);
+  const tvlGradientId = useStableGradientId('tvlGradient');
 
   // Calculate stats
   const stats = React.useMemo(() => {
@@ -216,8 +286,8 @@ export function PoolActivity({ pool }: PoolActivityProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <PoolActivityIcon size={32} /> Pool Activity
+          <h2 className="text-2xl font-bold text-white mb-1">
+            Pool Activity
           </h2>
           <p className="text-sm text-white/60">
             TVL changes and deposit/withdrawal flows for {pool.asset}
@@ -321,10 +391,10 @@ export function PoolActivity({ pool }: PoolActivityProps) {
           <ResponsiveContainer width="100%" height={320}>
             <ComposedChart
               data={dailyData}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
             >
               <defs>
-                <linearGradient id="tvlGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={tvlGradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
                 </linearGradient>
@@ -340,22 +410,40 @@ export function PoolActivity({ pool }: PoolActivityProps) {
                 tickLine={false}
               />
               <YAxis
-                yAxisId="flow"
+                yAxisId="tvl"
                 orientation="left"
+                tickFormatter={(v) => formatNumber(v)}
+                tick={{ fill: "#22d3ee", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                width={60}
+                label={{
+                  value: "TVL",
+                  angle: -90,
+                  position: "insideLeft",
+                  fill: "#22d3ee",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  offset: 10,
+                }}
+              />
+              <YAxis
+                yAxisId="flow"
+                orientation="right"
                 tickFormatter={(v) => formatNumber(v)}
                 tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                width={50}
-              />
-              <YAxis
-                yAxisId="tvl"
-                orientation="right"
-                tickFormatter={(v) => formatNumber(v)}
-                tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                width={50}
+                width={70}
+                label={{
+                  value: "Flows",
+                  angle: 90,
+                  position: "insideRight",
+                  fill: "rgba(255,255,255,0.6)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  offset: 10,
+                }}
               />
               <Tooltip
                 contentStyle={{
@@ -401,8 +489,9 @@ export function PoolActivity({ pool }: PoolActivityProps) {
                 dataKey="tvl"
                 stroke="#22d3ee"
                 strokeWidth={2}
-                fill="url(#tvlGradient)"
+                fill={`url(#${tvlGradientId})`}
                 name="tvl"
+                {...animationProps}
               />
               {/* Deposit Bars */}
               <Bar
@@ -412,6 +501,7 @@ export function PoolActivity({ pool }: PoolActivityProps) {
                 radius={[2, 2, 0, 0]}
                 name="deposits"
                 opacity={0.8}
+                {...animationProps}
               />
               {/* Withdrawal Bars (negative) */}
               <Bar
@@ -421,6 +511,7 @@ export function PoolActivity({ pool }: PoolActivityProps) {
                 radius={[0, 0, 2, 2]}
                 name="withdrawals"
                 opacity={0.8}
+                {...animationProps}
               />
             </ComposedChart>
           </ResponsiveContainer>

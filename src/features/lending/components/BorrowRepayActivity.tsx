@@ -21,10 +21,10 @@ import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 import {
-  BorrowingIcon,
   ErrorIcon,
 } from "../../../components/ThemedIcons";
 import type { PoolOverview } from "../types";
+import { useChartFirstRender } from "../../../components/charts/StableChart";
 
 interface BorrowRepayActivityProps {
   pool: PoolOverview;
@@ -58,7 +58,7 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
       try {
         setIsLoading(true);
         setError(null);
-        setDailyData([]);
+        // Don't clear dailyData - preserve previous data to prevent flicker
 
         const params = {
           ...timeRangeToParams(timeRange),
@@ -137,21 +137,13 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
           (a, b) => a.timestamp - b.timestamp
         );
 
-        // Calculate cumulative debt from current state working backwards
-        let currentDebt = pool.state?.borrow ?? 0;
-        const reversedForDebt = [...sortedData].reverse();
-        reversedForDebt.forEach((day, idx) => {
-          if (idx === 0) {
-            day.cumulativeDebt = currentDebt;
-          } else {
-            const nextDay = reversedForDebt[idx - 1];
-            day.cumulativeDebt = nextDay.cumulativeDebt - nextDay.netChange;
-          }
-        });
-
+        // Calculate cumulative debt going forward from 0
+        // This shows the net effect of borrow/repay activity over time
+        // Note: May differ from on-chain debt due to interest accrual or liquidations
+        let runningDebt = 0;
         sortedData.forEach((day) => {
-          const match = reversedForDebt.find((d) => d.date === day.date);
-          if (match) day.cumulativeDebt = Math.max(0, match.cumulativeDebt);
+          runningDebt += day.netChange;
+          day.cumulativeDebt = runningDebt;
         });
 
         setDailyData(sortedData);
@@ -165,6 +157,9 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
 
     fetchData();
   }, [timeRange, poolId, decimals, serverUrl, pool.state]);
+
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(dailyData.length > 0);
 
   // Calculate stats
   const stats = React.useMemo(() => {
@@ -213,8 +208,8 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <BorrowingIcon size={32} /> Borrow & Repay Activity
+          <h2 className="text-2xl font-bold text-white mb-1">
+            Borrow & Repay Activity
           </h2>
           <p className="text-sm text-white/60">
             Borrowing flows and outstanding debt for {pool.asset}
@@ -318,7 +313,7 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
           <ResponsiveContainer width="100%" height={320}>
             <ComposedChart
               data={dailyData}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              margin={{ top: 10, right: 30, left: 30, bottom: 0 }}
             >
               <defs>
                 <linearGradient id="debtGradient" x1="0" y1="0" x2="0" y2="1">
@@ -337,22 +332,36 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
                 tickLine={false}
               />
               <YAxis
-                yAxisId="flow"
+                yAxisId="debt"
                 orientation="left"
+                tickFormatter={(v) => formatNumber(v)}
+                tick={{ fill: "#fbbf24", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                width={60}
+                label={{
+                  value: "Net Borrowed",
+                  angle: -90,
+                  position: "insideLeft",
+                  style: { fill: "#fbbf24", fontSize: 12, fontWeight: 500 },
+                  offset: 10,
+                }}
+              />
+              <YAxis
+                yAxisId="flow"
+                orientation="right"
                 tickFormatter={(v) => formatNumber(v)}
                 tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                width={50}
-              />
-              <YAxis
-                yAxisId="debt"
-                orientation="right"
-                tickFormatter={(v) => formatNumber(v)}
-                tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                width={50}
+                width={70}
+                label={{
+                  value: "Daily Borrow/Repay",
+                  angle: 90,
+                  position: "insideRight",
+                  style: { fill: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 500 },
+                  offset: 10,
+                }}
               />
               <Tooltip
                 contentStyle={{
@@ -364,11 +373,13 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
                 labelStyle={{ color: "#fff", fontWeight: "bold" }}
                 formatter={(value: number, name: string) => {
                   const labels: Record<string, string> = {
-                    borrows: "Borrowed",
-                    repays: "Repaid",
-                    cumulativeDebt: "Total Debt",
+                    borrows: "Borrowed (this day)",
+                    repays: "Repaid (this day)",
+                    cumulativeDebt: "Net Borrowed (cumulative)",
                   };
-                  return [formatNumber(value), labels[name] || name];
+                  // Show absolute value for repays since it's displayed as negative bar
+                  const displayValue = name === "repays" ? Math.abs(value) : value;
+                  return [formatNumber(displayValue), labels[name] || name];
                 }}
               />
               <Legend
@@ -377,7 +388,7 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
                   const labels: Record<string, string> = {
                     borrows: "Borrowed",
                     repays: "Repaid",
-                    cumulativeDebt: "Total Debt",
+                    cumulativeDebt: "Net Borrowed",
                   };
                   return (
                     <span className="text-white/80 text-sm">
@@ -400,6 +411,7 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
                 strokeWidth={2}
                 dot={false}
                 name="cumulativeDebt"
+                {...animationProps}
               />
               {/* Borrow Bars */}
               <Bar
@@ -409,6 +421,7 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
                 radius={[2, 2, 0, 0]}
                 name="borrows"
                 opacity={0.8}
+                {...animationProps}
               />
               {/* Repay Bars (negative) */}
               <Bar
@@ -418,6 +431,7 @@ export function BorrowRepayActivity({ pool }: BorrowRepayActivityProps) {
                 radius={[0, 0, 2, 2]}
                 name="repays"
                 opacity={0.8}
+                {...animationProps}
               />
             </ComposedChart>
           </ResponsiveContainer>

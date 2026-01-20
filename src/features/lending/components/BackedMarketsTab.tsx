@@ -7,6 +7,7 @@ import { MarginPool } from "../../../contracts/deepbook_margin/deepbook_margin/m
 import { fetchLatestDeepbookPoolConfig } from "../api/events";
 import { fetchOHLCV, fetchPairSummary, parseCandles, type MarketSummary, type ParsedCandle } from "../api/marketData";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import { useChartFirstRender, useStableGradientId } from "../../../components/charts/StableChart";
 
 function formatRewardPercent(value: number): string {
   return ((value / 1_000_000_000) * 100).toFixed(1) + "%";
@@ -67,9 +68,21 @@ function MiniMarketChart({
     return parsed;
   }, [candles, mode]);
 
-  if (isLoading || chartData.length < 2) {
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(chartData.length > 0);
+  const priceGradientId = useStableGradientId(`mini-price-${poolName}`);
+  const volGradientId = useStableGradientId(`mini-vol-${poolName}`);
+
+  // Only show loading skeleton on first load, not on refetches
+  if (isLoading && chartData.length === 0) {
     return (
-      <div className="w-20 h-8 bg-slate-700/20 rounded animate-pulse" />
+      <div className="w-20 h-8 bg-white/10 rounded animate-pulse" />
+    );
+  }
+
+  if (chartData.length < 2) {
+    return (
+      <div className="w-20 h-8 bg-white/10 rounded" />
     );
   }
 
@@ -87,7 +100,7 @@ function MiniMarketChart({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 2 }}>
             <defs>
-              <linearGradient id={`vol-gradient-${poolName}`} x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={volGradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={isElevated ? "#f59e0b" : "#6366f1"} stopOpacity={0.4} />
                 <stop offset="100%" stopColor={isElevated ? "#f59e0b" : "#6366f1"} stopOpacity={0.05} />
               </linearGradient>
@@ -98,8 +111,9 @@ function MiniMarketChart({
               dataKey="volatility"
               stroke={isElevated ? "#f59e0b" : "#6366f1"}
               strokeWidth={1.5}
-              fill={`url(#vol-gradient-${poolName})`}
+              fill={`url(#${volGradientId})`}
               dot={false}
+              {...animationProps}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -118,7 +132,7 @@ function MiniMarketChart({
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 2 }}>
           <defs>
-            <linearGradient id={`gradient-${poolName}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={priceGradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={priceUp ? "#10b981" : "#ef4444"} stopOpacity={0.4} />
               <stop offset="100%" stopColor={priceUp ? "#10b981" : "#ef4444"} stopOpacity={0.05} />
             </linearGradient>
@@ -129,8 +143,9 @@ function MiniMarketChart({
             dataKey="close"
             stroke={priceUp ? "#10b981" : "#ef4444"}
             strokeWidth={1.5}
-            fill={`url(#gradient-${poolName})`}
+            fill={`url(#${priceGradientId})`}
             dot={false}
+            {...animationProps}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -388,10 +403,10 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
   if (isLoading) {
     return (
       <div className="space-y-3 animate-pulse">
-        <div className="h-5 w-48 bg-slate-700/50 rounded" />
-        <div className="h-4 w-64 bg-slate-700/30 rounded" />
-        <div className="h-12 bg-slate-800/40 rounded-lg" />
-        <div className="h-14 bg-slate-800/40 rounded-lg" />
+        <div className="h-5 w-48 bg-white/10 rounded" />
+        <div className="h-4 w-64 bg-white/5 rounded" />
+        <div className="h-12 bg-white/5 rounded-lg" />
+        <div className="h-14 bg-white/5 rounded-lg" />
       </div>
     );
   }
@@ -400,7 +415,7 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <svg
-          className="w-10 h-10 text-slate-600 mb-3"
+          className="w-10 h-10 text-white/30 mb-3"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -412,73 +427,74 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
             d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
           />
         </svg>
-        <h3 className="text-base font-medium text-slate-300 mb-1">No Linked Markets</h3>
-        <p className="text-xs text-slate-500 max-w-sm">
+        <h3 className="text-base font-medium text-white/70 mb-1">No Linked Markets</h3>
+        <p className="text-xs text-white/40 max-w-sm">
           This pool is not connected to any trading markets yet.
         </p>
       </div>
     );
   }
 
+  // Sparkline mode toggle component
+  const sparklineModeControls = (
+    <div className="flex items-center gap-1.5 bg-white/5 rounded-lg p-1">
+      <button
+        onClick={() => setSparklineMode('price')}
+        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+          sparklineMode === 'price'
+            ? 'bg-teal-500 text-white'
+            : 'text-white/60 hover:text-white hover:bg-white/10'
+        }`}
+      >
+        Price
+      </button>
+      <button
+        onClick={() => setSparklineMode('volatility')}
+        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+          sparklineMode === 'volatility'
+            ? 'bg-amber-500 text-white'
+            : 'text-white/60 hover:text-white hover:bg-white/10'
+        }`}
+      >
+        Volatility
+      </button>
+    </div>
+  );
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+    <div className="space-y-6">
+      {/* Header - matches Activity tab style */}
+      <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-semibold text-white mb-0.5 flex items-center gap-2">
-            <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
+          <h2 className="text-2xl font-bold text-white mb-1">
             Backed Markets
-          </h3>
-          <p className="text-xs text-slate-500">
-            These trading pools borrow from this margin pool.
+          </h2>
+          <p className="text-sm text-white/60">
+            Trading pools that borrow from this margin pool for {pool.asset}
           </p>
         </div>
-        
-        {/* Sparkline Mode Toggle */}
-        <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-0.5 border border-slate-700/40">
-          <button
-            onClick={() => setSparklineMode('price')}
-            className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
-              sparklineMode === 'price'
-                ? 'bg-slate-700 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            Price
-          </button>
-          <button
-            onClick={() => setSparklineMode('volatility')}
-            className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
-              sparklineMode === 'volatility'
-                ? 'bg-amber-500/20 text-amber-400 shadow-sm'
-                : 'text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            Volatility
-          </button>
-        </div>
+        {sparklineModeControls}
       </div>
 
-      {/* Summary Row */}
-      <div className="flex items-center gap-3 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/30">
+      {/* Stats Cards - matches Activity tab style */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {summaryStats.topDriver && (
-          <div className="flex items-center gap-2 pr-3 border-r border-slate-700/50">
-            <span className="text-[10px] text-slate-500 uppercase">Top driver</span>
-            <span className="text-xs font-semibold text-white">{summaryStats.topDriver.display}</span>
-            <span className="text-[10px] text-amber-400 font-medium">({summaryStats.topDriver.borrowShare}%)</span>
+          <div className="bg-white/5 rounded-2xl p-4 border border-teal-500/30">
+            <div className="text-sm text-white/60 mb-1">Top Driver</div>
+            <div className="text-xl font-bold text-teal-400">{summaryStats.topDriver.display}</div>
+            <div className="text-xs text-white/40 mt-1">{summaryStats.topDriver.borrowShare}% of borrows</div>
           </div>
         )}
-        <div className="flex items-center gap-2 pr-3 border-r border-slate-700/50">
-          <span className="text-[10px] text-slate-500 uppercase">Active</span>
-          <span className="text-xs font-semibold text-emerald-400">{summaryStats.activeCount}</span>
-          <span className="text-[10px] text-slate-600">/ {summaryStats.totalCount}</span>
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+          <div className="text-sm text-white/60 mb-1">Active Markets</div>
+          <div className="text-xl font-bold text-emerald-400">{summaryStats.activeCount}</div>
+          <div className="text-xs text-white/40 mt-1">of {summaryStats.totalCount} total</div>
         </div>
         {summaryStats.pausedCount > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-slate-500 uppercase">Paused</span>
-            <span className="text-xs font-semibold text-red-400">{summaryStats.pausedCount}</span>
+          <div className="bg-white/5 rounded-2xl p-4 border border-red-500/30">
+            <div className="text-sm text-white/60 mb-1">Paused</div>
+            <div className="text-xl font-bold text-red-400">{summaryStats.pausedCount}</div>
+            <div className="text-xs text-white/40 mt-1">Not borrowing</div>
           </div>
         )}
       </div>
@@ -504,14 +520,14 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
             <button
               key={pair.poolId}
               onClick={() => onMarketClick?.(pair.poolId)}
-              className="w-full group p-4 bg-slate-800/40 hover:bg-slate-800/60 rounded-xl border border-slate-700/30 hover:border-cyan-500/40 transition-all cursor-pointer text-left"
+              className="w-full group p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 hover:border-teal-500/40 transition-all cursor-pointer text-left"
             >
               {/* Top Row: Market info + Status */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${pair.isEnabled ? 'bg-emerald-400' : 'bg-red-400'}`} />
                   <span className="text-base font-semibold text-white">{pair.display}</span>
-                  <span className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">DeepBook</span>
+                  <span className="text-[10px] text-white/40 bg-white/5 px-1.5 py-0.5 rounded">DeepBook</span>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full ${
                     pair.isEnabled 
                       ? 'bg-emerald-500/20 text-emerald-400' 
@@ -520,7 +536,7 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
                     {pair.isEnabled ? 'Active' : 'Paused'}
                   </span>
                 </div>
-                <ChevronRightIcon className="w-4 h-4 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                <ChevronRightIcon className="w-4 h-4 text-white/30 group-hover:text-cyan-400 transition-colors" />
               </div>
 
               {/* Main Content: Chart + Supplier Signal + Stats */}
@@ -532,7 +548,7 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
                     priceUp={priceUp} 
                     mode={sparklineMode}
                   />
-                  <div className="text-[9px] text-slate-600 text-center mt-0.5">
+                  <div className="text-[9px] text-white/30 text-center mt-0.5">
                     {sparklineMode === 'price' ? '24h price' : '24h vol'}
                   </div>
                 </div>
@@ -550,7 +566,7 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
                         </div>
                         <span className="text-sm font-semibold text-red-400">Borrowing Disabled</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                      <p className="text-[11px] text-white/40 leading-relaxed">
                         This market is paused. No new borrows are being placed against this pool.
                       </p>
                     </div>
@@ -573,23 +589,23 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
                           {volInfo.riskLabel}
                         </div>
                         {/* Borrow share chip */}
-                        <div className="px-2 py-0.5 rounded-md bg-slate-700/50 text-[10px] text-slate-400">
+                        <div className="px-2 py-0.5 rounded-md bg-white/5 text-[10px] text-white/50">
                           {pair.borrowShare}% of borrows
                         </div>
                       </div>
                       
                       {/* Volatility context line */}
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-[11px] text-white/40">
                         {volInfo.vol7d > 0 && volInfo.vol7d < 100 ? (
                           volInfo.trend === 'rising' ? (
                             <>Above 7d avg <span className="text-amber-400">({volInfo.vol24h.toFixed(1)}% vs {volInfo.vol7d.toFixed(1)}%)</span></>
                           ) : volInfo.trend === 'falling' ? (
                             <>Below 7d avg <span className="text-emerald-400">({volInfo.vol24h.toFixed(1)}% vs {volInfo.vol7d.toFixed(1)}%)</span></>
                           ) : (
-                            <>Near 7d avg <span className="text-slate-400">({volInfo.vol24h.toFixed(1)}%)</span></>
+                            <>Near 7d avg <span className="text-white/50">({volInfo.vol24h.toFixed(1)}%)</span></>
                           )
                         ) : volInfo.vol24h > 0 ? (
-                          <>24h volatility: <span className="text-slate-300">{volInfo.vol24h.toFixed(1)}%</span></>
+                          <>24h volatility: <span className="text-white/70">{volInfo.vol24h.toFixed(1)}%</span></>
                         ) : (
                           'Volatility data loading...'
                         )}
@@ -602,15 +618,15 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
                 <div className="flex flex-col gap-1.5 text-[11px] min-w-[120px]">
                   {/* Volume (24h) */}
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Volume</span>
-                    <span className="text-slate-300 font-medium">
+                    <span className="text-white/40">Volume</span>
+                    <span className="text-white/70 font-medium">
                       {hasMarketData ? formatVolume(stats.quote_volume) : '—'}
                     </span>
                   </div>
                   
                   {/* Volatility (24h) */}
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Volatility</span>
+                    <span className="text-white/40">Volatility</span>
                     <span className={`font-medium ${
                       volInfo.level === 'low' ? 'text-emerald-400' : 
                       volInfo.level === 'med' ? 'text-amber-400' : 'text-red-400'
@@ -621,14 +637,14 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
                   
                   {/* Liq. Reward */}
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Liq. Reward</span>
+                    <span className="text-white/40">Liq. Reward</span>
                     <span className="text-cyan-400 font-medium">{poolReward}</span>
                   </div>
                   
                   {/* Spread */}
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Spread</span>
-                    <span className="text-slate-300 font-medium">
+                    <span className="text-white/40">Spread</span>
+                    <span className="text-white/70 font-medium">
                       {spread ? `${spread}%` : '—'}
                     </span>
                   </div>
@@ -636,12 +652,12 @@ export function BackedMarketsTab({ pool, pools, onMarketClick }: BackedMarketsTa
               </div>
 
               {/* Bottom: Borrow Share Bar */}
-              <div className="mt-3 pt-3 border-t border-slate-700/30">
+              <div className="mt-3 pt-3 border-t border-white/10">
                 <div className="flex items-center justify-between text-[11px] mb-1.5">
-                  <span className="text-slate-500">Borrow share from this pool</span>
+                  <span className="text-white/40">Borrow share from this pool</span>
                   <span className="text-amber-400 font-semibold">{pair.borrowShare}%</span>
                 </div>
-                <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
                     style={{ width: `${pair.borrowShare}%` }}

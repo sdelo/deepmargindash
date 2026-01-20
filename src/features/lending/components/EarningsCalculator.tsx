@@ -57,17 +57,18 @@ export function EarningsCalculator({ pool }: EarningsCalculatorProps) {
   
   let optimisticAPY = currentAPY;
   let pessimisticAPY = currentAPY;
+  let highUtilizationPct = 0;
+  let lowUtilizationPct = 0;
 
   if (ic && mc) {
     const optimalU = ic.optimal_utilization;
     const baseRate = ic.base_rate;
     const baseSlope = ic.base_slope;
-    const excessSlope = ic.excess_slope;
     const spread = mc.protocol_spread;
 
     // Optimistic: utilization goes to optimal
     const optimalBorrowAPY = baseRate + baseSlope * optimalU;
-    optimisticAPY = optimalBorrowAPY * optimalU * (1 - spread) * 100;
+    const calculatedOptimisticAPY = optimalBorrowAPY * optimalU * (1 - spread) * 100;
 
     // Pessimistic: utilization drops to 50% of current or 1%, whichever is higher
     const currentUtil = pool.state?.supply > 0 
@@ -75,7 +76,17 @@ export function EarningsCalculator({ pool }: EarningsCalculatorProps) {
       : 0;
     const lowUtil = Math.max(currentUtil * 0.5, 0.01);
     const lowBorrowAPY = baseRate + baseSlope * lowUtil;
-    pessimisticAPY = lowBorrowAPY * lowUtil * (1 - spread) * 100;
+    const calculatedPessimisticAPY = lowBorrowAPY * lowUtil * (1 - spread) * 100;
+
+    // Ensure high is always >= current and low is always <= current
+    // This prevents the confusing case where "low" is higher than "current"
+    optimisticAPY = Math.max(calculatedOptimisticAPY, currentAPY);
+    // Low is min of calculated pessimistic OR current minus 20%
+    pessimisticAPY = Math.min(calculatedPessimisticAPY, currentAPY * 0.8);
+
+    // Store utilization percentages for display
+    highUtilizationPct = optimalU * 100;
+    lowUtilizationPct = lowUtil * 100;
   }
 
   const optimisticEarnings = calculateEarnings(
@@ -211,7 +222,7 @@ export function EarningsCalculator({ pool }: EarningsCalculatorProps) {
           
           <div className="flex justify-between mt-2 text-xs">
             <div className="text-indigo-400">
-              <div className="font-medium">Low Util.</div>
+              <div className="font-medium">Low{lowUtilizationPct > 0 ? ` (${lowUtilizationPct.toFixed(0)}% util)` : ''}</div>
               <div className="text-white/60">+{formatEarnings(pessimisticEarnings)}</div>
             </div>
             <div className="text-cyan-400 text-center">
@@ -219,7 +230,7 @@ export function EarningsCalculator({ pool }: EarningsCalculatorProps) {
               <div className="text-white/60">+{formatEarnings(projectedEarnings)}</div>
             </div>
             <div className="text-teal-400 text-right">
-              <div className="font-medium">High Util.</div>
+              <div className="font-medium">High{highUtilizationPct > 0 ? ` (${highUtilizationPct.toFixed(0)}% util)` : ''}</div>
               <div className="text-white/60">+{formatEarnings(optimisticEarnings)}</div>
             </div>
           </div>

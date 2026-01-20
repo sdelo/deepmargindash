@@ -241,66 +241,66 @@ export function PositionDetailDrawer({
       />
       
       {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-lg bg-slate-900 border-l border-white/10 z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
+      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-slate-900 border-l border-white/10 z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 p-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 p-3 flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-lg font-semibold text-white">Position Details</h2>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <h2 className="text-sm font-semibold text-white">Position Details</h2>
               <ConfidenceBadge confidence={liqDetails.confidence} reasons={liqDetails.confidenceReasons} />
             </div>
             <a
               href={`https://suivision.xyz/object/${position.marginManagerId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1"
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1"
             >
               {formatAddress(position.marginManagerId)}
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </a>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
           >
-            <svg className="w-5 h-5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="p-4 space-y-6">
+        <div className="p-3 space-y-4">
           {/* Status Badge */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {position.isLiquidatable ? (
-              <span className="px-3 py-1.5 text-sm font-bold rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">
-                ⚠️ LIQUIDATABLE NOW
+              <span className="px-2 py-1 text-xs font-bold rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">
+                ⚠️ LIQUIDATABLE
               </span>
             ) : position.distanceToLiquidation < 5 ? (
-              <span className="px-3 py-1.5 text-sm font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <span className="px-2 py-1 text-xs font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
                 CRITICAL
               </span>
             ) : position.distanceToLiquidation < 15 ? (
-              <span className="px-3 py-1.5 text-sm font-bold rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">
+              <span className="px-2 py-1 text-xs font-bold rounded bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">
                 WARNING
               </span>
             ) : (
-              <span className="px-3 py-1.5 text-sm font-bold rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              <span className="px-2 py-1 text-xs font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                 WATCHING
               </span>
             )}
-            <span className="text-sm text-white/40">
+            <span className="text-xs text-white/40">
               {position.baseAssetSymbol}/{position.quoteAssetSymbol}
             </span>
           </div>
 
           {/* Key Metrics */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <div className="text-xs text-white/50 mb-1">Health Factor</div>
-              <div className={`text-2xl font-bold tabular-nums ${
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+              <div className="text-[10px] text-white/50 mb-0.5">Health Factor</div>
+              <div className={`text-lg font-bold tabular-nums ${
                 position.isLiquidatable ? 'text-rose-400' :
                 position.distanceToLiquidation < 5 ? 'text-amber-400' :
                 position.distanceToLiquidation < 15 ? 'text-yellow-400' :
@@ -308,13 +308,13 @@ export function PositionDetailDrawer({
               }`}>
                 {position.riskRatio.toFixed(3)}
               </div>
-              <div className="text-xs text-white/40 mt-1">
-                Liquidation @ {position.liquidationThreshold.toFixed(2)}
+              <div className="text-[10px] text-white/40 mt-0.5">
+                Liq @ {position.liquidationThreshold.toFixed(2)}
               </div>
             </div>
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <div className="text-xs text-white/50 mb-1">Price Buffer</div>
-              <div className={`text-2xl font-bold tabular-nums ${
+            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+              <div className="text-[10px] text-white/50 mb-0.5">Price Buffer</div>
+              <div className={`text-lg font-bold tabular-nums ${
                 position.distanceToLiquidation < 0 ? 'text-rose-400' :
                 position.distanceToLiquidation < 5 ? 'text-amber-400' :
                 position.distanceToLiquidation < 15 ? 'text-yellow-400' :
@@ -323,120 +323,109 @@ export function PositionDetailDrawer({
                 {position.distanceToLiquidation < 0 ? '' : '+'}
                 {position.distanceToLiquidation.toFixed(1)}%
               </div>
-              <div className="text-xs text-white/40 mt-1">
+              <div className="text-[10px] text-white/40 mt-0.5">
                 Until liquidation
               </div>
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════════════
-              EXECUTION BREAKDOWN - The liquidator brain
-          ═══════════════════════════════════════════════════════════════════ */}
-          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 rounded-xl p-4 border border-white/10 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Execution Breakdown
-              </h3>
-            </div>
+          {/* Execution Breakdown */}
+          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 rounded-lg p-3 border border-white/10 space-y-3">
+            <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
+              <svg className="w-3 h-3 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Execution Breakdown
+            </h3>
             
             {/* Execution steps */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {/* Step 1: Repay */}
-              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-bold text-cyan-400">1</span>
+              <div className="flex items-center gap-2 p-2 bg-white/5 rounded border border-white/10">
+                <div className="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] font-bold text-cyan-400">1</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-white/50">Repay Debt</div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-[10px] text-white/50">Repay Debt</div>
+                  <div className="text-xs font-medium text-white">
                     {liqDetails.maxRepayAmount.toFixed(4)} {liqDetails.maxRepayAsset}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-cyan-400 tabular-nums">
+                  <div className="text-xs font-bold text-cyan-400 tabular-nums">
                     {formatUsd(liqDetails.maxRepayUsd)}
                   </div>
-                  <div className="text-[10px] text-white/40">max repay</div>
                 </div>
               </div>
               
               {/* Step 2: Seize */}
-              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-bold text-emerald-400">2</span>
+              <div className="flex items-center gap-2 p-2 bg-white/5 rounded border border-white/10">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] font-bold text-emerald-400">2</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-white/50">Seize Collateral</div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-[10px] text-white/50">Seize</div>
+                  <div className="text-xs font-medium text-white">
                     {liqDetails.seizeAsset}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-emerald-400 tabular-nums">
+                  <div className="text-xs font-bold text-emerald-400 tabular-nums">
                     {formatUsd(liqDetails.seizeAmountUsd)}
                   </div>
-                  <div className="text-[10px] text-white/40">collateral value</div>
                 </div>
               </div>
               
               {/* Step 3: Bonus */}
-              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-bold text-amber-400">3</span>
+              <div className="flex items-center gap-2 p-2 bg-white/5 rounded border border-white/10">
+                <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] font-bold text-amber-400">3</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-white/50">Liquidation Bonus</div>
-                  <div className="text-sm font-medium text-white">
-                    {liqDetails.liquidationBonus.toFixed(1)}% discount
+                  <div className="text-[10px] text-white/50">Bonus</div>
+                  <div className="text-xs font-medium text-white">
+                    {liqDetails.liquidationBonus.toFixed(1)}%
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-amber-400 tabular-nums">
+                  <div className="text-xs font-bold text-amber-400 tabular-nums">
                     +{formatUsd(liqDetails.grossReward)}
                   </div>
-                  <div className="text-[10px] text-white/40">gross reward</div>
                 </div>
               </div>
             </div>
             
             {/* Profit Summary */}
-            <div className="pt-3 border-t border-white/10 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/60">Gross Reward</span>
+            <div className="pt-2 border-t border-white/10 space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-white/60">Gross</span>
                 <span className="text-emerald-400 font-medium tabular-nums">+{formatUsd(liqDetails.grossReward)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/60">Est. Gas Cost</span>
-                <span className="text-rose-400 tabular-nums">-{formatUsd(liqDetails.estimatedGas)}</span>
+              <div className="flex justify-between text-xs">
+                <span className="text-white/60">Gas + Slip</span>
+                <span className="text-rose-400 tabular-nums">-{formatUsd(liqDetails.estimatedGas + liqDetails.estimatedSlippage)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/60">Est. Slippage (~0.3%)</span>
-                <span className="text-rose-400 tabular-nums">-{formatUsd(liqDetails.estimatedSlippage)}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-white/10">
-                <span className="text-white font-medium">Est. Net Profit</span>
-                <span className={`font-bold text-lg tabular-nums ${liqDetails.netProfit > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <div className="flex justify-between pt-1.5 border-t border-white/10">
+                <span className="text-white font-medium text-xs">Net Profit</span>
+                <span className={`font-bold text-sm tabular-nums ${liqDetails.netProfit > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {liqDetails.netProfit > 0 ? '+' : ''}{formatUsd(liqDetails.netProfit)}
                 </span>
               </div>
             </div>
             
             {/* Confidence indicator */}
-            <div className={`p-3 rounded-lg ${
+            <div className={`p-2 rounded ${
               liqDetails.confidence === 'high' ? 'bg-emerald-500/10 border border-emerald-500/20' :
               liqDetails.confidence === 'medium' ? 'bg-amber-500/10 border border-amber-500/20' :
               'bg-rose-500/10 border border-rose-500/20'
             }`}>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${
+              <div className="flex items-center gap-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${
                   liqDetails.confidence === 'high' ? 'bg-emerald-500' :
                   liqDetails.confidence === 'medium' ? 'bg-amber-500' :
                   'bg-rose-500'
                 }`} />
-                <span className="text-xs text-white/80">
+                <span className="text-[10px] text-white/80">
                   {liqDetails.confidenceReasons.join(' · ')}
                 </span>
               </div>
@@ -444,42 +433,42 @@ export function PositionDetailDrawer({
           </div>
 
           {/* Position Breakdown */}
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-4">
-            <h3 className="text-sm font-semibold text-white/80">Position Breakdown</h3>
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10 space-y-3">
+            <h3 className="text-xs font-semibold text-white/80">Position Breakdown</h3>
             
             {/* Collateral */}
             <div>
-              <div className="text-xs text-white/50 mb-2">Collateral</div>
-              <div className="space-y-2">
+              <div className="text-[10px] text-white/50 mb-1.5">Collateral</div>
+              <div className="space-y-1.5">
                 {position.baseAsset > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-white/70">{position.baseAssetSymbol}</span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-white/70">{position.baseAssetSymbol}</span>
                     <div className="text-right">
-                      <span className="text-sm font-medium text-white">
+                      <span className="font-medium text-white">
                         {(position.baseAsset / 1e9).toFixed(4)}
                       </span>
-                      <span className="text-xs text-white/40 ml-2">
+                      <span className="text-[10px] text-white/40 ml-1.5">
                         {formatUsd(position.baseAssetUsd)}
                       </span>
                     </div>
                   </div>
                 )}
                 {position.quoteAsset > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-white/70">{position.quoteAssetSymbol}</span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-white/70">{position.quoteAssetSymbol}</span>
                     <div className="text-right">
-                      <span className="text-sm font-medium text-white">
+                      <span className="font-medium text-white">
                         {(position.quoteAsset / 1e6).toFixed(2)}
                       </span>
-                      <span className="text-xs text-white/40 ml-2">
+                      <span className="text-[10px] text-white/40 ml-1.5">
                         {formatUsd(position.quoteAssetUsd)}
                       </span>
                     </div>
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                  <span className="text-sm font-medium text-white/80">Total Collateral</span>
-                  <span className="text-sm font-bold text-white">
+                <div className="flex justify-between items-center pt-1.5 border-t border-white/10 text-xs">
+                  <span className="font-medium text-white/80">Total</span>
+                  <span className="font-bold text-white">
                     {formatUsd(position.baseAssetUsd + position.quoteAssetUsd)}
                   </span>
                 </div>
@@ -488,37 +477,37 @@ export function PositionDetailDrawer({
             
             {/* Debt */}
             <div>
-              <div className="text-xs text-white/50 mb-2">Debt</div>
-              <div className="space-y-2">
+              <div className="text-[10px] text-white/50 mb-1.5">Debt</div>
+              <div className="space-y-1.5">
                 {position.baseDebt > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-white/70">{position.baseAssetSymbol}</span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-white/70">{position.baseAssetSymbol}</span>
                     <div className="text-right">
-                      <span className="text-sm font-medium text-rose-400">
+                      <span className="font-medium text-rose-400">
                         {(position.baseDebt / 1e9).toFixed(4)}
                       </span>
-                      <span className="text-xs text-white/40 ml-2">
+                      <span className="text-[10px] text-white/40 ml-1.5">
                         {formatUsd(position.baseDebtUsd)}
                       </span>
                     </div>
                   </div>
                 )}
                 {position.quoteDebt > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-white/70">{position.quoteAssetSymbol}</span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-white/70">{position.quoteAssetSymbol}</span>
                     <div className="text-right">
-                      <span className="text-sm font-medium text-rose-400">
+                      <span className="font-medium text-rose-400">
                         {(position.quoteDebt / 1e6).toFixed(2)}
                       </span>
-                      <span className="text-xs text-white/40 ml-2">
+                      <span className="text-[10px] text-white/40 ml-1.5">
                         {formatUsd(position.quoteDebtUsd)}
                       </span>
                     </div>
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                  <span className="text-sm font-medium text-white/80">Total Debt</span>
-                  <span className="text-sm font-bold text-rose-400">
+                <div className="flex justify-between items-center pt-1.5 border-t border-white/10 text-xs">
+                  <span className="font-medium text-white/80">Total</span>
+                  <span className="font-bold text-rose-400">
                     {formatUsd(position.totalDebtUsd)}
                   </span>
                 </div>
@@ -527,24 +516,24 @@ export function PositionDetailDrawer({
           </div>
 
           {/* Price Simulator */}
-          <div className="bg-gradient-to-br from-cyan-500/10 to-teal-500/10 rounded-xl p-4 border border-cyan-500/30 space-y-4">
+          <div className="bg-gradient-to-br from-cyan-500/10 to-teal-500/10 rounded-lg p-3 border border-cyan-500/30 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
+                <svg className="w-3 h-3 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 Price Simulator
               </h3>
               <div className="text-right">
-                <div className="text-xs text-white/50">{position.baseAssetSymbol} Price</div>
-                <div className="text-sm font-bold text-white">${currentBasePrice.toFixed(4)}</div>
+                <div className="text-[10px] text-white/50">{position.baseAssetSymbol}</div>
+                <div className="text-xs font-bold text-white">${currentBasePrice.toFixed(4)}</div>
               </div>
             </div>
 
             {/* Price Change Slider */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-white/60">Simulate price change:</span>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-white/60">Simulate:</span>
                 <span className={`font-bold ${
                   priceChangePct < 0 ? 'text-rose-400' : 
                   priceChangePct > 0 ? 'text-emerald-400' : 
@@ -561,10 +550,10 @@ export function PositionDetailDrawer({
                 step={1}
                 value={priceChangePct}
                 onChange={(e) => setPriceChangePct(Number(e.target.value))}
-                className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer
+                className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer
                            [&::-webkit-slider-thumb]:appearance-none
-                           [&::-webkit-slider-thumb]:w-4
-                           [&::-webkit-slider-thumb]:h-4
+                           [&::-webkit-slider-thumb]:w-3
+                           [&::-webkit-slider-thumb]:h-3
                            [&::-webkit-slider-thumb]:rounded-full
                            [&::-webkit-slider-thumb]:bg-cyan-400
                            [&::-webkit-slider-thumb]:border-2
@@ -572,7 +561,7 @@ export function PositionDetailDrawer({
                            [&::-webkit-slider-thumb]:cursor-grab"
               />
               
-              <div className="flex justify-between text-xs text-white/40">
+              <div className="flex justify-between text-[10px] text-white/40">
                 <span>-50%</span>
                 <span>0%</span>
                 <span>+50%</span>
@@ -581,31 +570,31 @@ export function PositionDetailDrawer({
 
             {/* Simulation Results */}
             {priceChangePct !== 0 && (
-              <div className={`rounded-lg p-3 ${
+              <div className={`rounded p-2 ${
                 simulation.isLiquidatable 
                   ? 'bg-rose-500/20 border border-rose-500/40' 
                   : 'bg-white/5 border border-white/10'
               }`}>
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <div className="text-xs text-white/50">New Health Factor</div>
+                    <div className="text-[10px] text-white/50">New Health</div>
                     <div className={`font-bold ${simulation.isLiquidatable ? 'text-rose-400' : 'text-white'}`}>
                       {simulation.newHealthFactor.toFixed(3)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-white/50">New Price Buffer</div>
+                    <div className="text-[10px] text-white/50">New Buffer</div>
                     <div className={`font-bold ${simulation.isLiquidatable ? 'text-rose-400' : 'text-white'}`}>
                       {simulation.newPriceBuffer < 0 ? '' : '+'}{simulation.newPriceBuffer.toFixed(1)}%
                     </div>
                   </div>
                 </div>
                 {simulation.isLiquidatable && !position.isLiquidatable && (
-                  <div className="mt-2 text-xs text-rose-300 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="mt-1.5 text-[10px] text-rose-300 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    Position becomes liquidatable at this price
+                    Becomes liquidatable
                   </div>
                 )}
               </div>
@@ -613,33 +602,33 @@ export function PositionDetailDrawer({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-white/10">
+          <div className="flex gap-2 pt-3 border-t border-white/10">
             <button
               onClick={() => onViewHistory(position)}
-              className="flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center gap-2"
+              className="flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center gap-1.5"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              View History
+              History
             </button>
             
             {position.isLiquidatable ? (
               <button
                 onClick={() => onLiquidate(position)}
-                className="flex-1 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-rose-500 hover:bg-rose-400 text-white flex items-center justify-center gap-2"
+                className="flex-1 px-3 py-2.5 rounded-lg text-xs font-bold transition-all bg-rose-500 hover:bg-rose-400 text-white flex items-center justify-center gap-1.5"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Liquidate Now
+                Liquidate
               </button>
             ) : (
               <button
                 disabled
-                className="flex-1 px-4 py-3 rounded-xl text-sm font-medium bg-slate-700/50 text-slate-500 cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-3 py-2.5 rounded-lg text-xs font-medium bg-slate-700/50 text-slate-500 cursor-not-allowed"
               >
-                Not Yet Liquidatable
+                Not Liquidatable
               </button>
             )}
           </div>

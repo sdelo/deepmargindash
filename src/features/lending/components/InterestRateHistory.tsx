@@ -15,6 +15,7 @@ import { TimeRangeSelector } from "../../../components/TimeRangeSelector";
 import { EmptyState } from "../../../components/EmptyState";
 import { LoadingSkeleton } from "../../../components/LoadingSkeleton";
 import type { TimeRange } from "../api/types";
+import { useChartFirstRender } from "../../../components/charts/StableChart";
 
 type Props = { poolId?: string };
 
@@ -38,7 +39,10 @@ export const InterestRateHistory: FC<Props> = ({ poolId }) => {
     }));
   }, [interestRateQuery.transformed]);
 
-  if (interestRateQuery.isLoading) {
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(chartData.length > 0);
+
+  if (interestRateQuery.isLoading && chartData.length === 0) {
     return (
       <div className="relative card-surface border border-white/10 text-white">
         <div className="flex items-center justify-between mb-4">
@@ -153,6 +157,7 @@ export const InterestRateHistory: FC<Props> = ({ poolId }) => {
               name="Base Rate"
               dot={{ fill: "#6366f1", r: 4 }}
               activeDot={{ r: 6 }}
+              {...animationProps}
             />
             <Line
               type="monotone"
@@ -162,6 +167,7 @@ export const InterestRateHistory: FC<Props> = ({ poolId }) => {
               name="Base Slope"
               dot={{ fill: "#8b5cf6", r: 4 }}
               activeDot={{ r: 6 }}
+              {...animationProps}
             />
             <Line
               type="monotone"
@@ -171,6 +177,7 @@ export const InterestRateHistory: FC<Props> = ({ poolId }) => {
               name="Optimal Utilization"
               dot={{ fill: "#a78bfa", r: 4 }}
               activeDot={{ r: 6 }}
+              {...animationProps}
             />
             <Line
               type="monotone"
@@ -180,6 +187,7 @@ export const InterestRateHistory: FC<Props> = ({ poolId }) => {
               name="Excess Slope"
               dot={{ fill: "#c4b5fd", r: 4 }}
               activeDot={{ r: 6 }}
+              {...animationProps}
             />
             <Legend
               align="left"

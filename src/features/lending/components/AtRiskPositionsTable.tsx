@@ -470,7 +470,6 @@ export function AtRiskPositionsTable({
           }}
           onContinue={() => {
             // TODO: Implement actual liquidation transaction
-            console.log('Liquidate position:', selectedPosition?.marginManagerId);
             setShowTxModal(false);
             setSelectedPosition(null);
           }}

@@ -52,7 +52,7 @@ export function useLoanEvents(
     if (!borrowedQuery.data || !repaidQuery.data) return null;
     
     // Determine decimals based on pool (default to 9 for SUI)
-    const decimals = 9; // TODO: Get from pool config
+    const decimals = 9;
     
     return aggregateLoanEvents(borrowedQuery.data, repaidQuery.data, 'day', decimals);
   }, [borrowedQuery.data, repaidQuery.data]);
@@ -124,7 +124,7 @@ export function useSupplyWithdrawEvents(
     if (!suppliedQuery.data || !withdrawnQuery.data) return null;
     
     // Determine decimals based on pool (default to 9 for SUI)
-    const decimals = 9; // TODO: Get from pool config
+    const decimals = 9;
     
     return aggregateSupplyWithdrawEvents(
       suppliedQuery.data,

@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import type { PoolOverview } from "../types";
 import { ChevronDownIcon, ChevronUpIcon, CalculatorIcon } from "@heroicons/react/24/outline";
+import { useChartFirstRender, useStableGradientId } from "../../../components/charts/StableChart";
 
 interface FloatingCalculatorProps {
   pool: PoolOverview;
@@ -75,6 +76,7 @@ export function FloatingCalculator({
 }: FloatingCalculatorProps) {
   const [amount, setAmount] = React.useState<string>("1000");
   const [internalCollapsed, setInternalCollapsed] = React.useState(isCollapsed);
+  const [isAssumptionsExpanded, setIsAssumptionsExpanded] = React.useState(false);
   const [selectedPoint, setSelectedPoint] = React.useState<{
     day: number;
     label: string;
@@ -94,6 +96,8 @@ export function FloatingCalculator({
 
   let optimisticAPY = currentAPY;
   let pessimisticAPY = currentAPY;
+  let highUtilizationPct = 0;
+  let lowUtilizationPct = 0;
 
   if (ic && mc) {
     const optimalU = ic.optimal_utilization;
@@ -103,12 +107,22 @@ export function FloatingCalculator({
 
     // Optimistic: utilization goes to optimal
     const optimalBorrowAPY = baseRate + baseSlope * optimalU;
-    optimisticAPY = optimalBorrowAPY * optimalU * (1 - spread) * 100;
+    const calculatedOptimisticAPY = optimalBorrowAPY * optimalU * (1 - spread) * 100;
 
     // Pessimistic: utilization drops to 25% of optimal
     const lowUtil = optimalU * 0.25;
     const lowBorrowAPY = baseRate + baseSlope * lowUtil;
-    pessimisticAPY = lowBorrowAPY * lowUtil * (1 - spread) * 100;
+    const calculatedPessimisticAPY = lowBorrowAPY * lowUtil * (1 - spread) * 100;
+
+    // Ensure high is always >= current and low is always <= current
+    // This prevents the confusing case where "low" is higher than "current"
+    optimisticAPY = Math.max(calculatedOptimisticAPY, currentAPY);
+    // Low is min of calculated pessimistic OR current minus 20%
+    pessimisticAPY = Math.min(calculatedPessimisticAPY, currentAPY * 0.8);
+
+    // Store utilization percentages for display
+    highUtilizationPct = optimalU * 100;
+    lowUtilizationPct = lowUtil * 100;
   }
 
   const depositAmount = parseFloat(amount) || 0;
@@ -116,6 +130,12 @@ export function FloatingCalculator({
     () => generateProjectionData(depositAmount, currentAPY, pessimisticAPY, optimisticAPY),
     [depositAmount, currentAPY, pessimisticAPY, optimisticAPY]
   );
+
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(chartData.length > 0);
+  const highGradientId = useStableGradientId('colorHigh');
+  const currentGradientId = useStableGradientId('colorCurrent');
+  const lowGradientId = useStableGradientId('colorLow');
 
   // Calculate stats for display
   const dailyEarnings = (depositAmount * (currentAPY / 100)) / 365;
@@ -148,18 +168,41 @@ export function FloatingCalculator({
       const currentProjection = payload.find(p => p.dataKey === 'current');
       const currentEarnings = currentProjection ? currentProjection.value - depositAmount : 0;
       
+      // Sort by value descending (high, current, low)
+      const sortedPayload = [...payload].sort((a, b) => b.value - a.value);
+      
       return (
-        <div className="bg-slate-900/95 border border-slate-700 rounded-lg p-3 shadow-xl">
-          <p className="text-xs text-slate-400 mb-2">At {label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatValue(entry.value)} {pool.asset}
-            </p>
-          ))}
+        <div 
+          className="rounded-xl shadow-2xl backdrop-blur-sm"
+          style={{
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 20, 30, 0.98) 100%)',
+            border: '1px solid rgba(34, 211, 238, 0.15)',
+            padding: '12px 14px',
+            minWidth: '190px',
+          }}
+        >
+          <p className="text-[10px] font-medium uppercase tracking-wider text-white/40 mb-2.5 pb-2 border-b border-white/[0.06]">
+            At {label}
+          </p>
+          <div className="space-y-1.5">
+            {sortedPayload.map((entry, index) => (
+              <div key={index} className="flex items-center justify-between gap-4">
+                <span className="text-[11px] font-medium" style={{ color: entry.color }}>
+                  {entry.name}
+                </span>
+                <span className="text-xs font-mono tabular-nums" style={{ color: entry.color }}>
+                  {formatValue(entry.value)} {pool.asset}
+                </span>
+              </div>
+            ))}
+          </div>
           {currentEarnings > 0 && (
-            <p className="text-xs text-emerald-400 mt-1 border-t border-slate-700 pt-1">
-              +{formatEarnings(currentEarnings)} earned (at current APY)
-            </p>
+            <div className="mt-2.5 pt-2 border-t border-white/[0.06]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-white/40">Earned (current)</span>
+                <span className="text-xs font-mono text-emerald-400">+{formatEarnings(currentEarnings)}</span>
+              </div>
+            </div>
           )}
         </div>
       );
@@ -243,15 +286,15 @@ export function FloatingCalculator({
               onMouseLeave={() => setSelectedPoint(null)}
             >
               <defs>
-                <linearGradient id="colorHigh" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={highGradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
                 </linearGradient>
-                <linearGradient id="colorCurrent" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={currentGradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
                   <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
                 </linearGradient>
-                <linearGradient id="colorLow" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={lowGradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
                   <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                 </linearGradient>
@@ -289,27 +332,30 @@ export function FloatingCalculator({
                 dataKey="high"
                 name={`High (${optimisticAPY.toFixed(1)}%)`}
                 stroke="#22d3ee"
-                fill="url(#colorHigh)"
+                fill={`url(#${highGradientId})`}
                 strokeWidth={1.5}
                 dot={false}
+                {...animationProps}
               />
               <Area
                 type="monotone"
                 dataKey="current"
                 name={`Current (${currentAPY.toFixed(1)}%)`}
                 stroke="#10b981"
-                fill="url(#colorCurrent)"
+                fill={`url(#${currentGradientId})`}
                 strokeWidth={2}
                 dot={false}
+                {...animationProps}
               />
               <Area
                 type="monotone"
                 dataKey="low"
                 name={`Low (${pessimisticAPY.toFixed(1)}%)`}
                 stroke="#6366f1"
-                fill="url(#colorLow)"
+                fill={`url(#${lowGradientId})`}
                 strokeWidth={1.5}
                 dot={false}
+                {...animationProps}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -350,17 +396,44 @@ export function FloatingCalculator({
           </span>
         </div>
 
-        {/* Disclaimer */}
-        <div className="mt-3 px-2 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700/30">
-          <div className="text-[9px] text-slate-400 text-center space-y-0.5">
-            <p className="font-medium text-slate-300">Scenario Assumptions:</p>
-            <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5">
-              <span><span className="inline-block w-2 h-0.5 bg-cyan-400 mr-1 align-middle"></span>High: Optimal utilization</span>
-              <span><span className="inline-block w-2 h-0.5 bg-emerald-400 mr-1 align-middle"></span>Current: Today's APY</span>
-              <span><span className="inline-block w-2 h-0.5 bg-indigo-400 mr-1 align-middle"></span>Low: 25% of optimal</span>
+        {/* Expandable Assumptions */}
+        <div className="mt-3">
+          <button
+            onClick={() => setIsAssumptionsExpanded(!isAssumptionsExpanded)}
+            className="flex items-center gap-1.5 text-[10px] text-slate-400 hover:text-slate-300 transition-colors"
+          >
+            <ChevronDownIcon className={`w-3 h-3 transition-transform ${isAssumptionsExpanded ? 'rotate-180' : ''}`} />
+            <span>Scenario Assumptions</span>
+          </button>
+          
+          {isAssumptionsExpanded && (
+            <div className="mt-2 px-2.5 py-2 bg-slate-800/50 rounded-lg border border-slate-700/30 text-[10px] text-slate-400 space-y-1.5">
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-0.5 bg-cyan-400 mt-1.5 flex-shrink-0 rounded-full"></span>
+                <div>
+                  <span className="text-cyan-300 font-medium">High ({optimisticAPY.toFixed(1)}% APY)</span>
+                  <span className="text-slate-500"> — Utilization at optimal{highUtilizationPct > 0 ? ` (~${highUtilizationPct.toFixed(0)}%)` : ''}</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-0.5 bg-emerald-400 mt-1.5 flex-shrink-0 rounded-full"></span>
+                <div>
+                  <span className="text-emerald-300 font-medium">Current ({currentAPY.toFixed(1)}% APY)</span>
+                  <span className="text-slate-500"> — Today's actual rate</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-0.5 bg-indigo-400 mt-1.5 flex-shrink-0 rounded-full"></span>
+                <div>
+                  <span className="text-indigo-300 font-medium">Low ({pessimisticAPY.toFixed(1)}% APY)</span>
+                  <span className="text-slate-500"> — Low demand{lowUtilizationPct > 0 ? ` (~${lowUtilizationPct.toFixed(0)}% util)` : ''}</span>
+                </div>
+              </div>
+              <p className="text-slate-500 pt-1 border-t border-slate-700/30 italic">
+                APY varies with pool utilization. Projections compound daily.
+              </p>
             </div>
-            <p className="text-slate-500 italic pt-0.5">APY changes with pool utilization. Projections compound daily.</p>
-          </div>
+          )}
         </div>
       </div>
     </div>

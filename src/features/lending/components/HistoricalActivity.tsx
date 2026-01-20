@@ -14,6 +14,7 @@ import {
 import { useSupplyWithdrawEvents } from "../hooks/useEvents";
 import { useInterestRateHistory } from "../hooks/useEvents";
 import type { TimeRange } from "../api/types";
+import { useChartFirstRender, useStableGradientId } from "../../../components/charts/StableChart";
 
 type Props = { poolId: string };
 
@@ -36,6 +37,11 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
       borrow: point.borrow,
     }));
   }, [supplyWithdrawEvents.aggregated]);
+
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(chartData.length > 0);
+  const supplyGradientId = useStableGradientId('gradSupply');
+  const borrowGradientId = useStableGradientId('gradBorrow');
 
   // Prepare rate change markers
   const rateChangeMarkers = React.useMemo(() => {
@@ -149,11 +155,11 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
           >
             <defs>
-              <linearGradient id="gradSupply" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={supplyGradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.45} />
                 <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.05} />
               </linearGradient>
-              <linearGradient id="gradBorrow" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={borrowGradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.45} />
                 <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.05} />
               </linearGradient>
@@ -186,18 +192,20 @@ export const HistoricalActivity: FC<Props> = ({ poolId }) => {
               dataKey="supply"
               stroke="var(--color-cyan-300)"
               strokeWidth={2}
-              fill="url(#gradSupply)"
+              fill={`url(#${supplyGradientId})`}
               name="Supply"
               dot={false}
+              {...animationProps}
             />
             <Area
               type="monotone"
               dataKey="borrow"
               stroke="var(--color-amber-400)"
               strokeWidth={2}
-              fill="url(#gradBorrow)"
+              fill={`url(#${borrowGradientId})`}
               name="Borrow"
               dot={false}
+              {...animationProps}
             />
 
             {/* Rate change vertical markers */}

@@ -16,7 +16,7 @@ export const LiquidationMonitor: FC<Props> = ({ poolId }) => {
   const stats = React.useMemo(() => {
     if (!liquidationQuery.data) return null;
     // Determine decimals (default to 9 for SUI)
-    const decimals = 9; // TODO: Get from pool config
+    const decimals = 9;
     return aggregateLiquidationStats(liquidationQuery.data, decimals);
   }, [liquidationQuery.data]);
 

@@ -15,7 +15,6 @@ import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 import {
-  HistoryIcon,
   ErrorIcon,
 } from "../../../components/ThemedIcons";
 import type { PoolOverview } from "../types";
@@ -40,9 +39,9 @@ interface UnifiedEvent {
 }
 
 const EVENT_COLORS: Record<EventType, { bg: string; text: string; border: string }> = {
-  supply: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
-  withdraw: { bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-500/20" },
-  borrow: { bg: "bg-rose-500/10", text: "text-rose-400", border: "border-rose-500/20" },
+  supply: { bg: "bg-teal-500/10", text: "text-teal-400", border: "border-teal-500/20" },
+  withdraw: { bg: "bg-slate-500/10", text: "text-slate-300", border: "border-slate-500/20" },
+  borrow: { bg: "bg-slate-500/10", text: "text-slate-300", border: "border-slate-500/20" },
   repay: { bg: "bg-teal-500/10", text: "text-teal-400", border: "border-teal-500/20" },
   liquidation: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" },
 };
@@ -58,9 +57,9 @@ const EVENT_LABELS: Record<EventType, string> = {
 const EVENT_ICONS: Record<EventType, string> = {
   supply: "↓",
   withdraw: "↑",
-  borrow: "📤",
-  repay: "📥",
-  liquidation: "⚡",
+  borrow: "→",
+  repay: "←",
+  liquidation: "!",
 };
 
 export function UnifiedEventFeed({ pool }: UnifiedEventFeedProps) {
@@ -259,8 +258,8 @@ export function UnifiedEventFeed({ pool }: UnifiedEventFeedProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <HistoryIcon size={32} /> On-Chain Event Feed
+          <h2 className="text-2xl font-bold text-white mb-1">
+            On-Chain Event Feed
           </h2>
           <p className="text-sm text-white/60">
             All pool events in chronological order for {pool.asset}

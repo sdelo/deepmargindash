@@ -15,6 +15,9 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import { ChevronDownIcon, ChevronUpIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { useChartFirstRender, useStableGradientId } from "../../../components/charts/StableChart";
+
+type ScenarioType = "low" | "base" | "high";
 
 type Props = {
   userAddress: string | undefined;
@@ -85,6 +88,7 @@ export const PositionsWithCalculator: FC<Props> = ({
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
   const [manualAmount, setManualAmount] = useState<string>("");
   const [projectionPeriod, setProjectionPeriod] = useState<"30d" | "1y">("30d");
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioType>("base");
 
   const { data: fetchedPositions, error, isLoading } = useUserPositions(propPositions ? undefined : userAddress);
   const positions = propPositions || fetchedPositions;
@@ -137,6 +141,8 @@ export const PositionsWithCalculator: FC<Props> = ({
 
   let optimisticAPY = currentAPY;
   let pessimisticAPY = currentAPY;
+  let highUtilizationPct = 0;
+  let lowUtilizationPct = 0;
 
   if (ic && mc) {
     const optimalU = ic.optimal_utilization;
@@ -144,12 +150,24 @@ export const PositionsWithCalculator: FC<Props> = ({
     const baseSlope = ic.base_slope;
     const spread = mc.protocol_spread;
 
+    // High: utilization at optimal level
     const optimalBorrowAPY = baseRate + baseSlope * optimalU;
-    optimisticAPY = optimalBorrowAPY * optimalU * (1 - spread) * 100;
+    const calculatedOptimisticAPY = optimalBorrowAPY * optimalU * (1 - spread) * 100;
 
+    // Low: utilization drops to 25% of optimal
     const lowUtil = optimalU * 0.25;
     const lowBorrowAPY = baseRate + baseSlope * lowUtil;
-    pessimisticAPY = lowBorrowAPY * lowUtil * (1 - spread) * 100;
+    const calculatedPessimisticAPY = lowBorrowAPY * lowUtil * (1 - spread) * 100;
+
+    // Ensure high is always >= current and low is always <= current
+    // This prevents the confusing case where "low" is higher than "current"
+    optimisticAPY = Math.max(calculatedOptimisticAPY, currentAPY);
+    // Low is min of calculated pessimistic OR current minus 20%
+    pessimisticAPY = Math.min(calculatedPessimisticAPY, currentAPY * 0.8);
+
+    // Store utilization percentages for display
+    highUtilizationPct = optimalU * 100;
+    lowUtilizationPct = lowUtil * 100;
   }
 
   const chartData = useMemo(
@@ -157,9 +175,11 @@ export const PositionsWithCalculator: FC<Props> = ({
     [depositAmount, currentPositionForPool, currentAPY, pessimisticAPY, optimisticAPY, projectionPeriod]
   );
 
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(chartData.length > 0);
+  const gradientId = useStableGradientId('projectionGradient');
+
   const totalAmount = depositAmount + currentPositionForPool;
-  const dailyEarnings = (totalAmount * (currentAPY / 100)) / 365;
-  const monthlyEarnings = (totalAmount * (currentAPY / 100)) / 12;
 
   const formatEarnings = (num: number) => {
     if (num >= 1000) return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -177,16 +197,33 @@ export const PositionsWithCalculator: FC<Props> = ({
   const hasPosition = currentPositionForPool > 0;
   const showCalculator = totalAmount > 0 || manualAmount;
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string; color: string }>; label?: string }) => {
+  // Get scenario display info
+  const scenarioConfig = {
+    low: { label: "Low", apy: pessimisticAPY, color: "#6366f1" },
+    base: { label: "Base", apy: currentAPY, color: "#10b981" },
+    high: { label: "High", apy: optimisticAPY, color: "#2dd4bf" },
+  };
+  const activeScenario = scenarioConfig[selectedScenario];
+
+  // Calculate earnings based on selected scenario
+  const scenarioAPY = activeScenario.apy;
+  const dailyEarningsForScenario = (totalAmount * (scenarioAPY / 100)) / 365;
+
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string }>; label?: string }) => {
     if (active && payload && payload.length && selectedPool) {
+      const value = payload[0]?.value ?? 0;
+      
       return (
-        <div className="bg-[#0d1a1f]/95 border border-white/10 rounded-lg p-3 shadow-xl">
-          <p className="text-xs text-white/50 mb-2">Earnings at {label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} className="text-sm font-mono" style={{ color: entry.color }}>
-              {entry.name}: +{formatEarnings(entry.value)} {selectedPool.asset}
-            </p>
-          ))}
+        <div className="bg-[#0a1419]/98 backdrop-blur-sm border border-white/[0.08] rounded-lg px-3 py-2.5 shadow-2xl">
+          <p className="text-[10px] text-white/40 mb-1 font-medium tracking-wide uppercase">
+            Earnings at {label}
+          </p>
+          <p className="text-base font-semibold font-mono" style={{ color: activeScenario.color }}>
+            +{formatEarnings(value)} <span className="text-xs opacity-70">{selectedPool.asset}</span>
+          </p>
+          <p className="text-[10px] text-white/30 mt-1">
+            {activeScenario.label} scenario · {scenarioAPY.toFixed(2)}% APY
+          </p>
         </div>
       );
     }
@@ -262,20 +299,61 @@ export const PositionsWithCalculator: FC<Props> = ({
             {uniqueCapIds.length >= 1 && (
               <div className="flex items-center gap-2 text-[11px] text-white/40">
                 <span>Cap:</span>
-                <a
-                  href={`${explorerUrl}/object/${uniqueCapIds[0]}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#2dd4bf] hover:text-[#5eead4] font-mono transition-colors"
-                >
-                  {truncateAddress(uniqueCapIds[0])}
-                </a>
-                <button
-                  onClick={() => copyToClipboard(uniqueCapIds[0])}
-                  className="px-1.5 py-0.5 bg-white/[0.04] hover:bg-white/[0.08] rounded text-white/50 text-[9px] transition-colors"
-                >
-                  Copy
-                </button>
+                {uniqueCapIds.length > 1 ? (
+                  <>
+                    <select
+                      value={selectedCapId || ""}
+                      onChange={(e) => setSelectedCapId(e.target.value)}
+                      className="bg-white/[0.04] border border-white/[0.08] rounded px-2 py-0.5 text-[#2dd4bf] text-[11px] font-mono focus:outline-none focus:border-[#2dd4bf]/40 cursor-pointer appearance-none pr-6"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232dd4bf'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 4px center',
+                        backgroundSize: '12px'
+                      }}
+                    >
+                      {uniqueCapIds.map((capId) => (
+                        <option key={capId} value={capId} className="bg-[#0a1419] text-white">
+                          {truncateAddress(capId)}
+                        </option>
+                      ))}
+                    </select>
+                    <a
+                      href={`${explorerUrl}/object/${selectedCapId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#2dd4bf] hover:text-[#5eead4] transition-colors"
+                      title="View in explorer"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                    <button
+                      onClick={() => selectedCapId && copyToClipboard(selectedCapId)}
+                      className="px-1.5 py-0.5 bg-white/[0.04] hover:bg-white/[0.08] rounded text-white/50 text-[9px] transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <a
+                      href={`${explorerUrl}/object/${uniqueCapIds[0]}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#2dd4bf] hover:text-[#5eead4] font-mono transition-colors"
+                    >
+                      {truncateAddress(uniqueCapIds[0])}
+                    </a>
+                    <button
+                      onClick={() => copyToClipboard(uniqueCapIds[0])}
+                      className="px-1.5 py-0.5 bg-white/[0.04] hover:bg-white/[0.08] rounded text-white/50 text-[9px] transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -347,9 +425,9 @@ export const PositionsWithCalculator: FC<Props> = ({
               <span className="text-xs font-medium text-white/70">
                 Projection (Variable APY)
               </span>
-              <p className="text-[10px] text-white/40 mt-0.5">APY changes with utilization</p>
             </div>
             <div className="flex items-center gap-2">
+              {/* Period Toggle */}
               <div className="flex items-center bg-white/[0.04] rounded-lg p-0.5">
                 <button
                   onClick={() => setProjectionPeriod("30d")}
@@ -368,9 +446,53 @@ export const PositionsWithCalculator: FC<Props> = ({
                   1y
                 </button>
               </div>
-              <span className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[#2dd4bf]/12 text-[#2dd4bf] font-mono">
-                {currentAPY.toFixed(2)}% APY
+              {/* APY Badge */}
+              <span 
+                className="px-2 py-1 rounded-lg text-[10px] font-semibold font-mono"
+                style={{ 
+                  backgroundColor: `${activeScenario.color}15`,
+                  color: activeScenario.color 
+                }}
+              >
+                {scenarioAPY.toFixed(2)}% APY
               </span>
+            </div>
+          </div>
+
+          {/* Scenario Toggle */}
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] text-white/40">Scenario</span>
+            <div className="flex items-center bg-white/[0.04] rounded-lg p-0.5">
+              <button
+                onClick={() => setSelectedScenario("low")}
+                className={`px-2.5 py-1 rounded text-[10px] font-medium transition-all ${
+                  selectedScenario === "low" 
+                    ? "bg-indigo-500/20 text-indigo-400" 
+                    : "text-white/40 hover:text-white/60"
+                }`}
+              >
+                Low
+              </button>
+              <button
+                onClick={() => setSelectedScenario("base")}
+                className={`px-2.5 py-1 rounded text-[10px] font-medium transition-all ${
+                  selectedScenario === "base" 
+                    ? "bg-emerald-500/20 text-emerald-400" 
+                    : "text-white/40 hover:text-white/60"
+                }`}
+              >
+                Base
+              </button>
+              <button
+                onClick={() => setSelectedScenario("high")}
+                className={`px-2.5 py-1 rounded text-[10px] font-medium transition-all ${
+                  selectedScenario === "high" 
+                    ? "bg-[#2dd4bf]/20 text-[#2dd4bf]" 
+                    : "text-white/40 hover:text-white/60"
+                }`}
+              >
+                High
+              </button>
             </div>
           </div>
 
@@ -397,13 +519,9 @@ export const PositionsWithCalculator: FC<Props> = ({
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
                     <defs>
-                      <linearGradient id="colorHigh" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorCurrent" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                      <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={activeScenario.color} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={activeScenario.color} stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
@@ -420,29 +538,39 @@ export const PositionsWithCalculator: FC<Props> = ({
                       tickLine={false}
                       width={45}
                     />
-                    <RechartsTooltip content={<CustomTooltip />} />
-                    <Area type="monotone" dataKey="high" name={`High (${optimisticAPY.toFixed(1)}%)`} stroke="#2dd4bf" fill="url(#colorHigh)" strokeWidth={1.5} dot={false} />
-                    <Area type="monotone" dataKey="current" name={`Current (${currentAPY.toFixed(1)}%)`} stroke="#10b981" fill="url(#colorCurrent)" strokeWidth={2} dot={false} />
-                    <Area type="monotone" dataKey="low" name={`Low (${pessimisticAPY.toFixed(1)}%)`} stroke="#6366f1" fill="transparent" strokeWidth={1} strokeDasharray="4 4" dot={false} />
+                    <RechartsTooltip 
+                      content={<CustomTooltip />}
+                      cursor={{ stroke: activeScenario.color, strokeOpacity: 0.2, strokeWidth: 1 }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey={selectedScenario === "base" ? "current" : selectedScenario}
+                      name={`${activeScenario.label} (${scenarioAPY.toFixed(1)}%)`}
+                      stroke={activeScenario.color}
+                      fill={`url(#${gradientId})`}
+                      strokeWidth={2}
+                      dot={false}
+                      {...animationProps}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-2 mt-3">
-                <div className="rounded-lg p-2.5 text-center bg-white/[0.03]">
-                  <div className="text-[9px] text-white/40 mb-0.5">Est. Daily</div>
-                  <div className="text-xs font-semibold text-[#2dd4bf] font-mono">+{formatEarnings(dailyEarnings)}</div>
-                </div>
-                <div className="rounded-lg p-2.5 text-center bg-white/[0.03]">
-                  <div className="text-[9px] text-white/40 mb-0.5">Est. at 30d</div>
-                  <div className="text-xs font-semibold text-[#2dd4bf] font-mono">+{formatEarnings(monthlyEarnings)}</div>
-                </div>
-                <div className="rounded-lg p-2.5 text-center bg-white/[0.03]">
-                  <div className="text-[9px] text-white/40 mb-0.5">Est. at 30d</div>
-                  <div className="text-xs font-semibold text-emerald-400 font-mono">+{formatEarnings(monthlyEarnings)}</div>
-                </div>
+              {/* Est. daily earnings */}
+              <div className="flex items-center justify-between px-3 py-2.5 mt-3 bg-white/[0.03] rounded-lg">
+                <span className="text-[10px] text-white/40">Est. daily earnings</span>
+                <span 
+                  className="text-sm font-semibold font-mono"
+                  style={{ color: activeScenario.color }}
+                >
+                  +{formatEarnings(dailyEarningsForScenario)} {selectedPool?.asset}
+                </span>
               </div>
+
+              {/* Scenario hint */}
+              <p className="text-[9px] text-white/30 mt-2 italic">
+                APY varies with pool utilization. Projections compound daily.
+              </p>
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center py-6">

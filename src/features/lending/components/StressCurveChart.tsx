@@ -55,8 +55,9 @@ function calculateFirstLiquidationPoint(positions: AtRiskPosition[]): number | n
     if (position.isLiquidatable) return;
 
     const threshold = position.liquidationThreshold;
-    const collateral = position.collateralValueUsd;
-    const debt = position.debtValueUsd;
+    // Calculate collateral and debt from component fields
+    const collateral = position.baseAssetUsd + position.quoteAssetUsd;
+    const debt = position.totalDebtUsd;
 
     if (debt === 0) return;
 

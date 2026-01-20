@@ -23,13 +23,11 @@ import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
 import {
-  HistoryIcon,
-  ChartIcon,
-  InsightIcon,
   ErrorIcon,
 } from "../../../components/ThemedIcons";
 import type { PoolOverview } from "../types";
 import { calculatePoolRates, nineDecimalToPercent } from "../../../utils/interestRates";
+import { useChartFirstRender, useStableGradientId } from "../../../components/charts/StableChart";
 
 interface APYHistoryProps {
   pool: PoolOverview;
@@ -51,6 +49,10 @@ export function APYHistory({ pool }: APYHistoryProps) {
   const [dailyData, setDailyData] = React.useState<DailyDataPoint[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
+  
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(dailyData.length > 0);
+  const gradientId = useStableGradientId('apyGradient');
 
   const decimals = pool.contracts?.coinDecimals ?? 9;
   const poolId = pool.contracts?.marginPoolId;
@@ -100,7 +102,7 @@ export function APYHistory({ pool }: APYHistoryProps) {
       try {
         setIsLoading(true);
         setError(null);
-        setDailyData([]);
+        // Don't clear dailyData - preserve previous data to prevent flicker
 
         const params = {
           ...timeRangeToParams(timeRange),
@@ -257,11 +259,11 @@ export function APYHistory({ pool }: APYHistoryProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header - matches Activity tab style */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <HistoryIcon size={32} /> APY History
+          <h2 className="text-2xl font-bold text-white mb-1">
+            APY History
           </h2>
           <p className="text-sm text-white/60">
             Historical supply APY based on pool utilization for {pool.asset}
@@ -294,18 +296,25 @@ export function APYHistory({ pool }: APYHistoryProps) {
           </div>
         </div>
         <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-          <div className="text-sm text-white/60 mb-1">Low APY</div>
-          <div className="text-2xl font-bold text-indigo-300">
-            {stats.minAPY < 0.01 ? stats.minAPY.toFixed(4) : stats.minAPY.toFixed(2)}%
+          <div className="text-sm text-white/60 mb-1">
+            {stats.minAPY === 0 ? "APY Floor (since launch)" : "Low APY"}
+          </div>
+          <div className="text-2xl font-bold text-white/70">
+            {stats.minAPY === 0 ? (
+              <span className="text-sm font-normal text-white/30">Insufficient history</span>
+            ) : (
+              <>{stats.minAPY < 0.01 ? stats.minAPY.toFixed(4) : stats.minAPY.toFixed(2)}%</>
+            )}
           </div>
         </div>
       </div>
 
       {/* Chart */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-        <h3 className="text-lg font-bold text-cyan-200 mb-4 flex items-center gap-2">
-          <ChartIcon size={24} /> Supply APY Over Time
-        </h3>
+        <div className="text-xs text-white/60 flex items-center gap-2 mb-4">
+          Supply APY Over Time
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+        </div>
 
         {isLoading ? (
           <div className="h-72 flex items-center justify-center">
@@ -346,7 +355,7 @@ export function APYHistory({ pool }: APYHistoryProps) {
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
             >
               <defs>
-                <linearGradient id="apyGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
                   <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                 </linearGradient>
@@ -396,8 +405,9 @@ export function APYHistory({ pool }: APYHistoryProps) {
                 dataKey="supplyAPY"
                 stroke="#10b981"
                 strokeWidth={2}
-                fill="url(#apyGradient)"
+                fill={`url(#${gradientId})`}
                 name="supplyAPY"
+                {...animationProps}
               />
             </AreaChart>
           </ResponsiveContainer>

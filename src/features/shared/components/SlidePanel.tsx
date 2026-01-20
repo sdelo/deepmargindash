@@ -74,8 +74,8 @@ export default function SlidePanel({
         </div>
 
         {/* Header */}
-        <div className="flex-shrink-0 px-4 pb-3 flex items-center justify-between border-b border-cyan-500/20">
-          <div className="text-cyan-100 font-semibold text-lg truncate pr-4">
+        <div className="flex-shrink-0 px-3 pb-2 flex items-center justify-between border-b border-cyan-500/20">
+          <div className="text-cyan-100 font-semibold text-base truncate pr-3">
             {title}
           </div>
           <button
@@ -121,13 +121,13 @@ export default function SlidePanel({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex-shrink-0 px-6 py-4 flex items-center justify-between border-b border-cyan-500/20 bg-[#0c1a24]/90 backdrop-blur-sm">
-          <div className="text-cyan-100 font-semibold text-lg truncate pr-4">
+        <div className="flex-shrink-0 px-4 py-2.5 flex items-center justify-between border-b border-cyan-500/20 bg-[#0c1a24]/90 backdrop-blur-sm">
+          <div className="text-cyan-100 font-semibold text-base truncate pr-3">
             {title}
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 px-4 py-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-200 text-sm font-medium transition-colors"
+            className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-200 text-xs font-medium transition-colors"
           >
             Close
           </button>

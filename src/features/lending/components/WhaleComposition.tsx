@@ -25,11 +25,12 @@ import {
 import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
+import { NETWORK_CONFIGS } from "../../../config/networks";
 import {
-  WhaleIcon,
   ErrorIcon,
 } from "../../../components/ThemedIcons";
 import type { PoolOverview } from "../types";
+import { useChartFirstRender } from "../../../components/charts/StableChart";
 
 interface WhaleCompositionProps {
   pool: PoolOverview;
@@ -37,6 +38,7 @@ interface WhaleCompositionProps {
 
 interface WalletStats {
   address: string;
+  participantType: "supplier" | "borrower"; // supplier = supply cap, borrower = margin_manager
   totalInflow: number;
   totalOutflow: number;
   netFlow: number;
@@ -66,7 +68,8 @@ const SIZE_THRESHOLDS = [
 const BUCKET_COLORS = ["#94a3b8", "#22d3ee", "#2dd4bf", "#fbbf24", "#f43f5e"];
 
 export function WhaleComposition({ pool }: WhaleCompositionProps) {
-  const { serverUrl } = useAppNetwork();
+  const { serverUrl, network } = useAppNetwork();
+  const explorerUrl = NETWORK_CONFIGS[network]?.explorerUrl || "https://suivision.xyz";
   const [timeRange, setTimeRange] = React.useState<TimeRange>("1M");
   const [wallets, setWallets] = React.useState<WalletStats[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -100,7 +103,7 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
         // Build wallet stats
         const walletMap = new Map<string, WalletStats>();
 
-        const getOrCreate = (address: string, timestamp: number): WalletStats => {
+        const getOrCreate = (address: string, timestamp: number, participantType: "supplier" | "borrower"): WalletStats => {
           const existing = walletMap.get(address);
           if (existing) {
             existing.firstSeen = Math.min(existing.firstSeen, timestamp);
@@ -109,6 +112,7 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
           }
           const newWallet: WalletStats = {
             address,
+            participantType,
             totalInflow: 0,
             totalOutflow: 0,
             netFlow: 0,
@@ -122,36 +126,36 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
           return newWallet;
         };
 
-        // Process supply events (inflow)
+        // Process supply events (inflow) - supplier is a supply cap object ID
         supplied.forEach((e) => {
-          const wallet = getOrCreate(e.supplier, e.checkpoint_timestamp_ms);
+          const wallet = getOrCreate(e.supplier, e.checkpoint_timestamp_ms, "supplier");
           const amount = parseFloat(e.amount) / 10 ** decimals;
           wallet.totalInflow += amount;
           wallet.netFlow += amount;
           wallet.txCount++;
         });
 
-        // Process withdraw events (outflow)
+        // Process withdraw events (outflow) - supplier is a supply cap object ID
         withdrawn.forEach((e) => {
-          const wallet = getOrCreate(e.supplier, e.checkpoint_timestamp_ms);
+          const wallet = getOrCreate(e.supplier, e.checkpoint_timestamp_ms, "supplier");
           const amount = parseFloat(e.amount) / 10 ** decimals;
           wallet.totalOutflow += amount;
           wallet.netFlow -= amount;
           wallet.txCount++;
         });
 
-        // Process borrow events (they're traders, track by margin_manager_id)
+        // Process borrow events (borrowers, track by margin_manager_id object)
         borrowed.forEach((e) => {
-          const wallet = getOrCreate(e.margin_manager_id, e.checkpoint_timestamp_ms);
+          const wallet = getOrCreate(e.margin_manager_id, e.checkpoint_timestamp_ms, "borrower");
           const amount = parseFloat(e.loan_amount) / 10 ** decimals;
           wallet.totalInflow += amount; // Borrowing is inflow to their position
           wallet.netFlow += amount;
           wallet.txCount++;
         });
 
-        // Process repay events
+        // Process repay events - margin_manager_id is an object
         repaid.forEach((e) => {
-          const wallet = getOrCreate(e.margin_manager_id, e.checkpoint_timestamp_ms);
+          const wallet = getOrCreate(e.margin_manager_id, e.checkpoint_timestamp_ms, "borrower");
           const amount = parseFloat(e.repay_amount) / 10 ** decimals;
           wallet.totalOutflow += amount;
           wallet.netFlow -= amount;
@@ -160,23 +164,33 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
 
         // Calculate new/churned status based on time range
         const now = Date.now();
-        const rangeMs = {
-          "1D": 24 * 60 * 60 * 1000,
-          "1W": 7 * 24 * 60 * 60 * 1000,
-          "1M": 30 * 24 * 60 * 60 * 1000,
-          "3M": 90 * 24 * 60 * 60 * 1000,
-          "ALL": 365 * 24 * 60 * 60 * 1000,
-        }[timeRange] || 30 * 24 * 60 * 60 * 1000;
+        
+        if (timeRange === "ALL") {
+          // For "ALL" time: all wallets are "new" since they all joined at some point
+          // Churned = negative net flow (withdrew more than deposited over all time)
+          walletMap.forEach((wallet) => {
+            wallet.isNew = true;
+            wallet.churned = wallet.netFlow < 0;
+          });
+        } else {
+          const rangeMs = {
+            "1D": 24 * 60 * 60 * 1000,
+            "1W": 7 * 24 * 60 * 60 * 1000,
+            "1M": 30 * 24 * 60 * 60 * 1000,
+            "3M": 90 * 24 * 60 * 60 * 1000,
+            "YTD": (now - new Date(new Date().getFullYear(), 0, 1).getTime()),
+          }[timeRange] || 30 * 24 * 60 * 60 * 1000;
 
-        const periodStart = now - rangeMs;
-        const recentThreshold = now - rangeMs * 0.2; // Last 20% of period
+          const periodStart = now - rangeMs;
+          const recentThreshold = now - rangeMs * 0.2; // Last 20% of period
 
-        walletMap.forEach((wallet) => {
-          // New if first seen in this period and after period start
-          wallet.isNew = wallet.firstSeen > periodStart && wallet.firstSeen < recentThreshold;
-          // Churned if net flow is negative and last activity was early in period
-          wallet.churned = wallet.netFlow < 0 && wallet.lastSeen < recentThreshold;
-        });
+          walletMap.forEach((wallet) => {
+            // New if first seen within this time period
+            wallet.isNew = wallet.firstSeen >= periodStart;
+            // Churned if net flow is negative and last activity was early in period (not recent)
+            wallet.churned = wallet.netFlow < 0 && wallet.lastSeen < recentThreshold;
+          });
+        }
 
         setWallets(Array.from(walletMap.values()));
       } catch (err) {
@@ -202,6 +216,11 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
+  // Generate explorer URL - all addresses here are object IDs
+  const getExplorerUrl = (address: string) => {
+    return `${explorerUrl}/object/${address}`;
+  };
+
   // Calculate size buckets based on total flow
   const sizeBuckets = React.useMemo((): SizeBucket[] => {
     const totalVolume = wallets.reduce((sum, w) => sum + Math.abs(w.netFlow), 0);
@@ -225,20 +244,23 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
     });
   }, [wallets]);
 
-  // Top inflow/outflow wallets
+  // Top inflow/outflow wallets - sort by total amounts, not net flow
   const topInflow = React.useMemo(() => {
     return [...wallets]
-      .filter((w) => w.netFlow > 0)
-      .sort((a, b) => b.netFlow - a.netFlow)
+      .filter((w) => w.totalInflow > 0)
+      .sort((a, b) => b.totalInflow - a.totalInflow)
       .slice(0, 5);
   }, [wallets]);
 
   const topOutflow = React.useMemo(() => {
     return [...wallets]
-      .filter((w) => w.netFlow < 0)
-      .sort((a, b) => a.netFlow - b.netFlow)
+      .filter((w) => w.totalOutflow > 0)
+      .sort((a, b) => b.totalOutflow - a.totalOutflow)
       .slice(0, 5);
   }, [wallets]);
+
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(sizeBuckets.length > 0);
 
   // Composition stats
   const stats = React.useMemo(() => {
@@ -247,7 +269,7 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
     
     wallets.forEach((w) => {
       if (w.totalInflow > 0 || w.totalOutflow > 0) {
-        if (w.address.startsWith("0x") && w.address.length < 70) {
+        if (w.participantType === "supplier") {
           uniqueSuppliers.add(w.address);
         } else {
           uniqueBorrowers.add(w.address);
@@ -280,8 +302,8 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <WhaleIcon size={32} /> Whale & Composition Analysis
+          <h2 className="text-2xl font-bold text-white mb-1">
+            Whale & Composition Analysis
           </h2>
           <p className="text-sm text-white/60">
             Who's moving money and how activity is distributed for {pool.asset}
@@ -378,7 +400,7 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
                         name === "volume" ? "Volume" : "Count",
                       ]}
                     />
-                    <Bar dataKey="volume" fill="#22d3ee" radius={[0, 4, 4, 0]}>
+                    <Bar dataKey="volume" fill="#22d3ee" radius={[0, 4, 4, 0]} {...animationProps}>
                       {sizeBuckets.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={BUCKET_COLORS[index]} />
                       ))}
@@ -448,7 +470,7 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
                 <span>↓</span> Top Inflow Wallets
               </h3>
               {topInflow.length === 0 ? (
-                <div className="text-center py-8 text-white/30 text-sm">No net inflow wallets</div>
+                <div className="text-center py-8 text-white/30 text-sm">No inflow wallets</div>
               ) : (
                 <div className="space-y-2">
                   {topInflow.map((wallet, idx) => (
@@ -460,16 +482,22 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <div className="font-mono text-xs text-white/60 truncate">
+                        <a
+                          href={getExplorerUrl(wallet.address)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-xs text-white/60 hover:text-cyan-400 truncate block transition-colors"
+                          title={wallet.participantType === "supplier" ? "View Supply Cap" : "View Margin Manager"}
+                        >
                           {formatAddress(wallet.address)}
-                        </div>
+                        </a>
                         <div className="text-[10px] text-white/30">
-                          {wallet.txCount} txns
+                          {wallet.txCount} txns • {wallet.participantType === "supplier" ? "Supplier" : "Borrower"}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-emerald-400">
-                          +{formatNumber(wallet.netFlow)}
+                          +{formatNumber(wallet.totalInflow)}
                         </div>
                         <div className="text-[10px] text-white/30">{pool.asset}</div>
                       </div>
@@ -485,7 +513,7 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
                 <span>↑</span> Top Outflow Wallets
               </h3>
               {topOutflow.length === 0 ? (
-                <div className="text-center py-8 text-white/30 text-sm">No net outflow wallets</div>
+                <div className="text-center py-8 text-white/30 text-sm">No outflow wallets</div>
               ) : (
                 <div className="space-y-2">
                   {topOutflow.map((wallet, idx) => (
@@ -497,16 +525,22 @@ export function WhaleComposition({ pool }: WhaleCompositionProps) {
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <div className="font-mono text-xs text-white/60 truncate">
+                        <a
+                          href={getExplorerUrl(wallet.address)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-xs text-white/60 hover:text-cyan-400 truncate block transition-colors"
+                          title={wallet.participantType === "supplier" ? "View Supply Cap" : "View Margin Manager"}
+                        >
                           {formatAddress(wallet.address)}
-                        </div>
+                        </a>
                         <div className="text-[10px] text-white/30">
-                          {wallet.txCount} txns
+                          {wallet.txCount} txns • {wallet.participantType === "supplier" ? "Supplier" : "Borrower"}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-rose-400">
-                          {formatNumber(wallet.netFlow)}
+                          -{formatNumber(wallet.totalOutflow)}
                         </div>
                         <div className="text-[10px] text-white/30">{pool.asset}</div>
                       </div>

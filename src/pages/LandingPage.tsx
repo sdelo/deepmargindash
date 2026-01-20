@@ -7,16 +7,17 @@ import { HowItWorks } from "../components/HowItWorks";
 import { TransparencySection } from "../components/TransparencySection";
 import { Footer } from "../components/Footer";
 import { useAllPools } from "../hooks/useAllPools";
+import { useProtocolMetrics } from "../hooks/useProtocolMetrics";
 import { brand } from "../config/brand";
 
 export function LandingPage() {
   const { pools, isLoading } = useAllPools();
+  const metrics = useProtocolMetrics();
 
-  // Calculate highest APY for hero
-  const highestApy = React.useMemo(() => {
-    if (pools.length === 0) return "0.00";
-    const max = Math.max(...pools.map(p => Number(p.ui.aprSupplyPct)));
-    return max.toFixed(2);
+  // Calculate total suppliers across pools
+  const totalSuppliers = React.useMemo(() => {
+    if (pools.length === 0) return 0;
+    return pools.reduce((acc, p) => acc + (p.ui.depositors || 0), 0);
   }, [pools]);
 
   return (
@@ -37,40 +38,64 @@ export function LandingPage() {
             Earn yield with confidence
           </h2>
 
-          {/* Subline - Clear value prop */}
-          <p className="text-xl text-white/70 max-w-2xl mx-auto mb-4">
-            Supply to DeepBook margin pools. Earn interest from margin traders. 
-            Withdraw when liquidity is available.
+          {/* Subline - Punchy explainer */}
+          <p className="text-xl text-white/70 max-w-2xl mx-auto mb-2">
+            Supply to DeepBook margin pools. Earn variable interest from borrowing demand.
           </p>
 
-          {/* Reality anchor - blunt line */}
-          <p className="text-sm text-white/50 max-w-xl mx-auto mb-8">
-            Powered by Sui's on-chain order book. Your funds back leveraged trades — 
-            you earn the interest, traders take the risk.
-          </p>
-
-          {/* APY Highlight - Updated copy */}
-          <div className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/10 mb-8">
-            <span className="text-white/60">Current best APY:</span>
-            <span className="text-2xl font-bold text-teal-400">
-              {isLoading ? "..." : `${highestApy}%`}
-            </span>
-            <span className="text-xs text-white/40">(variable)</span>
+          {/* Powered by DeepBook - Badge style attribution near headline */}
+          <div className="flex items-center justify-center gap-1.5 mb-6">
+            <span className="text-[10px] uppercase tracking-wider text-white/30">Powered by</span>
+            <span className="text-xs font-medium text-white/50">DeepBook</span>
           </div>
 
+          {/* Stats Highlight - Active Suppliers and Borrowers with timeframe */}
+          <div className="inline-flex flex-col sm:flex-row items-center gap-4 sm:gap-6 px-6 py-3 rounded-full bg-white/5 border border-white/10 mb-4">
+            <div className="flex items-center gap-2">
+              <UsersSmallIcon />
+              <span className="text-white/50 text-xs">Active suppliers <span className="text-white/40">(7d)</span>:</span>
+              <span className="text-lg font-bold text-teal-400">
+                {isLoading ? "..." : totalSuppliers.toLocaleString()}
+              </span>
+            </div>
+            <div className="hidden sm:block w-px h-5 bg-white/10" />
+            <div className="flex items-center gap-2">
+              <BorrowersIcon />
+              <span className="text-white/50 text-xs">Active borrowers <span className="text-white/40">(7d)</span>:</span>
+              <span className="text-lg font-bold text-teal-400">
+                {metrics.isLoading ? "..." : metrics.activeMarginManagers.toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          {/* Alive proof - Total borrowed shows real flow */}
+          <p className="text-sm text-white/40 mb-8">
+            {metrics.isLoading ? "" : (
+              <>
+                <span className="text-white/50">${metrics.totalBorrowed.toLocaleString()}</span>
+                {" "}currently borrowed across all pools
+              </>
+            )}
+          </p>
+
           {/* Primary CTA */}
-          <div className="mb-8">
+          <div className="mb-3">
             <Link
               to="/pools"
               className="btn-primary inline-flex items-center gap-2 text-lg"
             >
-              Explore Pools
+              Launch App
               <ArrowRightIcon />
             </Link>
           </div>
 
-          {/* Trust Badges */}
-          <div className="flex flex-wrap justify-center gap-4 text-xs text-white/40 mb-8">
+          {/* Trust line under CTA */}
+          <p className="text-xs text-white/40 mb-6">
+            Non-custodial · On-chain contracts · Variable rates
+          </p>
+
+          {/* Trust Bar - Consolidated with withdrawal policy */}
+          <div className="flex flex-wrap justify-center gap-4 text-xs text-white/50">
             <div className="flex items-center gap-1.5">
               <VerifyIcon />
               <span>Verify on-chain</span>
@@ -81,17 +106,14 @@ export function LandingPage() {
             </div>
             <div className="flex items-center gap-1.5">
               <NoLockIcon />
-              <span>No lockup period</span>
+              <span>No fixed lockup — withdrawals depend on liquidity</span>
             </div>
           </div>
-
-          {/* Risks Disclosure */}
-          <RisksSection />
         </div>
       </section>
 
       {/* Pool Cards Section */}
-      <section className="py-8 px-4">
+      <section id="pool-cards" className="py-8 px-4 scroll-mt-24">
         <div className="max-w-4xl mx-auto">
           <div className="grid md:grid-cols-2 gap-6">
             {pools.map((pool) => (
@@ -101,22 +123,24 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Risks Section - Always visible */}
+      <section className="py-8 px-4">
+        <RisksSection />
+      </section>
+
       {/* Transparency - Moved up for trust */}
       <TransparencySection />
 
-      {/* Secondary CTA - People decide here */}
+      {/* Secondary CTA - Compare pools */}
       <section className="py-8 px-4">
         <div className="max-w-xl mx-auto text-center">
           <Link
             to="/pools"
-            className="btn-primary inline-flex items-center gap-2"
+            className="text-sm text-white/60 hover:text-white transition-colors inline-flex items-center gap-1.5 border border-white/10 rounded-full px-5 py-2.5 hover:border-white/20"
           >
-            Launch App
+            Compare pool rates & metrics
             <ArrowRightIcon />
           </Link>
-          <p className="text-xs text-white/40 mt-3">
-            Connect your wallet and start earning in minutes
-          </p>
         </div>
       </section>
 
@@ -201,13 +225,13 @@ function AdvancedToolsSection() {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <span className="text-xs uppercase tracking-wider text-white/40 font-medium">
-            Advanced Tools
+            Advanced Tools <span className="text-white/25">(for liquidators)</span>
           </span>
           <h3 className="text-xl font-semibold text-white mt-2">
             Liquidations Center
           </h3>
           <p className="text-white/50 text-sm mt-2 max-w-lg mx-auto">
-            Monitor at-risk positions and execute liquidations. For experienced users and bots.
+            Monitor at-risk margin positions and execute liquidations. Built for bots and experienced traders — not required for depositors.
           </p>
         </div>
 
@@ -278,60 +302,53 @@ function LeaderIcon() {
   );
 }
 
-// Risks disclosure section
+// Risks disclosure section - always visible
 function RisksSection() {
   return (
     <div className="max-w-2xl mx-auto">
-      <button
-        onClick={(e) => {
-          const details = e.currentTarget.nextElementSibling;
-          if (details) details.classList.toggle('hidden');
-          e.currentTarget.querySelector('svg')?.classList.toggle('rotate-180');
-        }}
-        className="flex items-center gap-2 text-xs text-white/40 hover:text-white/60 transition-colors mx-auto"
-      >
-        <WarningIcon />
-        <span>Can I lose money?</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-transform">
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
-      <div className="hidden mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] text-left">
-        <p className="text-xs text-white/50 mb-3">
-          Yes. Like all DeFi protocols, there are real risks:
-        </p>
-        <ul className="space-y-2 text-xs text-white/40">
-          <li className="flex items-start gap-2">
-            <span className="text-amber-400/70 mt-0.5">•</span>
-            <span><strong className="text-white/50">Smart contract risk</strong> — Bugs or exploits in the protocol code could result in loss of funds.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-amber-400/70 mt-0.5">•</span>
-            <span><strong className="text-white/50">Withdrawal liquidity risk</strong> — High utilization means your funds may be temporarily locked until borrowers repay.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-amber-400/70 mt-0.5">•</span>
-            <span><strong className="text-white/50">Bad debt risk</strong> — If liquidations fail during extreme volatility, the pool may incur losses.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-amber-400/70 mt-0.5">•</span>
-            <span><strong className="text-white/50">Rate variability</strong> — APY fluctuates based on utilization and market conditions. Past returns don't guarantee future performance.</span>
-          </li>
-        </ul>
-        <p className="text-[10px] text-white/30 mt-3 pt-3 border-t border-white/[0.06]">
-          Only deposit what you can afford to lose. This is not financial advice.
-        </p>
+      <div className="text-center mb-4">
+        <h3 className="text-sm font-medium text-white/60">Things to Know</h3>
+      </div>
+      <div className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+        <div className="grid sm:grid-cols-2 gap-4 text-xs text-white/50">
+          <div className="flex items-start gap-2">
+            <span className="text-white/30 mt-0.5">•</span>
+            <span><strong className="text-white/60">Smart contracts</strong> — Protocol code is on-chain and auditable, but all smart contracts carry inherent risk.</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-white/30 mt-0.5">•</span>
+            <span><strong className="text-white/60">Withdrawals</strong> — If utilization is high, you may need to wait for borrowers to repay before withdrawing.</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-white/30 mt-0.5">•</span>
+            <span><strong className="text-white/60">Market conditions</strong> — Extreme volatility could affect liquidations and pool health.</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-white/30 mt-0.5">•</span>
+            <span><strong className="text-white/60">Variable rates</strong> — APY changes based on pool utilization. Past performance isn't predictive.</span>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function WarningIcon() {
+function UsersSmallIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
+
+function BorrowersIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M17 11l-5-5-5 5M12 6v12" />
+      <path d="M5 18h14" />
+    </svg>
+  );
+}
+

@@ -179,7 +179,6 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
     totalDebtAtRiskUsd,
     isLoading,
     error,
-    lastUpdated,
   } = useAtRiskPositions();
 
   const riskDistribution = useRiskDistribution(positions);
@@ -673,14 +672,6 @@ export function LiquidationOverview({ onSelectTab }: LiquidationOverviewProps) {
         </button>
       </div>
 
-      {/* Timestamp */}
-      <p className="text-[10px] text-white/25 text-center">
-        Updated{" "}
-        {lastUpdated?.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }) || "—"}
-      </p>
     </div>
   );
 }

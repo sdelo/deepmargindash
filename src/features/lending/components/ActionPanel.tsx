@@ -7,7 +7,6 @@ import {
   createSupplyTransactionInfo,
   createWithdrawTransactionInfo,
 } from "../../../utils/transactionInfo";
-import { fetchPairSummary, type MarketSummary } from "../api/marketData";
 import type { PoolOverview } from "../types";
 
 // Fallback icons for when dynamic iconUrl is not available
@@ -53,47 +52,14 @@ export function ActionPanel({
   const [inputAmount, setInputAmount] = React.useState<string>("");
   const [isWithdrawMax, setIsWithdrawMax] = React.useState(false);
   const [showReviewModal, setShowReviewModal] = React.useState(false);
-  const [showUsd, setShowUsd] = React.useState(true);
-  const [marketPrice, setMarketPrice] = React.useState<number | null>(null);
 
-  // Fetch current market price for USD conversion
+  // Clear input on successful transaction (after wallet confirmation completes)
   React.useEffect(() => {
-    async function fetchPrice() {
-      if (!pool) return;
-      try {
-        // For stablecoins, price is ~1
-        if (pool.asset === "DBUSDC" || pool.asset === "USDC") {
-          setMarketPrice(1);
-          return;
-        }
-        // Try to fetch from market API using trading pair
-        const tradingPair = pool.contracts?.tradingPair || `${pool.asset}_DBUSDC`;
-        const summary = await fetchPairSummary(tradingPair);
-        if (summary?.last_price) {
-          setMarketPrice(summary.last_price);
-        }
-      } catch (err) {
-        console.error("Error fetching market price:", err);
-      }
+    if (txStatus === "success") {
+      setInputAmount("");
+      setIsWithdrawMax(false);
     }
-    fetchPrice();
-    // Refresh price every 30 seconds
-    const interval = setInterval(fetchPrice, 30000);
-    return () => clearInterval(interval);
-  }, [pool]);
-
-  // Format amount with optional USD value
-  const formatWithUsd = (amount: number, forceUsd = showUsd) => {
-    const formatted = amount.toLocaleString(undefined, { maximumFractionDigits: 4 });
-    if (forceUsd && marketPrice) {
-      const usdValue = amount * marketPrice;
-      const usdFormatted = usdValue >= 1000 
-        ? `$${(usdValue / 1000).toFixed(1)}K` 
-        : `$${usdValue.toFixed(2)}`;
-      return `${formatted} (${usdFormatted})`;
-    }
-    return formatted;
-  };
+  }, [txStatus]);
 
   // Get pool icon
   const poolIcon = pool?.ui?.iconUrl || FALLBACK_ICONS[pool?.asset || "SUI"] || FALLBACK_ICONS.SUI;
@@ -204,17 +170,38 @@ export function ActionPanel({
     return { currentPosition: currentPositionBalance, newPosition, incrementalDaily, incrementalMonthly, apy };
   }, [inputAmount, mode, pool, currentPositionBalance]);
 
+  // Track preview visibility and cached values for smooth animation
+  const [showPreview, setShowPreview] = React.useState(false);
+  const [isVisible, setIsVisible] = React.useState(false);
+  const [cachedPreview, setCachedPreview] = React.useState(depositPreview);
+
+  React.useEffect(() => {
+    if (depositPreview) {
+      setCachedPreview(depositPreview);
+      setShowPreview(true);
+      // Small delay to ensure element is in DOM before animating in
+      const enterTimer = setTimeout(() => setIsVisible(true), 20);
+      return () => clearTimeout(enterTimer);
+    } else {
+      // Start exit animation immediately
+      setIsVisible(false);
+      // Delay hiding element to allow exit animation (matches 700ms transition duration)
+      const exitTimer = setTimeout(() => setShowPreview(false), 700);
+      return () => clearTimeout(exitTimer);
+    }
+  }, [depositPreview]);
+
   if (!pool) return null;
 
   // Get utilization for withdrawal status
+  // Note: Withdrawal queue only activates at 100% utilization (no liquidity)
   const utilizationPct = pool.state.supply > 0 ? (pool.state.borrow / pool.state.supply) * 100 : 0;
   const getWithdrawStatus = () => {
-    if (utilizationPct < 50) return "Instant withdrawal";
-    if (utilizationPct < 80) return `Withdrawal queue possible (util > 50%)`;
-    return `Withdrawal queue likely (util ${utilizationPct.toFixed(0)}%)`;
+    if (utilizationPct < 100) return "Instant withdrawal";
+    return "Withdrawal queue active (100% utilized)";
   };
   const withdrawStatus = getWithdrawStatus();
-  const withdrawStatusColor = utilizationPct < 50 ? "text-emerald-400" : utilizationPct < 80 ? "text-amber-400" : "text-red-400";
+  const withdrawStatusColor = utilizationPct < 100 ? "text-emerald-400" : "text-red-400";
 
   // Min deposit based on pool (10 USDC for DBUSDC, 0.1 SUI for SUI)
   const minDeposit = pool.asset === "DBUSDC" ? 10 : 0.1;
@@ -232,26 +219,33 @@ export function ActionPanel({
         {/* Accent bar on left */}
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#2dd4bf]" />
         
-        <div className="pl-5 pr-4 py-3 bg-[#2dd4bf]/[0.08] border-b border-[#2dd4bf]/20">
+        <div className="pl-4 pr-3 py-2 bg-[#2dd4bf]/[0.08] border-b border-[#2dd4bf]/20">
+          {/* Step Indicator */}
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[8px] font-semibold text-[#2dd4bf] bg-[#2dd4bf]/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+              Step 2 of 2
+            </span>
+            <span className="text-[9px] text-white/40 uppercase tracking-wider font-medium">Enter Amount</span>
+          </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <img
                 src={poolIcon}
                 alt={pool.asset}
-                className="w-7 h-7 rounded-full ring-2 ring-[#2dd4bf]/30"
+                className="w-6 h-6 rounded-full ring-2 ring-[#2dd4bf]/30"
               />
               <div>
-                <div className="text-xs text-white/50 font-medium">
+                <div className="text-[10px] text-white/50 font-medium">
                   {mode === "deposit" ? "Deposit & Earn" : "Withdraw from"}
                 </div>
-                <div className="text-sm font-semibold text-white">
+                <div className="text-xs font-semibold text-white">
                   {pool.asset} Margin Pool
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[#2dd4bf] font-bold text-lg font-mono">{apyPct.toFixed(2)}%</div>
-              <div className="text-[10px] text-white/40">{utilizationPct.toFixed(0)}% utilized</div>
+              <div className="text-[#2dd4bf] font-bold text-base font-mono">{apyPct.toFixed(2)}% <span className="text-white/50 font-medium">APY</span></div>
+              <div className="text-[9px] text-white/40">{utilizationPct.toFixed(0)}% utilized</div>
             </div>
           </div>
         </div>
@@ -262,7 +256,7 @@ export function ActionPanel({
         <div className="flex flex-1">
           <button
             onClick={() => setMode("deposit")}
-            className={`flex-1 py-3 text-sm font-semibold transition-all relative ${
+            className={`flex-1 py-2 text-xs font-semibold transition-all relative ${
               mode === "deposit"
                 ? "text-[#2dd4bf]"
                 : "text-white/50 hover:text-white/70"
@@ -275,7 +269,7 @@ export function ActionPanel({
           </button>
           <button
             onClick={() => setMode("withdraw")}
-            className={`flex-1 py-3 text-sm transition-all relative ${
+            className={`flex-1 py-2 text-xs transition-all relative ${
               mode === "withdraw"
                 ? "text-white font-semibold"
                 : hasNoPosition 
@@ -289,27 +283,16 @@ export function ActionPanel({
             )}
           </button>
         </div>
-        {/* USD Toggle + How it works tooltip */}
-        <div className="flex items-center gap-1 pr-2">
-          <button
-            onClick={() => setShowUsd(!showUsd)}
-            className={`px-2 py-1 text-[10px] font-semibold rounded transition-all ${
-              showUsd 
-                ? "bg-[#2dd4bf]/20 text-[#2dd4bf] border border-[#2dd4bf]/30" 
-                : "bg-white/5 text-white/40 border border-white/10 hover:text-white/60"
-            }`}
-            title="Toggle USD values"
-          >
-            $
-          </button>
+        {/* How it works tooltip */}
+        <div className="flex items-center gap-1 pr-1.5">
           <div className="relative group">
             <button
-              className="px-2 py-2 flex items-center gap-1 text-[11px] text-white/40 hover:text-[#2dd4bf] transition-colors"
+              className="px-1.5 py-1.5 flex items-center gap-1 text-[10px] text-white/40 hover:text-[#2dd4bf] transition-colors"
             >
-              <InformationCircleIcon className="w-3.5 h-3.5" />
+              <InformationCircleIcon className="w-3 h-3" />
             </button>
-            <div className="absolute right-0 top-full mt-1 w-64 p-3 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-              <p className="text-[11px] text-white/90 leading-relaxed">
+            <div className="absolute right-0 top-full mt-1 w-56 p-2.5 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <p className="text-[10px] text-white/90 leading-relaxed">
                 Supplied assets are allocated to DeepBook margin traders and earn yield from borrow interest.
               </p>
               <div className="absolute -top-1.5 right-4 w-3 h-3 bg-slate-800 border-l border-t border-slate-700 rotate-45"></div>
@@ -318,48 +301,38 @@ export function ActionPanel({
         </div>
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="p-3 space-y-3">
         {/* Balance Info with USD */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+        <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/[0.06]">
           <div>
             <span className="text-label">{mode === "deposit" ? "Wallet Balance" : "Your Position"}</span>
-            <div className="text-sm font-mono text-white mt-0.5">
+            <div className="text-xs font-mono text-white mt-0.5">
               {maxBalanceFormatted} {pool.asset}
             </div>
-            {showUsd && marketPrice && (
-              <div className="text-xs font-mono text-[#2dd4bf]/70">
-                ${(maxBalance * marketPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-            )}
           </div>
           {mode === "deposit" && depositedBalance > 0 && (
             <div className="text-right">
               <span className="text-label">Already Supplied</span>
-              <div className="text-sm font-mono text-white/80 mt-0.5">
+              <div className="text-xs font-mono text-white/80 mt-0.5">
                 {depositedBalance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {pool.asset}
               </div>
-              {showUsd && marketPrice && (
-                <div className="text-xs font-mono text-[#2dd4bf]/70">
-                  ${(depositedBalance * marketPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              )}
             </div>
           )}
         </div>
 
         {/* Deposit Section */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-label">Deposit</span>
             {mode === "deposit" && (
-              <span className="text-xs text-white/40">Min: {minDeposit} {pool.asset}</span>
+              <span className="text-[10px] text-white/40">Min: {minDeposit} {pool.asset}</span>
             )}
           </div>
           
           {/* Amount Input */}
           <div className="relative">
             <div
-              className={`flex items-center rounded-xl overflow-hidden transition-all ${
+              className={`flex items-center rounded-lg overflow-hidden transition-all ${
                 insufficientBalanceInfo
                   ? "ring-1 ring-red-500/50"
                   : mode === "deposit" && hasNoPosition && !inputAmount
@@ -371,34 +344,28 @@ export function ActionPanel({
               }}
             >
               <div className="flex-1 flex items-center">
-                <span className="pl-4 text-sm text-white/50">Amount</span>
+                <span className="pl-3 text-xs text-white/50">Amount</span>
                 <input
                   type="number"
                   value={inputAmount}
                   onChange={(e) => handleInputChange(e.target.value)}
                   placeholder={`Enter ${pool.asset}`}
-                  className="flex-1 bg-transparent px-3 py-3.5 text-white text-base font-medium focus:outline-none placeholder:text-white/30 w-full font-mono"
+                  className="flex-1 bg-transparent px-2 py-2.5 text-white text-sm font-medium focus:outline-none placeholder:text-white/30 w-full font-mono"
                 />
               </div>
-              <div className="px-4 py-3.5 bg-[#2dd4bf] text-[#0d1a1f] font-semibold text-sm">
+              <div className="px-3 py-2.5 bg-[#2dd4bf] text-[#0d1a1f] font-semibold text-xs">
                 {pool.asset}
               </div>
             </div>
-            {/* USD value of input amount */}
-            {showUsd && marketPrice && inputAmount && parseFloat(inputAmount) > 0 && (
-              <div className="absolute -bottom-5 left-4 text-xs font-mono text-[#2dd4bf]/70">
-                ≈ ${(parseFloat(inputAmount) * marketPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-            )}
           </div>
 
           {/* Quick % Buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             {[25, 50, 75].map((p) => (
               <button
                 key={p}
                 onClick={() => handleQuickPercent(p)}
-                className="flex-1 py-2 text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] rounded-lg text-white/60 hover:text-white transition-all"
+                className="flex-1 py-1.5 text-[10px] font-semibold bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] rounded-md text-white/60 hover:text-white transition-all"
                 disabled={maxBalance <= 0}
               >
                 {p}%
@@ -406,7 +373,7 @@ export function ActionPanel({
             ))}
             <button
               onClick={() => handleQuickPercent(100)}
-              className="flex-1 py-2 text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] rounded-lg text-white/60 hover:text-white transition-all"
+              className="flex-1 py-1.5 text-[10px] font-semibold bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] rounded-md text-white/60 hover:text-white transition-all"
               disabled={maxBalance <= 0}
             >
               MAX
@@ -414,92 +381,85 @@ export function ActionPanel({
           </div>
         </div>
 
-        {/* Deposit Preview - Trade Ticket Style */}
-        {depositPreview && (
-          <div className="p-3 bg-[#2dd4bf]/[0.08] rounded-lg border border-[#2dd4bf]/20">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold text-[#2dd4bf] uppercase tracking-wider">
-                Deposit Preview
-              </span>
-              <span className="text-[9px] text-white/40 bg-white/5 px-1.5 py-0.5 rounded">
-                ~0.001 SUI gas
-              </span>
-            </div>
-
-            {/* Position: Before → After → Delta */}
-            <div className="bg-black/20 rounded-lg p-2.5 mb-2">
-              <div className="text-[9px] text-white/40 mb-1">Position</div>
-              <div className="flex items-center gap-1.5 text-xs font-mono">
-                <span className="text-white/50">
-                  {depositPreview.currentPosition.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+        {/* Deposit Preview - Trade Ticket Style with smooth animation */}
+        {showPreview && cachedPreview && (
+          <div
+            className={`transition-all duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
+              isVisible 
+                ? "opacity-100 translate-y-0 scale-100 max-h-[500px]" 
+                : "opacity-0 translate-y-4 scale-[0.96] max-h-0"
+            }`}
+            style={{ overflow: 'hidden', transformOrigin: 'top center' }}
+          >
+            <div className="p-2 bg-[#2dd4bf]/[0.08] rounded-md border border-[#2dd4bf]/20">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[9px] font-semibold text-[#2dd4bf] uppercase tracking-wider">
+                  Deposit Preview
                 </span>
-                <span className="text-white/30">→</span>
-                <span className="text-white font-semibold">
-                  {depositPreview.newPosition.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                </span>
-                <span className="text-[#2dd4bf] text-[10px] bg-[#2dd4bf]/15 px-1 py-0.5 rounded">
-                  +{(parseFloat(inputAmount) || 0).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                <span className="text-[8px] text-white/40 bg-white/5 px-1 py-0.5 rounded">
+                  ~0.001 SUI gas
                 </span>
               </div>
-            </div>
 
-            {/* APY + Rate Type + Sensitivity in one line */}
-            <div className="flex items-center gap-2 text-[10px] mb-2 pb-2 border-b border-white/[0.06]">
-              <span className="text-[#2dd4bf] font-semibold">{depositPreview.apy.toFixed(2)}% APY</span>
-              <span className="text-white/20">•</span>
-              <span className="text-amber-400">Variable</span>
-              <span className="text-white/20">•</span>
-              <span className="text-white/40">↑ with utilization</span>
-            </div>
-
-            {/* Earnings */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-white/40">Daily</span>
-                <span className="text-[#2dd4bf] font-mono">+{depositPreview.incrementalDaily.toFixed(6)}</span>
+              {/* Position: Before → After → Delta */}
+              <div className="bg-black/20 rounded p-2 mb-1.5">
+                <div className="text-[8px] text-white/40 mb-0.5">Position</div>
+                <div className="flex items-center gap-1 text-[10px] font-mono">
+                  <span className="text-white/50">
+                    {cachedPreview.currentPosition.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                  </span>
+                  <span className="text-white/30">→</span>
+                  <span className="text-white font-semibold">
+                    {cachedPreview.newPosition.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                  </span>
+                  <span className="text-[#2dd4bf] text-[9px] bg-[#2dd4bf]/15 px-1 py-0.5 rounded">
+                    +{(parseFloat(inputAmount) || 0).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-white/40">Monthly</span>
-                <span className="text-[#2dd4bf] font-mono">+{depositPreview.incrementalMonthly.toFixed(4)}</span>
-              </div>
-            </div>
 
-            {/* Simulate link */}
-            <div className="mt-2 pt-2 border-t border-white/[0.06] flex justify-end">
-              <a
-                href={`https://suiscan.xyz/${network}/tx/preview`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[9px] text-white/40 hover:text-[#2dd4bf] flex items-center gap-1 transition-colors"
-              >
-                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Simulate tx
-              </a>
+              {/* APY + Rate Type + Sensitivity in one line */}
+              <div className="flex items-center gap-1.5 text-[9px] mb-1.5 pb-1.5 border-b border-white/[0.06]">
+                <span className="text-[#2dd4bf] font-semibold">{cachedPreview.apy.toFixed(2)}% APY</span>
+                <span className="text-white/20">•</span>
+                <span className="text-amber-400">Variable</span>
+                <span className="text-white/20">•</span>
+                <span className="text-white/40">↑ with utilization</span>
+              </div>
+
+              {/* Earnings */}
+              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                <div className="flex justify-between">
+                  <span className="text-white/40">Daily</span>
+                  <span className="text-[#2dd4bf] font-mono">+{cachedPreview.incrementalDaily.toFixed(6)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/40">Monthly</span>
+                  <span className="text-[#2dd4bf] font-mono">+{cachedPreview.incrementalMonthly.toFixed(4)}</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* DeepBook Trust Line */}
-        <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-          <CheckBadgeIcon className="w-4 h-4 text-emerald-400" />
-          <span className="text-[11px] text-white/70">
-            Powered by <span className="font-semibold text-white">DeepBook Margin Pool</span>
+        <div className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md bg-emerald-500/5 border border-emerald-500/10">
+          <CheckBadgeIcon className="w-3 h-3 text-emerald-400" />
+          <span className="text-[9px] text-white/70">
+            Powered by <span className="font-semibold text-white">DeepBook</span>
           </span>
           <span className="text-white/20">·</span>
-          <span className="text-[11px] text-emerald-400 font-medium">Verified</span>
+          <span className="text-[9px] text-emerald-400 font-medium">Verified</span>
           <span className="text-white/20">·</span>
           <a
             href={`${explorerUrl}/object/${pool.contracts?.marginPoolId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] text-white/50 hover:text-[#2dd4bf] transition-colors flex items-center gap-0.5"
+            className="text-[9px] text-white/50 hover:text-[#2dd4bf] transition-colors flex items-center gap-0.5"
           >
-            View on Explorer
-            <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+            Explorer
+            <ArrowTopRightOnSquareIcon className="w-2.5 h-2.5" />
           </a>
         </div>
 
@@ -509,7 +469,7 @@ export function ActionPanel({
             <button
               onClick={() => !isSubmitDisabled && setShowReviewModal(true)}
               disabled={isSubmitDisabled}
-              className={`btn-primary w-full py-3.5 ${
+              className={`btn-primary w-full py-2.5 text-sm ${
                 isSubmitDisabled ? "opacity-50 cursor-not-allowed shadow-none" : ""
               }`}
             >
@@ -530,14 +490,14 @@ export function ActionPanel({
             )}
           </>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <ConnectModal
               open={connectOpen}
               onOpenChange={setConnectOpen}
               trigger={
                 <button
                   disabled
-                  className="w-full py-3.5 rounded-xl text-sm font-semibold bg-white/[0.06] text-white/40 cursor-not-allowed border border-white/[0.08]"
+                  className="w-full py-2.5 rounded-lg text-xs font-semibold bg-white/[0.06] text-white/40 cursor-not-allowed border border-white/[0.08]"
                 >
                   {mode === "deposit" ? "Deposit" : "Withdraw"}
                 </button>
@@ -545,7 +505,7 @@ export function ActionPanel({
             />
             <button
               onClick={() => setConnectOpen(true)}
-              className="w-full text-center text-xs text-[#2dd4bf] hover:text-[#5eead4] transition-colors cursor-pointer"
+              className="w-full text-center text-[10px] text-[#2dd4bf] hover:text-[#5eead4] transition-colors cursor-pointer"
             >
               Connect wallet to continue →
             </button>
@@ -553,30 +513,24 @@ export function ActionPanel({
         )}
 
         {/* Contract Details */}
-        <div className="space-y-1.5 pt-3 border-t border-white/[0.06]">
-          <div className="text-[10px] text-white/30 uppercase tracking-wider font-medium mb-2">Contract Details</div>
-          <div className="flex items-center justify-between text-xs">
+        <div className="space-y-1 pt-2 border-t border-white/[0.06]">
+          <div className="text-[9px] text-white/30 uppercase tracking-wider font-medium mb-1">Contract Details</div>
+          <div className="flex items-center justify-between text-[10px]">
             <span className="text-white/40">Pool Contract</span>
             <a
               href={`${explorerUrl}/object/${pool.contracts?.marginPoolId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/50 hover:text-[#2dd4bf] flex items-center gap-1 font-mono text-[11px] transition-colors"
+              className="text-white/50 hover:text-[#2dd4bf] flex items-center gap-1 font-mono text-[10px] transition-colors"
             >
               {pool.contracts?.marginPoolId?.slice(0, 8)}...{pool.contracts?.marginPoolId?.slice(-6)}
-              <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+              <ArrowTopRightOnSquareIcon className="w-2.5 h-2.5" />
             </a>
           </div>
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center justify-between text-[10px]">
             <span className="text-white/40">Withdrawal Status</span>
             <span className={withdrawStatusColor}>{withdrawStatus}</span>
           </div>
-          {showUsd && marketPrice && (
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white/40">{pool.asset} Price</span>
-              <span className="text-white/60 font-mono">${marketPrice.toFixed(pool.asset === "SUI" ? 4 : 2)}</span>
-            </div>
-          )}
         </div>
       </div>
     </div>

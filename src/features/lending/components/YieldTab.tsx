@@ -8,7 +8,7 @@ import type { PoolOverview } from "../types";
 interface YieldTabProps {
   pool: PoolOverview;
   pools: PoolOverview[];
-  onShowInterestHistory: () => void;
+  initialSection?: string | null;
   onMarketClick: (poolId: string) => void;
 }
 
@@ -27,11 +27,16 @@ const SECTIONS: SectionConfig[] = [
 export function YieldTab({
   pool,
   pools,
-  onShowInterestHistory,
+  initialSection,
   onMarketClick,
 }: YieldTabProps) {
-  const [activeSection, setActiveSection] = React.useState("rates");
+  const [activeSection, setActiveSection] = React.useState(initialSection || "rates");
   const [isChipsSticky, setIsChipsSticky] = React.useState(false);
+  const [flashingSection, setFlashingSection] = React.useState<string | null>(null);
+  
+  // Track programmatic navigation to temporarily disable scrollspy
+  const isNavigatingRef = React.useRef(false);
+  const navigationTimeoutRef = React.useRef<ReturnType<typeof setTimeout>>();
   
   // Refs for each section
   const ratesRef = React.useRef<HTMLDivElement>(null);
@@ -45,13 +50,74 @@ export function YieldTab({
     markets: marketsRef,
   };
 
+  // Helper to scroll to section with proper positioning and flash effect
+  const scrollToSection = React.useCallback((sectionId: string, shouldFlash = false) => {
+    const ref = sectionRefs[sectionId];
+    if (!ref?.current) return;
+    
+    // Mark as navigating to prevent scrollspy from overriding
+    isNavigatingRef.current = true;
+    setActiveSection(sectionId);
+    
+    // Clear any existing navigation timeout
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+    
+    // Get the element's position relative to the document
+    const element = ref.current;
+    const elementRect = element.getBoundingClientRect();
+    const absoluteElementTop = elementRect.top + window.scrollY;
+    
+    // Calculate target scroll position to put element near top of viewport
+    // Account for: navbar (~56px) + tab bar (~52px) + section chips (~44px) + some padding (~20px)
+    const totalHeaderHeight = 172;
+    const targetScrollPosition = absoluteElementTop - totalHeaderHeight;
+    
+    window.scrollTo({
+      top: Math.max(0, targetScrollPosition),
+      behavior: "smooth"
+    });
+    
+    // Trigger flash effect after scroll animation starts
+    if (shouldFlash) {
+      setTimeout(() => {
+        setFlashingSection(sectionId);
+        setTimeout(() => setFlashingSection(null), 600);
+      }, 300);
+    }
+    
+    // Re-enable scrollspy after scroll animation completes
+    navigationTimeoutRef.current = setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 1000);
+  }, []);
+
+  // Navigate to section when initialSection changes (e.g., from tile click)
+  React.useEffect(() => {
+    if (initialSection && sectionRefs[initialSection]) {
+      // Use a longer delay to ensure the new tab content is fully rendered and measured
+      const timeoutId = setTimeout(() => {
+        requestAnimationFrame(() => {
+          scrollToSection(initialSection, true);
+        });
+      }, 150);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [initialSection, scrollToSection]);
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Scroll to section when clicking chips
   const handleSectionClick = (sectionId: string) => {
-    setActiveSection(sectionId);
-    const ref = sectionRefs[sectionId];
-    if (ref?.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    scrollToSection(sectionId, true);
   };
 
   // Smart sticky: detect when we've scrolled past the sentinel
@@ -82,12 +148,13 @@ export function YieldTab({
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+            // Only update if not currently navigating programmatically
+            if (!isNavigatingRef.current && entry.isIntersecting && entry.intersectionRatio > 0.2) {
               setActiveSection(id);
             }
           });
         },
-        { threshold: [0.3, 0.5, 0.7], rootMargin: "-100px 0px -50% 0px" }
+        { threshold: [0.2, 0.4, 0.6], rootMargin: "-180px 0px -40% 0px" }
       );
       
       observer.observe(ref.current);
@@ -122,76 +189,39 @@ export function YieldTab({
         />
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION: Rate Model
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={ratesRef} className="scroll-mt-36 pb-8">
-        {/* Section Summary Strip */}
-        <div className="flex items-center gap-4 p-3 mb-4 bg-gradient-to-r from-[#2dd4bf]/5 to-transparent rounded-xl border border-[#2dd4bf]/10">
-          <div className="flex-1 flex items-center gap-6">
-            <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider">Supply APY</span>
-              <div className="text-lg font-bold text-[#2dd4bf] font-mono">
-                {pool.ui?.aprSupplyPct?.toFixed(2) || "0.00"}%
-              </div>
-            </div>
-            <div className="w-px h-8 bg-slate-700/50" />
-            <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider">Borrow APY</span>
-              <div className="text-lg font-bold text-amber-400 font-mono">
-                {pool.ui?.aprBorrowPct?.toFixed(2) || "0.00"}%
-              </div>
-            </div>
-            <div className="w-px h-8 bg-slate-700/50" />
-            <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider">Utilization</span>
-              <div className="text-lg font-bold text-white font-mono">
-                {pool.state.supply > 0
-                  ? ((pool.state.borrow / pool.state.supply) * 100).toFixed(1)
-                  : "0.0"}%
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-semibold text-white">Interest Rate Model</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                How rates change with utilization
-              </p>
-            </div>
-            <button
-              onClick={onShowInterestHistory}
-              className="text-xs text-[#2dd4bf] hover:text-[#5eead4] transition-colors"
-            >
-              View History →
-            </button>
-          </div>
-          
-          <YieldCurve pool={pool} onShowHistory={onShowInterestHistory} />
-        </div>
+      {/* SECTION: Rate Model */}
+      <section 
+        ref={ratesRef} 
+        className={`scroll-mt-44 pb-6 rounded-xl transition-all duration-300 ${
+          flashingSection === "rates" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
+        <YieldCurve pool={pool} />
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION: APY History
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={historyRef} className="scroll-mt-36 pb-8 border-t border-slate-700/30 pt-6">
-        <div className="mb-4">
-          <h3 className="text-base font-semibold text-white">APY History</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Historical rates and utilization trends
-          </p>
-        </div>
-        
+      {/* SECTION: APY History */}
+      <section 
+        ref={historyRef} 
+        className={`scroll-mt-44 pb-6 rounded-xl transition-all duration-300 ${
+          flashingSection === "history" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
         <APYHistory pool={pool} />
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION: Markets / Deployment
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={marketsRef} className="scroll-mt-36 pb-4 border-t border-slate-700/30 pt-6">
+      {/* SECTION: Markets / Deployment */}
+      <section 
+        ref={marketsRef} 
+        className={`scroll-mt-44 pb-4 rounded-xl transition-all duration-300 ${
+          flashingSection === "markets" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
         <BackedMarketsTab
           pool={pool}
           pools={pools}

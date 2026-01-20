@@ -12,14 +12,11 @@ import {
 import { type TimeRange, timeRangeToParams } from "../api/types";
 import TimeRangeSelector from "../../../components/TimeRangeSelector";
 import { useAppNetwork } from "../../../context/AppNetworkContext";
+import { NETWORK_CONFIGS } from "../../../config/networks";
 import {
-  ConcentrationIcon,
   CheckIcon,
   AlertIcon,
   BoltIcon,
-  DiamondIcon,
-  BorrowersIcon,
-  InsightIcon,
   ErrorIcon,
 } from "../../../components/ThemedIcons";
 
@@ -40,7 +37,8 @@ interface ParticipantStats {
 }
 
 export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps) {
-  const { serverUrl } = useAppNetwork();
+  const { serverUrl, network } = useAppNetwork();
+  const explorerUrl = NETWORK_CONFIGS[network]?.explorerUrl || "https://suivision.xyz";
   const [timeRange, setTimeRange] = React.useState<TimeRange>("ALL");
   const [suppliedEvents, setSuppliedEvents] = React.useState<
     AssetSuppliedEventResponse[]
@@ -216,16 +214,21 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
+  // Generate explorer URL - supplier addresses are supply cap objects, borrower addresses are margin manager objects
+  const getExplorerUrl = (address: string) => {
+    return `${explorerUrl}/object/${address}`;
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header - matches Activity tab style */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <ConcentrationIcon size={32} /> Concentration
+          <h2 className="text-2xl font-bold text-white mb-1">
+            Concentration
           </h2>
           <p className="text-sm text-white/60">
-            Position concentration risk - Top suppliers vs. borrowers
+            Position concentration risk — Top suppliers vs. borrowers{asset ? ` for ${asset}` : ""}
           </p>
         </div>
         <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
@@ -250,55 +253,50 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
         </div>
       ) : (
         <>
-          {/* Concentration Risk Overview */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Stats Cards - matches Activity tab style */}
+          <div className="grid grid-cols-2 gap-4">
             {/* Supply Concentration */}
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-white/80">Supply Concentration</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                  supplyRisk.color === "red" ? "bg-red-500/20 text-red-300" :
-                  supplyRisk.color === "orange" ? "bg-amber-500/20 text-teal-300" :
-                  "bg-emerald-500/20 text-emerald-300"
-                }`}>
-                  {supplyRisk.label}
-                </span>
+            <div className={`bg-white/5 rounded-2xl p-4 border ${
+              supplyRisk.color === "red" ? "border-red-500/30" :
+              supplyRisk.color === "orange" ? "border-amber-500/30" :
+              "border-teal-500/30"
+            }`}>
+              <div className="text-sm text-white/60 mb-1">Supply Concentration</div>
+              <div className={`text-xl font-bold ${
+                supplyRisk.color === "red" ? "text-red-400" :
+                supplyRisk.color === "orange" ? "text-amber-400" :
+                "text-teal-400"
+              }`}>
+                {concentration.supplyConcentration.toFixed(1)}%
               </div>
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-2xl font-bold text-white">{concentration.supplyConcentration.toFixed(1)}%</span>
-                <span className="text-xs text-white/40">top supplier share</span>
-              </div>
-              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div className="text-xs text-white/40 mt-1">{supplyRisk.label} risk</div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mt-2">
                 <div
                   className={`h-full transition-all duration-500 ${
                     supplyRisk.color === "red" ? "bg-red-500" :
-                    supplyRisk.color === "orange" ? "bg-amber-500" : "bg-cyan-500"
+                    supplyRisk.color === "orange" ? "bg-amber-500" : "bg-teal-400"
                   }`}
                   style={{ width: `${Math.min(concentration.supplyConcentration, 100)}%` }}
                 />
               </div>
-              <div className="mt-2 text-xs text-white/50">
-                Top 5: {concentration.totalSupply.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-              </div>
             </div>
 
             {/* Borrow Concentration */}
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-white/80">Borrow Concentration</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                  borrowRisk.color === "red" ? "bg-red-500/20 text-red-300" :
-                  borrowRisk.color === "orange" ? "bg-amber-500/20 text-teal-300" :
-                  "bg-emerald-500/20 text-emerald-300"
-                }`}>
-                  {borrowRisk.label}
-                </span>
+            <div className={`bg-white/5 rounded-2xl p-4 border ${
+              borrowRisk.color === "red" ? "border-red-500/30" :
+              borrowRisk.color === "orange" ? "border-amber-500/30" :
+              "border-white/10"
+            }`}>
+              <div className="text-sm text-white/60 mb-1">Borrow Concentration</div>
+              <div className={`text-xl font-bold ${
+                borrowRisk.color === "red" ? "text-red-400" :
+                borrowRisk.color === "orange" ? "text-amber-400" :
+                "text-emerald-400"
+              }`}>
+                {concentration.borrowConcentration.toFixed(1)}%
               </div>
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-2xl font-bold text-white">{concentration.borrowConcentration.toFixed(1)}%</span>
-                <span className="text-xs text-white/40">top borrower share</span>
-              </div>
-              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div className="text-xs text-white/40 mt-1">{borrowRisk.label} risk</div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mt-2">
                 <div
                   className={`h-full transition-all duration-500 ${
                     borrowRisk.color === "red" ? "bg-red-500" :
@@ -307,17 +305,14 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
                   style={{ width: `${Math.min(concentration.borrowConcentration, 100)}%` }}
                 />
               </div>
-              <div className="mt-2 text-xs text-white/50">
-                Top 5: {concentration.totalBorrow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-              </div>
             </div>
           </div>
 
           {/* Top 5 Lists */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {/* Top Suppliers */}
-            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-              <h4 className="text-xs font-medium text-white/60 uppercase tracking-wider mb-2">Top 5 Suppliers</h4>
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+              <h3 className="text-lg font-bold text-cyan-200 mb-3">Top 5 Suppliers</h3>
               {topSuppliers.length === 0 ? (
                 <div className="text-center py-4 text-white/30 text-xs">No suppliers found</div>
               ) : (
@@ -329,7 +324,15 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
                         idx === 1 ? "bg-slate-500/20 text-slate-300" :
                         idx === 2 ? "bg-orange-500/20 text-orange-300" : "bg-white/10 text-white/50"
                       }`}>{idx + 1}</span>
-                      <span className="font-mono text-[10px] text-white/60 truncate flex-1">{formatAddress(supplier.address)}</span>
+                      <a
+                        href={getExplorerUrl(supplier.address)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[10px] text-white/60 hover:text-cyan-400 truncate flex-1 transition-colors"
+                        title="View Supply Cap"
+                      >
+                        {formatAddress(supplier.address)}
+                      </a>
                       <span className="text-xs font-semibold text-white">{supplier.netAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                       <span className="text-[10px] text-cyan-400">{((supplier.netAmount / concentration.totalSupply) * 100).toFixed(1)}%</span>
                     </div>
@@ -339,8 +342,8 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
             </div>
 
             {/* Top Borrowers */}
-            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-              <h4 className="text-xs font-medium text-white/60 uppercase tracking-wider mb-2">Top 5 Borrowers</h4>
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+              <h3 className="text-lg font-bold text-cyan-200 mb-3">Top 5 Borrowers</h3>
               {topBorrowers.length === 0 ? (
                 <div className="text-center py-4 text-white/30 text-xs">No borrowers found</div>
               ) : (
@@ -352,7 +355,15 @@ export function WhaleWatch({ poolId, decimals = 9, asset = "" }: WhaleWatchProps
                         idx === 1 ? "bg-slate-500/20 text-slate-300" :
                         idx === 2 ? "bg-orange-500/20 text-orange-300" : "bg-white/10 text-white/50"
                       }`}>{idx + 1}</span>
-                      <span className="font-mono text-[10px] text-white/60 truncate flex-1">{formatAddress(borrower.address)}</span>
+                      <a
+                        href={getExplorerUrl(borrower.address)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[10px] text-white/60 hover:text-cyan-400 truncate flex-1 transition-colors"
+                        title="View Margin Manager"
+                      >
+                        {formatAddress(borrower.address)}
+                      </a>
                       <span className="text-xs font-semibold text-white">{borrower.netAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                       <span className="text-[10px] text-teal-400">{((borrower.netAmount / concentration.totalBorrow) * 100).toFixed(1)}%</span>
                     </div>

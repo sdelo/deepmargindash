@@ -56,15 +56,8 @@ export async function fetchUserOriginalValue(
     });
     
     if (userSupplies.length === 0) {
-      console.log('[fetchUserOriginalValue] No supply events found - indexer may be behind or not running');
-      return null; // Return null to indicate we need indexer data
+      return null; // Return null to indicate indexer data unavailable
     }
-    
-    console.log('[fetchUserOriginalValue] Processing events:', {
-      supplierCapId: supplierCapId.slice(0, 10) + '...',
-      supplies: userSupplies.length,
-      withdrawals: userWithdrawals.length
-    });
     
     // Calculate total cost basis from all deposits
     // Sum up all the tokens spent to acquire shares
@@ -104,7 +97,6 @@ export async function fetchUserOriginalValue(
     }
     
     if (netShares === 0n || netCost === 0n) {
-      console.log('[fetchUserOriginalValue] No net position');
       return 0n;
     }
     
@@ -115,15 +107,6 @@ export async function fetchUserOriginalValue(
     
     // Original value of CURRENT shares = currentShares × avgCostPerShare
     const originalValue = (currentShares * avgCostPerShare) / SCALING;
-    
-    console.log('[fetchUserOriginalValue] Cost basis result:', {
-      totalSharesAcquired: totalSharesAcquired.toString(),
-      totalCost: totalCost.toString(),
-      netShares: netShares.toString(),
-      netCost: netCost.toString(),
-      currentShares: currentShares.toString(),
-      originalValue: originalValue.toString()
-    });
     
     return originalValue;
   } catch (error) {

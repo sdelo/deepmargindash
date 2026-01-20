@@ -5,10 +5,10 @@ import { LiquidityTab } from "./LiquidityTab";
 import { WhaleWatch } from "./WhaleWatch";
 import { LiquidationWall } from "./LiquidationWall";
 import type { PoolOverview } from "../types";
-import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 interface RiskTabProps {
   pool: PoolOverview;
+  initialSection?: string | null;
 }
 
 const SECTIONS: SectionConfig[] = [
@@ -25,10 +25,14 @@ const SECTIONS: SectionConfig[] = [
  * - Concentration (top suppliers/HHI, whale share)
  * - Liquidations (events over time + what triggers liquidations visuals)
  */
-export function RiskTab({ pool }: RiskTabProps) {
-  const [activeSection, setActiveSection] = React.useState("overview");
-  const [liquidationsExpanded, setLiquidationsExpanded] = React.useState(false);
+export function RiskTab({ pool, initialSection }: RiskTabProps) {
+  const [activeSection, setActiveSection] = React.useState(initialSection || "overview");
   const [isChipsSticky, setIsChipsSticky] = React.useState(false);
+  const [flashingSection, setFlashingSection] = React.useState<string | null>(null);
+  
+  // Track programmatic navigation to temporarily disable scrollspy
+  const isNavigatingRef = React.useRef(false);
+  const navigationTimeoutRef = React.useRef<ReturnType<typeof setTimeout>>();
 
   // Refs for each section
   const overviewRef = React.useRef<HTMLDivElement>(null);
@@ -44,17 +48,74 @@ export function RiskTab({ pool }: RiskTabProps) {
     liquidations: liquidationsRef,
   };
 
+  // Helper to scroll to section with proper positioning and flash effect
+  const scrollToSection = React.useCallback((sectionId: string, shouldFlash = false) => {
+    const ref = sectionRefs[sectionId];
+    if (!ref?.current) return;
+    
+    // Mark as navigating to prevent scrollspy from overriding
+    isNavigatingRef.current = true;
+    setActiveSection(sectionId);
+    
+    // Clear any existing navigation timeout
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+    
+    // Get the element's position relative to the document
+    const element = ref.current;
+    const elementRect = element.getBoundingClientRect();
+    const absoluteElementTop = elementRect.top + window.scrollY;
+    
+    // Calculate target scroll position to put element near top of viewport
+    // Account for: navbar (~56px) + tab bar (~52px) + section chips (~44px) + some padding (~20px)
+    const totalHeaderHeight = 172;
+    const targetScrollPosition = absoluteElementTop - totalHeaderHeight;
+    
+    window.scrollTo({
+      top: Math.max(0, targetScrollPosition),
+      behavior: "smooth"
+    });
+    
+    // Trigger flash effect after scroll animation starts
+    if (shouldFlash) {
+      setTimeout(() => {
+        setFlashingSection(sectionId);
+        setTimeout(() => setFlashingSection(null), 600);
+      }, 300);
+    }
+    
+    // Re-enable scrollspy after scroll animation completes
+    navigationTimeoutRef.current = setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 1000);
+  }, []);
+
+  // Navigate to section when initialSection changes (e.g., from tile click)
+  React.useEffect(() => {
+    if (initialSection && sectionRefs[initialSection]) {
+      // Use a longer delay to ensure the new tab content is fully rendered and measured
+      const timeoutId = setTimeout(() => {
+        requestAnimationFrame(() => {
+          scrollToSection(initialSection, true); // Flash on tile click navigation
+        });
+      }, 150);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [initialSection, scrollToSection]);
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Scroll to section when clicking chips
   const handleSectionClick = (sectionId: string) => {
-    setActiveSection(sectionId);
-    const ref = sectionRefs[sectionId];
-    if (ref?.current) {
-      ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-    // Auto-expand liquidations if clicking on it
-    if (sectionId === "liquidations") {
-      setLiquidationsExpanded(true);
-    }
+    scrollToSection(sectionId, true); // Flash on chip click too
   };
 
   // Smart sticky: detect when we've scrolled past the sentinel
@@ -85,12 +146,15 @@ export function RiskTab({ pool }: RiskTabProps) {
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+            // Only update if not currently navigating programmatically
+            // Use a lower threshold so sections near top of viewport are detected
+            if (!isNavigatingRef.current && entry.isIntersecting && entry.intersectionRatio > 0.2) {
               setActiveSection(id);
             }
           });
         },
-        { threshold: [0.3, 0.5, 0.7], rootMargin: "-100px 0px -50% 0px" }
+        // Adjusted rootMargin: less bottom margin so we detect sections when they're at top
+        { threshold: [0.2, 0.4, 0.6], rootMargin: "-180px 0px -40% 0px" }
       );
 
       observer.observe(ref.current);
@@ -140,7 +204,14 @@ export function RiskTab({ pool }: RiskTabProps) {
       {/* ═══════════════════════════════════════════════════════════════════
           SECTION: Risk Overview
       ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={overviewRef} className="scroll-mt-36 pb-8">
+      <section 
+        ref={overviewRef} 
+        className={`scroll-mt-44 pb-8 rounded-xl transition-all duration-300 ${
+          flashingSection === "overview" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
         {/* Quick Summary Strip */}
         <div className="flex items-center gap-4 p-3 mb-4 bg-gradient-to-r from-slate-800/60 to-transparent rounded-xl border border-slate-700/30">
           <div className="flex-1 flex items-center gap-6">
@@ -185,17 +256,27 @@ export function RiskTab({ pool }: RiskTabProps) {
         <PoolRiskOutlook pool={pool} />
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION: Liquidity
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={liquidityRef} className="scroll-mt-36 pb-8 border-t border-slate-700/30 pt-6">
+      {/* SECTION: Liquidity */}
+      <section 
+        ref={liquidityRef} 
+        className={`scroll-mt-44 pb-6 rounded-xl transition-all duration-300 ${
+          flashingSection === "liquidity" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
         <LiquidityTab pool={pool} />
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION: Concentration
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={concentrationRef} className="scroll-mt-36 pb-8 border-t border-slate-700/30 pt-6">
+      {/* SECTION: Concentration */}
+      <section 
+        ref={concentrationRef} 
+        className={`scroll-mt-44 pb-6 rounded-xl transition-all duration-300 ${
+          flashingSection === "concentration" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
         <WhaleWatch
           poolId={pool.contracts?.marginPoolId}
           decimals={pool.contracts?.coinDecimals}
@@ -203,59 +284,19 @@ export function RiskTab({ pool }: RiskTabProps) {
         />
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION: Liquidations (Collapsible by default)
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section ref={liquidationsRef} className="scroll-mt-36 pb-4 border-t border-slate-700/30 pt-6">
-        <button
-          onClick={() => setLiquidationsExpanded(!liquidationsExpanded)}
-          className="w-full flex items-center justify-between p-4 bg-slate-800/40 hover:bg-slate-800/60 rounded-xl border border-slate-700/30 transition-colors mb-4"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-rose-500/10">
-              <svg
-                className="w-5 h-5 text-rose-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
-            </div>
-            <div className="text-left">
-              <h3 className="text-base font-semibold text-white">
-                Liquidation History
-              </h3>
-              <p className="text-xs text-slate-500">
-                Historical liquidation events and bad debt analysis
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500">
-              {liquidationsExpanded ? "Collapse" : "Expand"}
-            </span>
-            {liquidationsExpanded ? (
-              <ChevronUpIcon className="w-5 h-5 text-slate-400" />
-            ) : (
-              <ChevronDownIcon className="w-5 h-5 text-slate-400" />
-            )}
-          </div>
-        </button>
-
-        {liquidationsExpanded && (
-          <div className="animate-fade-in">
-            <LiquidationWall
-              poolId={pool.contracts?.marginPoolId}
-              asset={pool.asset}
-            />
-          </div>
-        )}
+      {/* SECTION: Liquidations */}
+      <section 
+        ref={liquidationsRef} 
+        className={`scroll-mt-44 pb-4 rounded-xl transition-all duration-300 ${
+          flashingSection === "liquidations" 
+            ? "ring-2 ring-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/20 bg-[#2dd4bf]/5" 
+            : ""
+        }`}
+      >
+        <LiquidationWall
+          poolId={pool.contracts?.marginPoolId}
+          asset={pool.asset}
+        />
       </section>
     </div>
   );

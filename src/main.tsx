@@ -15,13 +15,13 @@ import {
   DEEPBOOK_MARGIN_PACKAGE_IDS,
   DEEPBOOK_MARGIN_PACKAGE_NAME,
 } from "./config/contracts";
-import { DEFAULT_NETWORK } from "./config/networks";
+import { getPersistedNetwork } from "./config/networks";
 import { AppNetworkProvider } from "./context/AppNetworkContext";
 
 function Root() {
   useEffect(() => {
-    setTheme("leviathan");
-    // Expose a quick switch for manual testing in console: window.setTheme('leviathan'|'default')
+    setTheme("nerid");
+    // Expose a quick switch for manual testing in console: window.setTheme('nerid'|'default')
     (window as any).setTheme = setTheme;
   }, []);
   return <App />;
@@ -52,12 +52,15 @@ const { networkConfig } = createNetworkConfig({
 
 const queryClient = new QueryClient();
 
+// Read persisted network before first render
+const initialNetwork = getPersistedNetwork();
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider
         networks={networkConfig}
-        defaultNetwork={DEFAULT_NETWORK}
+        defaultNetwork={initialNetwork}
       >
         <AppNetworkProvider>
           <WalletProvider

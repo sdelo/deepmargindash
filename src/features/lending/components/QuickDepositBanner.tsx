@@ -203,6 +203,14 @@ export function QuickDepositBanner({
   const [showHowItWorks, setShowHowItWorks] = React.useState(false);
   const [showReviewModal, setShowReviewModal] = React.useState(false);
 
+  // Clear input on successful transaction (after wallet confirmation completes)
+  React.useEffect(() => {
+    if (txStatus === "success") {
+      setInputAmount("");
+      setIsWithdrawMax(false);
+    }
+  }, [txStatus]);
+
   const selectedPool = pools.find((p) => p.id === selectedPoolId) ?? pools[0];
 
   // Parse balances
@@ -348,6 +356,27 @@ export function QuickDepositBanner({
       apy,
     };
   }, [inputAmount, mode, selectedPool, currentPositionBalance]);
+
+  // Track preview visibility for smooth enter/exit animations
+  const [showPreview, setShowPreview] = React.useState(false);
+  const [isPreviewVisible, setIsPreviewVisible] = React.useState(false);
+  const [cachedPreview, setCachedPreview] = React.useState(depositPreview);
+
+  React.useEffect(() => {
+    if (depositPreview) {
+      setCachedPreview(depositPreview);
+      setShowPreview(true);
+      // Small delay to ensure element is in DOM before animating in
+      const enterTimer = setTimeout(() => setIsPreviewVisible(true), 20);
+      return () => clearTimeout(enterTimer);
+    } else {
+      // Start exit animation immediately
+      setIsPreviewVisible(false);
+      // Delay hiding element to allow exit animation (matches 700ms transition duration)
+      const exitTimer = setTimeout(() => setShowPreview(false), 700);
+      return () => clearTimeout(exitTimer);
+    }
+  }, [depositPreview]);
 
   if (!selectedPool) return null;
 
@@ -604,8 +633,15 @@ export function QuickDepositBanner({
               </div>
 
               {/* Row 3: INLINE "After Deposit" Preview - Trade Ticket Style */}
-              {depositPreview && (
-                <div className="mt-3 pt-3 border-t border-emerald-500/20 animate-fade-in">
+              {showPreview && cachedPreview && (
+                <div 
+                  className={`mt-3 pt-3 border-t border-emerald-500/20 transition-all duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
+                    isPreviewVisible 
+                      ? "opacity-100 translate-y-0 scale-100" 
+                      : "opacity-0 translate-y-4 scale-[0.96]"
+                  }`}
+                  style={{ transformOrigin: 'top center' }}
+                >
                   <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 rounded-lg p-4 border border-emerald-500/20">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-3">
@@ -624,7 +660,7 @@ export function QuickDepositBanner({
                       </div>
                       <div className="flex items-center gap-2 text-sm font-mono">
                         <span className="text-slate-400">
-                          {depositPreview.currentPosition.toLocaleString(
+                          {cachedPreview.currentPosition.toLocaleString(
                             undefined,
                             {
                               minimumFractionDigits: 3,
@@ -634,7 +670,7 @@ export function QuickDepositBanner({
                         </span>
                         <span className="text-white/30">→</span>
                         <span className="text-white font-semibold">
-                          {depositPreview.newPosition.toLocaleString(
+                          {cachedPreview.newPosition.toLocaleString(
                             undefined,
                             {
                               minimumFractionDigits: 3,
@@ -663,7 +699,7 @@ export function QuickDepositBanner({
                       <div className="flex items-center gap-1.5">
                         <span className="text-slate-500">Est. APY:</span>
                         <span className="text-emerald-400 font-semibold">
-                          {depositPreview.apy.toFixed(2)}%
+                          {cachedPreview.apy.toFixed(2)}%
                         </span>
                       </div>
                       <span className="text-slate-700">•</span>
@@ -687,9 +723,9 @@ export function QuickDepositBanner({
                         </div>
                         <div className="text-xs font-semibold text-emerald-400 font-mono">
                           +
-                          {depositPreview.incrementalDaily < 0.0001
-                            ? depositPreview.incrementalDaily.toFixed(6)
-                            : depositPreview.incrementalDaily.toFixed(4)}
+                          {cachedPreview.incrementalDaily < 0.0001
+                            ? cachedPreview.incrementalDaily.toFixed(6)
+                            : cachedPreview.incrementalDaily.toFixed(4)}
                         </div>
                       </div>
                       <div>
@@ -698,9 +734,9 @@ export function QuickDepositBanner({
                         </div>
                         <div className="text-xs font-semibold text-emerald-400 font-mono">
                           +
-                          {depositPreview.incrementalMonthly < 0.01
-                            ? depositPreview.incrementalMonthly.toFixed(4)
-                            : depositPreview.incrementalMonthly.toFixed(2)}
+                          {cachedPreview.incrementalMonthly < 0.01
+                            ? cachedPreview.incrementalMonthly.toFixed(4)
+                            : cachedPreview.incrementalMonthly.toFixed(2)}
                         </div>
                       </div>
                       <div>
@@ -709,9 +745,9 @@ export function QuickDepositBanner({
                         </div>
                         <div className="text-xs font-semibold text-emerald-400 font-mono">
                           +
-                          {depositPreview.yearlyEarnings < 1
-                            ? depositPreview.yearlyEarnings.toFixed(4)
-                            : depositPreview.yearlyEarnings.toFixed(2)}
+                          {cachedPreview.yearlyEarnings < 1
+                            ? cachedPreview.yearlyEarnings.toFixed(4)
+                            : cachedPreview.yearlyEarnings.toFixed(2)}
                         </div>
                       </div>
                     </div>

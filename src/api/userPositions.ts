@@ -74,9 +74,6 @@ async function getAllSupplierCaps(
     filter: { StructType: capType },
   });
   
-  // Log raw response for debugging
-  console.log(`getOwnedObjects raw response for ${capType}:`, JSON.stringify(caps.data, null, 2));
-
   return caps.data
     .map((cap) => cap.data?.objectId)
     .filter((id): id is string => id !== undefined && id !== null);
@@ -115,18 +112,12 @@ export async function fetchUserPositionFromPool(
     const positionTableId = (marginPool as any)?.positions?.positions?.id?.id;
 
     if (!positionTableId || typeof positionTableId !== 'string') {
-      console.error(`Invalid position table ID derived from pool ${poolId}:`, positionTableId);
-      console.log('Full margin pool structure:', JSON.stringify(marginPool, null, 2));
       return null;
     }
 
     if (!supplierCapId) {
-        console.error(`Cannot fetch position: supplierCapId is missing/undefined for user ${userAddress}`);
-        return null;
+      return null;
     }
-
-    // Query the dynamic field for this user's position using SupplierCap ID
-    console.log(`Fetching position for cap ${supplierCapId} in pool ${poolId} (Table: ${positionTableId})`);
     
     let positionField;
     try {
@@ -138,24 +129,15 @@ export async function fetchUserPositionFromPool(
         },
       });
     } catch (err: any) {
-      // Check for explicit error types
+      // This is expected if the user has no position in this pool
       if (err?.message?.includes('DynamicFieldNotFound')) {
-        // This is expected if the user has no position in this pool
         return null;
       }
-      
-      console.error(`Failed to fetch dynamic field:`, {
-        parentId: positionTableId,
-        nameType: '0x2::object::ID',
-        nameValue: supplierCapId,
-        error: err.message
-      });
-      throw err; // Re-throw to let the outer catch handle it
+      throw err;
     }
 
     // If content is missing, fetch it explicitly
     if (positionField.data?.objectId && !positionField.data?.content) {
-      console.log(`Content missing for DF ${positionField.data.objectId}, fetching explicitly...`);
       positionField = await suiClient.getObject({
         id: positionField.data.objectId,
         options: { showContent: true }
@@ -164,17 +146,13 @@ export async function fetchUserPositionFromPool(
 
     // Dynamic fields return content, not BCS
     if (!positionField.data?.content) {
-      console.log(`No position content found for cap ${supplierCapId}`);
       return null;
     }
-    
-    console.log(`Position content structure:`, JSON.stringify(positionField.data.content, null, 2));
 
     // Extract shares from the nested dynamic field structure
     const shares = extractSharesFromDynamicField(positionField.data.content);
     
     if (!shares) {
-      console.warn(`Could not extract shares from position for ${userAddress} (cap: ${supplierCapId}) in ${asset} pool`);
       return null;
     }
     
@@ -197,9 +175,8 @@ export async function fetchUserPositionFromPool(
   } catch (error) {
     // Ignore errors if the position field doesn't exist (user has cap but no position)
     if (JSON.stringify(error).includes("DynamicFieldNotFound")) {
-        return null;
+      return null;
     }
-    console.error(`Error fetching user position from ${asset} pool:`, error);
     return null;
   }
 }
@@ -234,15 +211,12 @@ export async function fetchUserPositions(
     ? getPackageId(firstPoolResponse.data.type)
     : null;
 
-  console.log(`Derived package ID from pool: ${packageId}`);
-
   if (!packageId) {
     return [];
   }
 
   // Fetch all SupplierCaps for this package (one cap can be used across all pools)
   const allCapIds = await getAllSupplierCaps(suiClient, userAddress, packageId);
-  console.log(`Found ${allCapIds.length} supplier caps for ${userAddress}:`, allCapIds);
 
   // Extra safety check to ensure no undefined/null values made it through
   const validCapIds = allCapIds.filter(id => id); 
@@ -255,10 +229,8 @@ export async function fetchUserPositions(
   const positionPromises: Promise<UserPosition | null>[] = [];
   
   for (const capId of validCapIds) {
-    // Double check capId is valid string
     if (!capId) {
-        console.warn("Skipping invalid capId:", capId);
-        continue;
+      continue;
     }
     
     // Try this cap against all configured pools

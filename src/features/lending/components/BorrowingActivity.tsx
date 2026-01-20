@@ -15,6 +15,7 @@ import { TimeRangeSelector } from "../../../components/TimeRangeSelector";
 import { EmptyState } from "../../../components/EmptyState";
 import { LoadingSkeleton } from "../../../components/LoadingSkeleton";
 import type { TimeRange } from "../api/types";
+import { useChartFirstRender, useStableGradientId } from "../../../components/charts/StableChart";
 
 type Props = { poolId?: string };
 
@@ -72,7 +73,12 @@ export const BorrowingActivity: FC<Props> = ({ poolId }) => {
     return netData;
   }, [loanEvents.aggregated, loanEvents.borrowed, loanEvents.repaid]);
 
-  if (loanEvents.isLoading) {
+  // Stable chart rendering - prevent flicker on data updates
+  const { animationProps } = useChartFirstRender(chartData.length > 0);
+  const borrowsGradientId = useStableGradientId('gradBorrows');
+  const netGradientId = useStableGradientId('gradNet');
+
+  if (loanEvents.isLoading && chartData.length === 0) {
     return (
       <div className="relative card-surface border border-white/10 text-white">
         <div className="flex items-center justify-between mb-4">
@@ -149,7 +155,7 @@ export const BorrowingActivity: FC<Props> = ({ poolId }) => {
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="gradNetBorrow" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={netGradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.45} />
                 <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.05} />
               </linearGradient>
@@ -183,9 +189,10 @@ export const BorrowingActivity: FC<Props> = ({ poolId }) => {
               dataKey="net"
               stroke="#fbbf24"
               strokeWidth={2}
-              fill="url(#gradNetBorrow)"
+              fill={`url(#${netGradientId})`}
               name="Net Borrowing"
               dot={false}
+              {...animationProps}
             />
             <Legend
               align="left"
